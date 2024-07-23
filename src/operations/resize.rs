@@ -34,6 +34,9 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         let ignore_aspect_ratio = ascii.contains(&b'!');
         let only_enlarge = ascii.contains(&b'<');
         let only_shrink = ascii.contains(&b'>');
+        if only_enlarge && only_shrink {
+            return Err(ArgParseErr {});
+        }
 
         let mut iter = ascii.split(|c| *c == b'x');
         let width = if let Some(slice) = iter.next() {
@@ -53,12 +56,6 @@ impl TryFrom<&OsStr> for ResizeGeometry {
 
         // The offsets after the resolution, such as +500 or -200, are accepted by the imagemagick parser but ignored.
         // We don't even bother parsing them.
-
-        if only_enlarge && only_shrink {
-            // passing these two flags simultaneously causes imagemagick to do nothing,
-            // but it doesn't report an error or even warn that something is amiss.
-            return Ok(Self::default());
-        }
 
         Ok(ResizeGeometry {
             width,
