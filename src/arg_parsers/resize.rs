@@ -2,6 +2,7 @@ use std::{ffi::OsStr, num::ParseFloatError, str::FromStr};
 
 use crate::args::ArgParseErr;
 
+/// Extended geometry
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub struct ResizeGeometry {
     pub width: Option<u64>,
@@ -10,6 +11,7 @@ pub struct ResizeGeometry {
     pub only_enlarge: bool,
     pub only_shrink: bool,
     // TODO: percentage mode, which can be fractional
+    // TODO: area mode
 }
 
 impl FromStr for ResizeGeometry {
