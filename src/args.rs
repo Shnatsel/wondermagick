@@ -111,7 +111,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, ArgParseErr>
                 let value = iter.next().ok_or(ArgParseErr {})?;
                 arg_name.to_operation(Some(value.as_os_str()))?
             } else {
-                arg_name.to_operation(None)? // TODO: push
+                arg_name.to_operation(None)?
             };
             plan.add_operation(operation);
         } else {
