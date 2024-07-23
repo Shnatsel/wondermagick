@@ -5,8 +5,8 @@ use crate::args::ArgParseErr;
 /// Extended geometry
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub struct ResizeGeometry {
-    pub width: Option<u64>,
-    pub height: Option<u64>,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
     pub ignore_aspect_ratio: bool,
     pub only_enlarge: bool,
     pub only_shrink: bool,
@@ -44,14 +44,14 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         let width = if let Some(slice) = iter.next() {
             find_and_parse_float(slice)
                 .map_err(|_| ArgParseErr {})?
-                .map(|f| f.round() as u64) // imagemagick rounds to nearest
+                .map(|f| f.round() as u32) // imagemagick rounds to nearest
         } else {
             None
         };
         let height = if let Some(slice) = iter.next() {
             find_and_parse_float(slice)
                 .map_err(|_| ArgParseErr {})?
-                .map(|f| f.round() as u64) // imagemagick rounds to nearest
+                .map(|f| f.round() as u32) // imagemagick rounds to nearest
         } else {
             None
         };

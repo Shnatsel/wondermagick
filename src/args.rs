@@ -9,24 +9,11 @@ use std::{
     str::FromStr,
 };
 
-pub struct Plan {
-    pub output_file: OsString,
-    pub input_files: Vec<FilePlan>,
-}
+use crate::{arg_parsers::ResizeGeometry, plan::ExecutionPlan};
 
-impl Plan {
-    pub fn process_arg() {
-        todo!()
-    }
-}
-
-pub struct FilePlan {
-    filename: OsString,
-    ops: Vec<Operation>,
-}
-
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Operation {
-    Resize,
+    Resize(ResizeGeometry),
 }
 
 #[derive(Debug)]
@@ -66,12 +53,9 @@ impl Arg {
             return Err(ArgParseErr {});
         };
 
-        if !self.needs_value() {
-            // TODO: flags go here
-        } else {
+        match self {
+            Arg::Resize => Ok(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?)),
         }
-
-        todo!()
     }
 }
 
@@ -90,7 +74,7 @@ fn print_help_and_exit() -> ! {
     todo!();
 }
 
-pub fn parse_args(mut args: Vec<OsString>) -> Result<Plan, ArgParseErr> {
+pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, ArgParseErr> {
     // TODO: whole lotta stuff: https://imagemagick.org/script/command-line-processing.php
 
     // maybe_print_help should take care of it, but this won't hurt
@@ -106,6 +90,10 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<Plan, ArgParseErr> {
     if starts_with_dash(&output_filename) {
         return Err(ArgParseErr {});
     }
+
+    let mut plan = ExecutionPlan::default();
+    plan.output_file = output_filename;
+
     // TODO: parse the filename specification, there's a lot of operations that can be attached to it
     let mut input_filenames: Vec<OsString> = Vec::new();
 
@@ -119,15 +107,18 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<Plan, ArgParseErr> {
             // and there is nothing we can do about it without introducing incompatibility in argument parsing.
             let string_arg = arg.to_str().ok_or(ArgParseErr {})?;
             let arg_name = Arg::from_str(string_arg)?;
-            if arg_name.needs_value() {
+            let operation = if arg_name.needs_value() {
                 let value = iter.next().ok_or(ArgParseErr {})?;
-                // TODO: call the parser for this particular value
-            }
+                arg_name.to_operation(Some(value.as_os_str()))?
+            } else {
+                arg_name.to_operation(None)? // TODO: push
+            };
+            plan.add_operation(operation);
         } else {
             input_filenames.push(arg);
         }
     }
-    todo!(); // convert stuff into an execution plan
+    Ok(plan)
 }
 
 fn starts_with_dash(arg: &OsStr) -> bool {
