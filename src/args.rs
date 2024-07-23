@@ -9,11 +9,27 @@ use std::{
     str::FromStr,
 };
 
-pub struct CliArgs {
+pub struct Plan {
     pub output_file: OsString,
-    pub input_file: Vec<OsString>,
+    pub input_files: Vec<FilePlan>,
 }
 
+impl Plan {
+    pub fn process_arg() {
+        todo!()
+    }
+}
+
+pub struct FilePlan {
+    filename: OsString,
+    ops: Vec<Operation>,
+}
+
+pub enum Operation {
+    Resize,
+}
+
+#[derive(Debug)]
 pub struct ArgParseErr {}
 
 impl Display for ArgParseErr {
@@ -38,6 +54,27 @@ impl FromStr for Arg {
     }
 }
 
+impl Arg {
+    fn needs_value(&self) -> bool {
+        match self {
+            Arg::Resize => true,
+        }
+    }
+
+    fn to_operation(&self, value: Option<&OsStr>) -> Result<Operation, ArgParseErr> {
+        if self.needs_value() != value.is_some() {
+            return Err(ArgParseErr {});
+        };
+
+        if !self.needs_value() {
+            // TODO: flags go here
+        } else {
+        }
+
+        todo!()
+    }
+}
+
 pub fn maybe_print_help() {
     match std::env::args_os().nth(1) {
         None => print_help_and_exit(),
@@ -53,13 +90,7 @@ fn print_help_and_exit() -> ! {
     todo!();
 }
 
-fn arg_needs_value(arg: Arg) -> bool {
-    match arg {
-        Arg::Resize => true,
-    }
-}
-
-pub fn parse_args(mut args: Vec<OsString>) -> Result<CliArgs, ArgParseErr> {
+pub fn parse_args(mut args: Vec<OsString>) -> Result<Plan, ArgParseErr> {
     // TODO: whole lotta stuff: https://imagemagick.org/script/command-line-processing.php
 
     // maybe_print_help should take care of it, but this won't hurt
@@ -88,7 +119,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<CliArgs, ArgParseErr> {
             // and there is nothing we can do about it without introducing incompatibility in argument parsing.
             let string_arg = arg.to_str().ok_or(ArgParseErr {})?;
             let arg_name = Arg::from_str(string_arg)?;
-            if arg_needs_value(arg_name) {
+            if arg_name.needs_value() {
                 let value = iter.next().ok_or(ArgParseErr {})?;
                 // TODO: call the parser for this particular value
             }
