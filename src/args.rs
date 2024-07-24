@@ -11,11 +11,16 @@ use std::{
 
 use image::DynamicImage;
 
-use crate::{arg_parsers::ResizeGeometry, operations, plan::{ExecutionPlan, FilePlan}};
+use crate::{
+    arg_parsers::ResizeGeometry,
+    operations,
+    plan::{ExecutionPlan, FilePlan},
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Operation {
     Resize(ResizeGeometry),
+    Thumbnail(ResizeGeometry),
 }
 
 impl Operation {
@@ -23,6 +28,7 @@ impl Operation {
     pub fn execute(&self, image: &mut DynamicImage) {
         match self {
             Operation::Resize(geom) => operations::resize::resize(image, geom),
+            Operation::Thumbnail(geom) => operations::resize::thumbnail(image, geom),
         }
     }
 }
@@ -41,6 +47,7 @@ impl std::error::Error for ArgParseErr {}
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Arg {
     Resize,
+    Thumbnail,
 }
 
 impl FromStr for Arg {
@@ -49,6 +56,7 @@ impl FromStr for Arg {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "-resize" => Ok(Arg::Resize),
+            "-thumbnail" => Ok(Arg::Thumbnail),
             _ => Err(ArgParseErr {}),
         }
     }
@@ -58,6 +66,7 @@ impl Arg {
     fn needs_value(&self) -> bool {
         match self {
             Arg::Resize => true,
+            Arg::Thumbnail => true,
         }
     }
 
@@ -68,6 +77,9 @@ impl Arg {
 
         match self {
             Arg::Resize => Ok(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::Thumbnail => Ok(Operation::Thumbnail(ResizeGeometry::try_from(
+                value.unwrap(),
+            )?)),
         }
     }
 }
