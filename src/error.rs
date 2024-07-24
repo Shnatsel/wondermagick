@@ -67,16 +67,17 @@ macro_rules! wm_try {
                 // This only happens a handful of times per execution and only when we're bailing out anyway,
                 // so we can easily afford the slight runtime overhead of copying a string.
                 let magick_type_id = TypeId::of::<$crate::error::MagickError>();
-                if get_type_id(&err) == magick_type_id {
+                let magick_error = if get_type_id(&err) == magick_type_id {
                     // Even though we know *at runtime* that we are dealing with a MagickError,
                     // we still need this to compile for any type.
                     // We achieve this by using `to_string()` from the `Display` trait
                     // because anything that implements `Error` also implements `Display`.
-                    return std::result::Result::Err(MagickError(err.to_string()));
+                    MagickError(err.to_string())
                 } else {
                     // Convert the foreign error into our format
-                    return std::result::Result::Err(wm_err!("{}", err));
+                    wm_err!("{}", err)
                 };
+                return std::result::Result::Err(magick_error);
             }
         }
     }};
