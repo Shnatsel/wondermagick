@@ -1,23 +1,23 @@
+use image::ImageReader;
 use std::error::Error;
-
-use fast_image_resize::Resizer;
-use image::DynamicImage;
+use wondermagick::args;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    use image::ImageReader;
-    let input = std::env::args().nth(1).unwrap();
-    let output = std::env::args().nth(2).unwrap();
-    let src_image = ImageReader::open(input)?.with_guessed_format()?.decode()?;
+    // TODO: handle multiple images
+    args::maybe_print_help();
+    let arguments: Vec<_> = std::env::args_os().collect();
+    let plan = args::parse_args(arguments)?;
 
-    let dst_width = 800;
-    let dst_height = 600;
-    let mut dst_image = DynamicImage::new(dst_width, dst_height, src_image.color());
+    // TODO: handle multiple images
+    let file_plan = plan.input_files.first().unwrap();
+    let mut image = ImageReader::open(&file_plan.filename)?
+        .with_guessed_format()?
+        .decode()?;
 
-    // Create Resizer instance and resize source image
-    // into buffer of destination image
-    let mut resizer = Resizer::new();
-    resizer.resize(&src_image, &mut dst_image, None).unwrap();
+    for operation in &file_plan.ops {
+        operation.execute(&mut image);
+    }
 
-    dst_image.save(output)?;
+    image.save(plan.output_file)?;
     Ok(())
 }

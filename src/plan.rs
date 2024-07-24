@@ -22,6 +22,6 @@ impl ExecutionPlan {
 /// Plan of operations for a single input file
 #[derive(Debug, Default)]
 pub struct FilePlan {
-    filename: OsString,
-    ops: Vec<Operation>,
+    pub filename: OsString,
+    pub ops: Vec<Operation>,
 }

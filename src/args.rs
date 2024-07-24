@@ -9,11 +9,22 @@ use std::{
     str::FromStr,
 };
 
-use crate::{arg_parsers::ResizeGeometry, plan::ExecutionPlan};
+use image::DynamicImage;
+
+use crate::{arg_parsers::ResizeGeometry, operations, plan::ExecutionPlan};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Operation {
     Resize(ResizeGeometry),
+}
+
+impl Operation {
+    // TODO: bubble up errors
+    pub fn execute(&self, image: &mut DynamicImage) {
+        match self {
+            Operation::Resize(geom) => operations::resize::resize(image, geom),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -24,6 +35,8 @@ impl Display for ArgParseErr {
         write!(f, "Failed to parse arguments") // TODO: elaborate
     }
 }
+
+impl std::error::Error for ArgParseErr {}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Arg {

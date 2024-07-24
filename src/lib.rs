@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
 mod arg_parsers;
-mod args;
+pub mod args;
 mod operations;
 mod plan;
