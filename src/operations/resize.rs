@@ -20,7 +20,7 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
     (width, height)
 }
 
-fn compute_dimension(image_size: u32, geom_size: Option<u32>, geometry: &ResizeGeometry) -> u32 {
+fn compute_dimension(image_size: u32, geom_size: Option<u32>, _geometry: &ResizeGeometry) -> u32 {
     // TODO: do the actual computation accounting for flags
     geom_size.unwrap_or(image_size)
 }
