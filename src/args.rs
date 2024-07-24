@@ -47,7 +47,7 @@ impl FromStr for Arg {
         match s {
             "-resize" => Ok(Arg::Resize),
             "-thumbnail" => Ok(Arg::Thumbnail),
-            _ => Err(wm_err!(format!("unrecognized option `{}'", s))),
+            _ => Err(wm_err!("unrecognized option `{}'", s)),
         }
     }
 }
@@ -62,7 +62,7 @@ impl Arg {
 
     fn to_operation(&self, value: Option<&OsStr>) -> Result<Operation, MagickError> {
         if self.needs_value() != value.is_some() {
-            return Err(wm_err!(format!("argument requires a value")));
+            return Err(wm_err!("argument requires a value"));
         };
 
         match self {
@@ -103,10 +103,10 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     let output_filename = args.pop().unwrap();
     // imagemagick rejects output filenames that look like arguments
     if starts_with_dash(&output_filename) {
-        return Err(wm_err!(format!(
+        return Err(wm_err!(
             "missing an image filename `{}'",
             output_filename.to_string_lossy()
-        )));
+        ));
     }
 
     let mut plan = ExecutionPlan::default();
@@ -122,16 +122,14 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             // A file named "-foobar.jpg" will be parsed as an option.
             // Sadly imagemagick does not support the -- convention to separate options and filenames,
             // and there is nothing we can do about it without introducing incompatibility in argument parsing.
-            let string_arg = arg.to_str().ok_or(wm_err!(format!(
-                "unrecognized option `{}'",
-                arg.to_string_lossy()
-            )))?;
+            let string_arg = arg
+                .to_str()
+                .ok_or(wm_err!("unrecognized option `{}'", arg.to_string_lossy()))?;
             let arg_name = Arg::from_str(string_arg)?;
             let operation = if arg_name.needs_value() {
-                let value = iter.next().ok_or(wm_err!(format!(
-                    "argument requires a value: {}",
-                    &string_arg
-                )))?;
+                let value = iter
+                    .next()
+                    .ok_or(wm_err!("argument requires a value: {}", &string_arg))?;
                 arg_name.to_operation(Some(value.as_os_str()))?
             } else {
                 arg_name.to_operation(None)?

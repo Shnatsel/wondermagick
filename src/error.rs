@@ -15,14 +15,16 @@ impl Debug for MagickError {
 
 impl std::error::Error for MagickError {}
 
-/// Returns a `MagickError` with the specified string, and records the source code location where it was called.
+/// Like `format!`, but returns a `MagickError` instead of a `String`,
+/// and records the source code location where it was called.
 /// We use it to imitate the structure of imagemagick's error messages.
 #[macro_export]
 macro_rules! wm_err {
-    ($msg:expr) => {
+    ($($arg:tt)*) => {{
+        let res = std::fmt::format(std::format_args!($($arg)*));
         MagickError(format!(
             "wondermagick: {} @ {}/{}/{}.",
-            $msg,
+            res,
             file!(),
             // Get the function name.
             // Adapted from https://stackoverflow.com/a/40234666/585725
@@ -38,7 +40,7 @@ macro_rules! wm_err {
             },
             line!(),
         ))
-    };
+    }};
 }
 
 /// Similar to the `try!` macro and the `?` operator, but always converts the result to `MagickError`.
@@ -66,7 +68,7 @@ macro_rules! wm_try {
                     return std::result::Result::Err(MagickError(err.to_string()));
                 } else {
                     // Convert the foreign error into our format
-                    return std::result::Result::Err(wm_err!(err));
+                    return std::result::Result::Err(wm_err!("{}", err));
                 };
             }
         }

@@ -29,10 +29,10 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         // TODO: support all of these qualifiers: https://www.imagemagick.org/Magick++/Geometry.html
         // TODO: return default value (no-op) on certain mailformed strings like imagemagick does
         if !s.is_ascii() {
-            return Err(wm_err!(format!(
+            return Err(wm_err!(
                 "invalid argument for option `-resize': {}",
                 s.to_string_lossy()
-            )));
+            ));
         }
         let ascii = s.as_encoded_bytes();
 
