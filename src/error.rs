@@ -15,7 +15,7 @@ impl Debug for MagickError {
 
 impl std::error::Error for MagickError {}
 
-/// Similar to `format!`, but returns a `MagickError` and also records the source code location where it was called.
+/// Returns a `MagickError` with the specified string, and also records the source code location where it was called.
 /// We use it to imitate the structure of imagemagick's error messages.
 #[macro_export]
 macro_rules! wm_err {
