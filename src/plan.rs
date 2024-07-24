@@ -25,3 +25,12 @@ pub struct FilePlan {
     pub filename: OsString,
     pub ops: Vec<Operation>,
 }
+
+impl FilePlan {
+    pub fn new(filename: OsString) -> Self {
+        Self {
+            filename,
+            ops: Vec::new(),
+        }
+    }
+}

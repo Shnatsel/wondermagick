@@ -11,7 +11,7 @@ use std::{
 
 use image::DynamicImage;
 
-use crate::{arg_parsers::ResizeGeometry, operations, plan::ExecutionPlan};
+use crate::{arg_parsers::ResizeGeometry, operations, plan::{ExecutionPlan, FilePlan}};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Operation {
@@ -108,7 +108,6 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, ArgParseErr>
     plan.output_file = output_filename;
 
     // TODO: parse the filename specification, there's a lot of operations that can be attached to it
-    let mut input_filenames: Vec<OsString> = Vec::new();
 
     let mut iter = args.into_iter().skip(1); // skip argv[0], path to our binary
     while let Some(arg) = iter.next() {
@@ -128,7 +127,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, ArgParseErr>
             };
             plan.add_operation(operation);
         } else {
-            input_filenames.push(arg);
+            plan.input_files.push(FilePlan::new(arg));
         }
     }
     Ok(plan)
