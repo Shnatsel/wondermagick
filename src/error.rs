@@ -60,7 +60,12 @@ macro_rules! wm_try {
         match $expr {
             std::result::Result::Ok(val) => val,
             std::result::Result::Err(err) => {
-                // Avoid appending the line numbers twice by accident
+                // The type ID check is to avoid appending the line numbers twice by accident
+                // by converting MagickError into itself.
+                // I haven't figured out how to complain about that at compile time
+                // with a helpful error message, so we just prevent it at runtime.
+                // This only happens a handful of times per execution and only when we're bailing out anyway,
+                // so we can easily afford the slight runtime overhead of copying a string.
                 let magick_type_id = TypeId::of::<$crate::error::MagickError>();
                 if get_type_id(&err) == magick_type_id {
                     // Even though we know *at runtime* that we are dealing with a MagickError,
