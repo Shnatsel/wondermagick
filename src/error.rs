@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Display};
-pub struct MagickError(String);
+pub struct MagickError(pub String);
 
 impl Display for MagickError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -15,6 +15,7 @@ impl Debug for MagickError {
 
 impl std::error::Error for MagickError {}
 
+#[macro_export]
 macro_rules! wm_err {
     ($msg:expr) => {
         MagickError(format!(
@@ -27,6 +28,7 @@ macro_rules! wm_err {
     };
 }
 
+#[macro_export]
 macro_rules! wm_try {
     ($expr:expr $(,)?) => {
         match $expr {

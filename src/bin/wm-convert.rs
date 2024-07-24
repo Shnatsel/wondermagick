@@ -2,7 +2,13 @@ use image::ImageReader;
 use std::error::Error;
 use wondermagick::args;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
+    if let Err(e) = real_main() {
+        eprintln!("{}", e);
+    }
+}
+
+fn real_main() -> Result<(), Box<dyn Error>> {
     // TODO: handle multiple images
     args::maybe_print_help();
     let arguments: Vec<_> = std::env::args_os().collect();
