@@ -5,7 +5,6 @@
 
 use std::{
     ffi::{OsStr, OsString},
-    fmt::Display,
     str::FromStr,
 };
 
@@ -34,17 +33,6 @@ impl Operation {
         }
     }
 }
-
-#[derive(Debug)]
-pub struct ArgParseErr {}
-
-impl Display for ArgParseErr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Failed to parse arguments") // TODO: elaborate
-    }
-}
-
-impl std::error::Error for ArgParseErr {}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Arg {

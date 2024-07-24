@@ -1,6 +1,6 @@
 use std::{ffi::OsStr, num::ParseFloatError, str::FromStr};
 
-use crate::args::ArgParseErr;
+use crate::{error::MagickError, wm_err, wm_try};
 
 /// Extended geometry
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
@@ -15,7 +15,7 @@ pub struct ResizeGeometry {
 }
 
 impl FromStr for ResizeGeometry {
-    type Err = ArgParseErr;
+    type Err = MagickError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_from(OsStr::new(s))
@@ -23,13 +23,16 @@ impl FromStr for ResizeGeometry {
 }
 
 impl TryFrom<&OsStr> for ResizeGeometry {
-    type Error = ArgParseErr;
+    type Error = MagickError;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
         // TODO: support all of these qualifiers: https://www.imagemagick.org/Magick++/Geometry.html
         // TODO: return default value (no-op) on certain mailformed strings like imagemagick does
         if !s.is_ascii() {
-            return Err(ArgParseErr {});
+            return Err(wm_err!(format!(
+                "invalid argument for option `-resize': {}",
+                s.to_string_lossy()
+            )));
         }
         let ascii = s.as_encoded_bytes();
 
@@ -37,21 +40,19 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         let only_enlarge = ascii.contains(&b'<');
         let only_shrink = ascii.contains(&b'>');
         if only_enlarge && only_shrink {
-            return Err(ArgParseErr {});
+            return Err(wm_err!(
+                "invalid argument for option `-resize': < and > cannot be specified together"
+            ));
         }
 
         let mut iter = ascii.split(|c| *c == b'x');
         let width = if let Some(slice) = iter.next() {
-            find_and_parse_float(slice)
-                .map_err(|_| ArgParseErr {})?
-                .map(|f| f.round() as u32) // imagemagick rounds to nearest
+            wm_try!(find_and_parse_float(slice)).map(|f| f.round() as u32) // imagemagick rounds to nearest
         } else {
             None
         };
         let height = if let Some(slice) = iter.next() {
-            find_and_parse_float(slice)
-                .map_err(|_| ArgParseErr {})?
-                .map(|f| f.round() as u32) // imagemagick rounds to nearest
+            wm_try!(find_and_parse_float(slice)).map(|f| f.round() as u32) // imagemagick rounds to nearest
         } else {
             None
         };
