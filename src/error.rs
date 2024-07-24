@@ -15,20 +15,6 @@ impl Debug for MagickError {
 
 impl std::error::Error for MagickError {}
 
-#[macro_export]
-macro_rules! function_name {
-    () => {{
-        fn f() {}
-        fn type_name_of<T>(_: T) -> &'static str {
-            std::any::type_name::<T>()
-        }
-        let name = type_name_of(f);
-        // transform the full path that ends with "::f" to indicate a function
-        // into the name of the function
-        &name.rsplit("::").nth(1).unwrap_or("unknown")
-    }};
-}
-
 /// Returns a `MagickError` with the specified string, and also records the source code location where it was called.
 /// We use it to imitate the structure of imagemagick's error messages.
 #[macro_export]
@@ -73,8 +59,13 @@ macro_rules! wm_try {
                 // Avoid appending the line numbers twice by accident
                 let magick_type_id = TypeId::of::<$crate::error::MagickError>();
                 if get_type_id(&err) == magick_type_id {
+                    // Even though we know *at runtime* that we are dealing with a MagickError,
+                    // we still need this to compile for any type.
+                    // We achieve this by using `to_string()` from the `Display` trait
+                    // because anything that implements `Error` also implements `Display`.
                     return std::result::Result::Err(MagickError(err.to_string()));
                 } else {
+                    // Convert the foreign error into our format
                     return std::result::Result::Err(wm_err!(err));
                 };
             }
