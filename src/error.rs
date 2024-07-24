@@ -48,7 +48,7 @@ macro_rules! wm_try {
     ($expr:expr $(,)?) => {{
         use std::any::TypeId;
 
-        // gets the type ID of a value, as opposed to a type that `TypeId::of` provides
+        // gets the type ID of a *value*, as opposed to a *type* that `TypeId::of` operates on
         fn get_type_id<T: std::any::Any>(_: &T) -> TypeId {
             TypeId::of::<T>()
         }

@@ -15,7 +15,7 @@ use crate::{
     error::MagickError,
     operations,
     plan::{ExecutionPlan, FilePlan},
-    wm_err, wm_try,
+    wm_err,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -66,12 +66,10 @@ impl Arg {
         };
 
         match self {
-            Arg::Resize => Ok(Operation::Resize(wm_try!(ResizeGeometry::try_from(
-                value.unwrap()
-            )))),
-            Arg::Thumbnail => Ok(Operation::Thumbnail(wm_try!(ResizeGeometry::try_from(
-                value.unwrap()
-            )))),
+            Arg::Resize => Ok(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::Thumbnail => Ok(Operation::Thumbnail(ResizeGeometry::try_from(
+                value.unwrap(),
+            )?)),
         }
     }
 }
