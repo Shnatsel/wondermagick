@@ -15,18 +15,42 @@ impl Debug for MagickError {
 
 impl std::error::Error for MagickError {}
 
+#[macro_export]
+macro_rules! function_name {
+    () => {{
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        // transform the full path that ends with "::f" to indicate a function
+        // into the name of the function
+        &name.rsplit("::").nth(1).unwrap_or("unknown")
+    }};
+}
+
 /// Returns a `MagickError` with the specified string, and also records the source code location where it was called.
 /// We use it to imitate the structure of imagemagick's error messages.
 #[macro_export]
 macro_rules! wm_err {
-    // TODO: consider also recording function path: https://stackoverflow.com/a/40234666/585725
     ($msg:expr) => {
         MagickError(format!(
-            "wondermagick: {} @ {}:{}:{}",
+            "wondermagick: {} @ {}/{}/{}.",
             $msg,
             file!(),
+            // Get the function name.
+            // Adapted from https://stackoverflow.com/a/40234666/585725
+            {
+                fn f() {}
+                fn type_name_of<T>(_: T) -> &'static str {
+                    std::any::type_name::<T>()
+                }
+                let name = type_name_of(f);
+                // transform the full path that ends with "::f" to indicate a function
+                // into the name of the function
+                &name.rsplit("::").nth(1).unwrap_or("unknown")
+            },
             line!(),
-            column!()
         ))
     };
 }
@@ -35,12 +59,25 @@ macro_rules! wm_err {
 /// records the source code location where it was called.
 #[macro_export]
 macro_rules! wm_try {
-    ($expr:expr $(,)?) => {
+    ($expr:expr $(,)?) => {{
+        use std::any::TypeId;
+
+        // gets the type ID of a value, as opposed to a type that `TypeId::of` provides
+        fn get_type_id<T: std::any::Any>(_: &T) -> TypeId {
+            TypeId::of::<T>()
+        }
+
         match $expr {
             std::result::Result::Ok(val) => val,
             std::result::Result::Err(err) => {
-                return std::result::Result::Err(wm_err!(err));
+                // Avoid appending the line numbers twice by accident
+                let magick_type_id = TypeId::of::<$crate::error::MagickError>();
+                if get_type_id(&err) == magick_type_id {
+                    return std::result::Result::Err(MagickError(err.to_string()));
+                } else {
+                    return std::result::Result::Err(wm_err!(err));
+                };
             }
         }
-    };
+    }};
 }
