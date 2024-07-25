@@ -31,6 +31,6 @@ Really, making image processing *secure* is not the hard part. We've had memory-
 We allow potentially memory-unsafe code in certain low-risk scenarios:
 
 1. **Explicit SIMD intrinsics.** Sadly the [portable SIMD API](https://doc.rust-lang.org/stable/std/simd/index.html) requires a nightly Rust compiler, so we allow unsafe SIMD intrinsics for now. This kind of code tends to be straightforward and easy to audit.
-1. **Format encoders.** Image processing CVEs are overwhelmingly found in decoders, not encoders. Because of that the Rust ecosystem has been primarily focused on implementing decoders. We may use C implementations of encoders for certain formats when no comparable Rust implementation is available.
+1. **Format encoders.** Image processing CVEs are overwhelmingly found in decoders, not encoders. Because of that the Rust ecosystem has been primarily focused on implementing decoders. The vast majority of our encoders are memory-safe as well, but we may use C implementations of encoders for certain formats when no comparable Rust implementation is available.
 
 Not yet implemented, but planned: an ability to opt out of even this unsafe code.
