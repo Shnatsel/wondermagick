@@ -13,6 +13,7 @@ use crate::arg_parsers::ResizeTarget;
 /// Implements `-resize` command
 pub fn resize(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
+    // The default algorithm is Sinc/Lancsoz3, a very high-quality one
     resize_impl(image, dst_width, dst_height, Default::default())
 }
 
