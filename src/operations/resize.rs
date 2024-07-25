@@ -27,6 +27,12 @@ pub fn scale(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), 
     )
 }
 
+/// Implements `-sample` command
+pub fn sample(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+    let (dst_width, dst_height) = compute_dimensions(image, geometry);
+    resize_impl(image, dst_width, dst_height, ResizeAlg::Nearest)
+}
+
 /// Implements `-thumbnail` command
 pub fn thumbnail(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);

@@ -21,6 +21,7 @@ enum Arg {
     Resize,
     Thumbnail,
     Scale,
+    Sample,
 }
 
 impl FromStr for Arg {
@@ -31,6 +32,7 @@ impl FromStr for Arg {
             "-resize" => Ok(Arg::Resize),
             "-thumbnail" => Ok(Arg::Thumbnail),
             "-scale" => Ok(Arg::Scale),
+            "-sample" => Ok(Arg::Sample),
             _ => Err(wm_err!("unrecognized option `{}'", s)),
         }
     }
@@ -42,6 +44,7 @@ impl Arg {
             Arg::Resize => true,
             Arg::Thumbnail => true,
             Arg::Scale => true,
+            Arg::Sample => true,
         }
     }
 
@@ -55,7 +58,8 @@ impl Arg {
             Arg::Thumbnail => Ok(Operation::Thumbnail(ResizeGeometry::try_from(
                 value.unwrap(),
             )?)),
-            Arg::Scale => Ok(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::Scale => Ok(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::Sample => Ok(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
         }
     }
 }

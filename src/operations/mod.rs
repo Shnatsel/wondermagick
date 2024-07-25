@@ -9,6 +9,7 @@ pub enum Operation {
     Resize(ResizeGeometry),
     Thumbnail(ResizeGeometry),
     Scale(ResizeGeometry),
+    Sample(ResizeGeometry),
 }
 
 impl Operation {
@@ -17,6 +18,7 @@ impl Operation {
             Operation::Resize(geom) => resize::resize(image, geom),
             Operation::Thumbnail(geom) => resize::thumbnail(image, geom),
             Operation::Scale(geom) => resize::scale(image, geom),
+            Operation::Sample(geom) => resize::sample(image, geom),
         }
     }
 }
