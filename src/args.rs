@@ -129,6 +129,9 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             plan.input_files.push(FilePlan::new(arg));
         }
     }
+    if plan.input_files.is_empty() {
+        return Err(wm_err!("no images defined")); // mimics imagemagick
+    }
     Ok(plan)
 }
 
