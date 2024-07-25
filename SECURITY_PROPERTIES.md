@@ -8,7 +8,7 @@ It is *not* a priority to prevent things such as:
 1. Allocating an unbounded amount of memory (memory limits are not yet implemented)
 1. Taking a very long time to perform an operation, or even entering an infinite loop
 
-That's because unlike code execution vulnerabilities, these issues are easy to prevent using external tools. For example, name this shell script `convert`:
+That's because unlike code execution vulnerabilities, these issues are easy to prevent using external tools. For example, on Linux save this shell script and name it `convert`:
 
 ```bash
 #!/bin/bash
@@ -16,7 +16,7 @@ ulimit -v 2000000 # 2GB memory limit
 timeout 10s wm-convert "$@" # 10 seconds timeout
 ```
 
-Boom, you're protected.
+We will still strive to avoid and fix such issues, but they will not be considered security vulnerabilities, and will not have a high priority.
 
 ## How
 
