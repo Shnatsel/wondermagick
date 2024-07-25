@@ -73,7 +73,7 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
                 (width, height)
             }
         }
-        ResizeTarget::Area(_) => todo!(),
+        ResizeTarget::Area(area) => resize_to_max_area(image.width(), image.height(), area),
     }
 }
 
@@ -137,6 +137,19 @@ fn prevent_zero(size: u32) -> u32 {
     } else {
         size
     }
+}
+
+fn resize_to_max_area(width: u32, height: u32, max_area: u64) -> (u32, u32) {
+    let original_area = (width as u64) * (height as u64);
+    let scale_factor = (max_area as f64 / original_area as f64).sqrt();
+
+    // We do not .round() here to avoid accidentally exceeding the allotted area.
+    // I'm not confident that rounding up will not blast past it.
+    // Casting via `as` will always round down, which is what we want.
+    let new_width = (width as f64 * scale_factor) as u32;
+    let new_height = (height as f64 * scale_factor) as u32;
+    debug_assert!(new_width as u64 * new_height as u64 <= max_area);
+    (new_width, new_height)
 }
 
 #[cfg(test)]
