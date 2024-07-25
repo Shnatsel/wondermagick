@@ -18,13 +18,13 @@ ulimit -v 2000000 # 2GB memory limit
 timeout 10s wm-convert "$@" # 10 seconds timeout
 ```
 
-## How
+## How is this possible?
 
-All the image decoders and image processing operations are written in safe Rust.
+All the image decoders and image processing operations are written in safe Rust. The compiler guarantees it for us. It's magic!
 
-Memory safety of our code is guaranteed by the Rust compiler. That's why our PNG decoder will never have a single code execution CVE, while libpng has an [ever-growing laundry list](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=libpng). And our WebP decoder will never have [a code execution vulnerability exploited in the wild](https://blog.cloudflare.com/uncovering-the-hidden-webp-vulnerability-cve-2023-4863).
+That's why our PNG decoder will never have a single code execution CVE, while libpng has an [ever-growing laundry list](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=libpng). There simply is no way for such issues to occur in the first place.
 
-Really, making image processing *secure* is not the hard part. We've had memory-safe languages for decades! The problem is that image processing written in Java or Python will never have satisfactory performance. Rust enables code that is *secure and fast at the same time.*
+Really, making image processing *secure* is not the hard part. We've had memory-safe languages for decades! The problem is that image processing written in Java or Python will never have satisfactory performance. Rust enables code that is *secure and fast simultaneously* for the first time.
 
 ## Exceptions
 
