@@ -56,11 +56,7 @@ fn compute_dimension(image_size: u32, target_size: Option<u32>, geometry: &Resiz
     };
 
     // imagemagick emits a 1x1 image if you ask for a 0x0 one
-    if size == 0 {
-        1
-    } else {
-        size
-    }
+    prevent_zero(size)
 }
 
 /// Returns `(width, height)`
@@ -75,15 +71,26 @@ fn preserve_aspect_ratio(
     match image_ratio.cmp(&target_ratio) {
         Ordering::Less => {
             // the image is narrower than the target dimensions, reduce width
-            let width = (image_ratio.to_float() * target_height as f64).round() as u32;
+            let mut width = (image_ratio.to_float() * target_height as f64).round() as u32;
+            width = prevent_zero(width);
             (width, target_height)
         }
         Ordering::Greater => {
             // the image is wider than the target dimensions, reduce height
-            let height = (image_ratio.reciprocal().to_float() * target_width as f64).round() as u32;
+            let mut height =
+                (image_ratio.reciprocal().to_float() * target_width as f64).round() as u32;
+            height = prevent_zero(height);
             (target_width, height)
         }
         Ordering::Equal => (target_width, target_height),
+    }
+}
+
+fn prevent_zero(size: u32) -> u32 {
+    if size == 0 {
+        1
+    } else {
+        size
     }
 }
 
