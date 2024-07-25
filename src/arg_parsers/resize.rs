@@ -119,7 +119,6 @@ impl TryFrom<&OsStr> for ResizeGeometry {
                 ));
             }
         } else if percentage_mode {
-            // do not run aspect-ratio-fitting machinery later to reduce bugs
             match (width, height) {
                 (None, None) => {} // imagemagick accepts % without a number, which amounts to a no-op
                 (Some(width), None) => {
