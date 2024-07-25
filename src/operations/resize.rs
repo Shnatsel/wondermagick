@@ -1,4 +1,4 @@
-use fast_image_resize::{ResizeAlg, ResizeOptions, Resizer};
+use fast_image_resize::{FilterType, ResizeAlg, ResizeOptions, Resizer};
 use image::DynamicImage;
 
 use crate::{
@@ -10,11 +10,24 @@ use crate::{
 
 use crate::arg_parsers::ResizeTarget;
 
+/// Implements `-resize` command
 pub fn resize(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
     resize_impl(image, dst_width, dst_height, Default::default())
 }
 
+/// Implements `-scale` command
+pub fn scale(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+    let (dst_width, dst_height) = compute_dimensions(image, geometry);
+    resize_impl(
+        image,
+        dst_width,
+        dst_height,
+        ResizeAlg::Convolution(FilterType::Box),
+    )
+}
+
+/// Implements `-thumbnail` command
 pub fn thumbnail(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
 

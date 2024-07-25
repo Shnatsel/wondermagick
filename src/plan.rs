@@ -1,6 +1,6 @@
 use std::ffi::OsString;
 
-use crate::args::Operation;
+use crate::operations::Operation;
 
 /// Plan of operations for the whole run over multiple files
 #[derive(Debug, Default)]
