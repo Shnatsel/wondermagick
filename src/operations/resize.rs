@@ -86,6 +86,7 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
                 }
             }
         }
+        ResizeTarget::FullyCover => todo!(),
     }
 }
 

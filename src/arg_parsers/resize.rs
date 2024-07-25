@@ -10,18 +10,26 @@ pub enum ResizeConstraint {
     OnlyShrink,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum CoverageMode {
+    AnyDimension(u32),
+    Size { width: u32, height: u32 },
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum ResizeTarget {
     Size {
         width: Option<u32>,
         height: Option<u32>,
+        /// `!` operator
         ignore_aspect_ratio: bool,
     },
-    Percentage {
-        width: Option<f64>,
-        height: f64,
-    },
+    /// `%` operator
+    Percentage { width: Option<f64>, height: f64 },
+    /// `@` operator
     Area(u64),
+    /// ^` operator
+    FullyCover,
 }
 
 impl Default for ResizeTarget {
