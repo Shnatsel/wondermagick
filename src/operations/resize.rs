@@ -1,7 +1,7 @@
 use fast_image_resize::{ResizeAlg, ResizeOptions, Resizer};
 use image::DynamicImage;
 
-use crate::arg_parsers::ResizeGeometry;
+use crate::arg_parsers::{ResizeConstraint, ResizeGeometry};
 
 pub fn resize(image: &mut DynamicImage, geometry: &ResizeGeometry) {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
@@ -39,7 +39,20 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
     (width, height)
 }
 
-fn compute_dimension(image_size: u32, geom_size: Option<u32>, _geometry: &ResizeGeometry) -> u32 {
-    // TODO: do the actual computation accounting for flags
-    geom_size.unwrap_or(image_size)
+fn compute_dimension(image_size: u32, geom_size: Option<u32>, geometry: &ResizeGeometry) -> u32 {
+    // If no size is specified for this dimension, keep the image's original size
+    let geom_size = geom_size.unwrap_or(image_size);
+
+    let size = match geometry.constraint {
+        ResizeConstraint::Any => geom_size,
+        ResizeConstraint::OnlyEnlarge => image_size.max(geom_size),
+        ResizeConstraint::OnlyShrink => image_size.min(geom_size),
+    };
+
+    // imagemagick emits a 1x1 image if you ask for a 0x0 one
+    if size == 0 {
+        1
+    } else {
+        size
+    }
 }

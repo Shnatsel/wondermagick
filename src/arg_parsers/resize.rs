@@ -2,14 +2,21 @@ use std::{ffi::OsStr, num::ParseFloatError, str::FromStr};
 
 use crate::{error::MagickError, wm_err, wm_try};
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ResizeConstraint {
+    #[default]
+    Any,
+    OnlyEnlarge,
+    OnlyShrink,
+}
+
 /// Extended geometry
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub struct ResizeGeometry {
     pub width: Option<u32>,
     pub height: Option<u32>,
     pub ignore_aspect_ratio: bool,
-    pub only_enlarge: bool,
-    pub only_shrink: bool,
+    pub constraint: ResizeConstraint,
     // TODO: percentage mode, which can be fractional
     // TODO: area mode
 }
@@ -44,6 +51,12 @@ impl TryFrom<&OsStr> for ResizeGeometry {
                 "invalid argument for option `-resize': < and > cannot be specified together"
             ));
         }
+        let mut constraint = ResizeConstraint::default();
+        if only_enlarge {
+            constraint = ResizeConstraint::OnlyEnlarge;
+        } else if only_shrink {
+            constraint = ResizeConstraint::OnlyShrink;
+        }
 
         let mut iter = ascii.split(|c| *c == b'x');
         let width = if let Some(slice) = iter.next() {
@@ -64,8 +77,7 @@ impl TryFrom<&OsStr> for ResizeGeometry {
             width,
             height,
             ignore_aspect_ratio,
-            only_enlarge,
-            only_shrink,
+            constraint,
         })
     }
 }
@@ -90,6 +102,8 @@ fn find_and_parse_float(input: &[u8]) -> Result<Option<f64>, ParseFloatError> {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use crate::arg_parsers::resize::ResizeConstraint;
 
     use super::ResizeGeometry;
 
@@ -132,7 +146,7 @@ mod tests {
         let mut expected = ResizeGeometry::default();
         expected.width = Some(40);
         expected.height = Some(50);
-        expected.only_enlarge = true;
+        expected.constraint = ResizeConstraint::OnlyEnlarge;
         let parsed = ResizeGeometry::from_str("<40x50").unwrap();
         assert_eq!(parsed, expected);
     }
@@ -141,7 +155,7 @@ mod tests {
     fn test_only_enlarge_width() {
         let mut expected = ResizeGeometry::default();
         expected.width = Some(40);
-        expected.only_enlarge = true;
+        expected.constraint = ResizeConstraint::OnlyEnlarge;
         let parsed = ResizeGeometry::from_str("<40").unwrap();
         assert_eq!(parsed, expected);
         let parsed = ResizeGeometry::from_str("40<").unwrap();
@@ -152,10 +166,20 @@ mod tests {
     fn test_only_enlarge_height() {
         let mut expected = ResizeGeometry::default();
         expected.height = Some(50);
-        expected.only_enlarge = true;
+        expected.constraint = ResizeConstraint::OnlyEnlarge;
         let parsed = ResizeGeometry::from_str("<x50").unwrap();
         assert_eq!(parsed, expected);
         let parsed = ResizeGeometry::from_str("x50<").unwrap();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn test_only_shrink() {
+        let mut expected = ResizeGeometry::default();
+        expected.width = Some(40);
+        expected.height = Some(50);
+        expected.constraint = ResizeConstraint::OnlyShrink;
+        let parsed = ResizeGeometry::from_str(">40x50").unwrap();
         assert_eq!(parsed, expected);
     }
 

@@ -2,4 +2,4 @@
 //! e.g. <https://www.imagemagick.org/Magick++/Geometry.html>
 
 mod resize;
-pub use resize::ResizeGeometry;
+pub use resize::*;
