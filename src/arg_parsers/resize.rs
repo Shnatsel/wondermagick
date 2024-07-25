@@ -55,8 +55,6 @@ impl TryFrom<&OsStr> for ResizeGeometry {
     type Error = MagickError;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
-        // TODO: support page size names: https://www.imagemagick.org/Magick++/Geometry.html
-        // TODO: support the ^ operator
         if !s.is_ascii() {
             return Err(wm_err!(
                 "invalid argument for option `-resize': {}",
