@@ -343,3 +343,28 @@ fn test_percentage_only_height() {
     let parsed = ResizeGeometry::from_str("x50%").unwrap();
     assert_eq!(parsed, expected);
 }
+
+#[test]
+fn test_percentage_no_op() {
+    let expected = ResizeGeometry::default();
+    let parsed = ResizeGeometry::from_str("%").unwrap();
+    assert_eq!(parsed, expected);
+}
+
+#[test]
+fn test_area() {
+    let mut expected = ResizeGeometry::default();
+    expected.target = ResizeTarget::Area(200);
+    let parsed = ResizeGeometry::from_str("200@").unwrap();
+    assert_eq!(parsed, expected);
+    let parsed = ResizeGeometry::from_str("@200").unwrap();
+    assert_eq!(parsed, expected);
+}
+
+#[test]
+fn test_area_with_ignored_height() {
+    let mut expected = ResizeGeometry::default();
+    expected.target = ResizeTarget::Area(200);
+    let parsed = ResizeGeometry::from_str("200x500@").unwrap();
+    assert_eq!(parsed, expected);
+}
