@@ -141,11 +141,8 @@ fn prevent_zero(size: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use image::DynamicImage;
-
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn preserve_aspect_ratio_wide() {
