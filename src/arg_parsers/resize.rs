@@ -364,4 +364,11 @@ mod tests {
         let parsed = ResizeGeometry::from_str("200x500@").unwrap();
         assert_eq!(parsed, expected);
     }
+
+    #[test]
+    fn test_cover_no_op() {
+        let expected = ResizeGeometry::default();
+        let parsed = ResizeGeometry::from_str("^").unwrap();
+        assert_eq!(parsed, expected);
+    }
 }
