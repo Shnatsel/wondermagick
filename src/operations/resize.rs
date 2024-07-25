@@ -44,6 +44,7 @@ fn resize_impl(
     Ok(())
 }
 
+#[must_use]
 fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, u32) {
     let constaint = geometry.constraint;
     match geometry.target {
@@ -76,12 +77,14 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
     }
 }
 
+#[must_use]
 /// Scale the image dimension by the given percentage
 fn apply_percentage(size: u32, percentage: f64) -> u32 {
     // dividing by 100 at the *end* minimizes precision loss
     (size as f64 * percentage / 100.0).round() as u32
 }
 
+#[must_use]
 fn compute_dimension(
     image_size: u32,
     target_size: Option<u32>,
@@ -100,6 +103,7 @@ fn compute_dimension(
     prevent_zero(size)
 }
 
+#[must_use]
 /// Returns `(width, height)`
 fn preserve_aspect_ratio(
     image: &DynamicImage,
@@ -137,9 +141,11 @@ fn prevent_zero(size: u32) -> u32 {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use image::DynamicImage;
 
-    use super::preserve_aspect_ratio;
+    use super::*;
 
     #[test]
     fn preserve_aspect_ratio_wide() {
@@ -169,5 +175,26 @@ mod tests {
     fn preserve_aspect_ratio_same() {
         let image = DynamicImage::new_rgb8(800, 800);
         assert_eq!(preserve_aspect_ratio(&image, 100, 100), (100, 100));
+    }
+
+    #[test]
+    fn percentage() {
+        let image = DynamicImage::new_rgb8(800, 600);
+        let geometry = ResizeGeometry::from_str("50%").unwrap();
+        assert_eq!((400, 300), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn height_percentage() {
+        let image = DynamicImage::new_rgb8(800, 600);
+        let geometry = ResizeGeometry::from_str("x50%").unwrap();
+        assert_eq!((800, 300), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn fractional_percentage() {
+        let image = DynamicImage::new_rgb8(1000, 1000);
+        let geometry = ResizeGeometry::from_str("4.5%").unwrap();
+        assert_eq!((45, 45), compute_dimensions(&image, &geometry));
     }
 }
