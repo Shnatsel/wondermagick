@@ -59,9 +59,27 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
             }
             (width, height)
         }
-        ResizeTarget::Percentage { width, height } => todo!(),
+        ResizeTarget::Percentage { width, height } => {
+            // return early on a no-op
+            if height == 100.0 && (width.is_none() || width == Some(100.0)) {
+                (image.width(), image.height())
+            } else {
+                let width = match width {
+                    Some(percent) => apply_percentage(image.width(), percent),
+                    None => image.width(),
+                };
+                let height = apply_percentage(image.height(), height);
+                (width, height)
+            }
+        }
         ResizeTarget::Area(_) => todo!(),
     }
+}
+
+/// Scale the image dimension by the given percentage
+fn apply_percentage(size: u32, percentage: f64) -> u32 {
+    // dividing by 100 at the *end* minimizes precision loss
+    (size as f64 * percentage / 100.0).round() as u32
 }
 
 fn compute_dimension(
