@@ -11,3 +11,18 @@ To that end we have a policy of **upstream-first** contributions. That is, if wh
 We don't want any bespoke unsafe code in `wondermagick`. We declare `#![forbid(unsafe_code)]` to make the compiler yell at you if you try to add any.
 
 We are also cautious with pulling in dependencies that use unsafe code. Any unsafe code that enhances performance should be disabled, with the exception of SIMD intrinsics. Any unsafe code that does get included despite the previous restriction, should be fuzzed with [`cargo fuzz`](https://github.com/rust-fuzz/cargo-fuzz) or an equally capable fuzzer (e.g. AFL) and a fuzzing harness contributed upstream. The project must also have a test suite and run it in CI under Address Sanitizer or [miri](https://github.com/rust-lang/miri). If it does not, please add such a CI setup upstream before adding the dependency to `wondermagick`.
+
+# How to contribute
+
+There are two main ways to contribute:
+
+1. Improve crates such as `image` that `wondermagick` relies on
+1. Add new commands to `wondermagick`
+
+## How to add new commands
+
+1. Add the operation to the `Operation` enum in `src/operations/mod.rs`
+1. Add the flag to the `Arg` enum in `src/args.rs`
+1. Follow the trail of compiler errors and fix all of them. That should be it!
+
+`wondermagick` commands should be backed by algorithms available elsewhere, not just in `wondermagick`. If you are contributing e.g. a blur implementation, ideally it should be in `image` or `imageproc`. If you really need to write it yourself and contributing to an existing crate is not an option (e.g. the maintainers rejected it), please structure it as a separate crate within this repository.
