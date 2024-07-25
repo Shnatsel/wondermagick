@@ -10,18 +10,6 @@ pub enum ResizeConstraint {
     OnlyShrink,
 }
 
-// #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
-// pub struct TargetSize {
-//     pub width: Option<u32>,
-//     pub height: Option<u32>,
-// }
-
-// #[derive(Copy, Clone, PartialEq, Debug, Default)]
-// pub struct Percentage {
-//     pub width: f64,
-//     pub height: f64,
-// }
-
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum ResizeTarget {
     Size {
