@@ -234,4 +234,25 @@ mod tests {
         let computed = size_with_max_area(100, 100, 900);
         assert_eq!((30, 30), computed);
     }
+
+    #[test]
+    fn max_area_unconstrained() {
+        let image = DynamicImage::new_rgb8(100, 100);
+        let geometry = ResizeGeometry::from_str("900@").unwrap();
+        assert_eq!((30, 30), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn max_area_enlarge_only() {
+        let image = DynamicImage::new_rgb8(100, 100);
+        let geometry = ResizeGeometry::from_str("900@<").unwrap();
+        assert_eq!((100, 100), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn max_area_shrink_only() {
+        let image = DynamicImage::new_rgb8(100, 100);
+        let geometry = ResizeGeometry::from_str("900@>").unwrap();
+        assert_eq!((30, 30), compute_dimensions(&image, &geometry));
+    }
 }
