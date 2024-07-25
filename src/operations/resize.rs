@@ -46,15 +46,15 @@ fn resize_impl(
 
 #[must_use]
 fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, u32) {
-    let constaint = geometry.constraint;
+    let constraint = geometry.constraint;
     match geometry.target {
         ResizeTarget::Size {
             width,
             height,
             ignore_aspect_ratio,
         } => {
-            let mut width = compute_dimension(image.width(), width, &constaint);
-            let mut height = compute_dimension(image.height(), height, &constaint);
+            let mut width = compute_dimension(image.width(), width, &constraint);
+            let mut height = compute_dimension(image.height(), height, &constraint);
             if !ignore_aspect_ratio {
                 (width, height) = preserve_aspect_ratio(image, width, height);
             }
@@ -74,7 +74,18 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
             }
         }
         // TODO: constaint handling
-        ResizeTarget::Area(area) => size_with_max_area(image.width(), image.height(), area),
+        ResizeTarget::Area(area) => {
+            let (width, height) = size_with_max_area(image.width(), image.height(), area);
+            match constraint {
+                ResizeConstraint::Unconstrained => (width, height),
+                ResizeConstraint::OnlyEnlarge => {
+                    (width.max(image.width()), height.max(image.height()))
+                }
+                ResizeConstraint::OnlyShrink => {
+                    (width.min(image.width()), height.min(image.height()))
+                }
+            }
+        }
     }
 }
 
