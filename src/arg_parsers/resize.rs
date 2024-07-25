@@ -291,68 +291,68 @@ mod tests {
         let parsed = ResizeGeometry::from_str("40x50-60").unwrap();
         assert_eq!(parsed, expected);
     }
-}
 
-#[test]
-fn test_percentage() {
-    let mut expected = ResizeGeometry::default();
-    expected.target = ResizeTarget::Percentage {
-        width: Some(40.0),
-        height: 40.0,
-    };
-    let parsed = ResizeGeometry::from_str("40%").unwrap();
-    assert_eq!(parsed, expected);
-    let parsed = ResizeGeometry::from_str("%40").unwrap();
-    assert_eq!(parsed, expected);
-    let parsed = ResizeGeometry::from_str("40x40%").unwrap();
-    assert_eq!(parsed, expected);
-    let parsed = ResizeGeometry::from_str("%40%x%40%").unwrap();
-    assert_eq!(parsed, expected);
-}
+    #[test]
+    fn test_percentage() {
+        let mut expected = ResizeGeometry::default();
+        expected.target = ResizeTarget::Percentage {
+            width: Some(40.0),
+            height: 40.0,
+        };
+        let parsed = ResizeGeometry::from_str("40%").unwrap();
+        assert_eq!(parsed, expected);
+        let parsed = ResizeGeometry::from_str("%40").unwrap();
+        assert_eq!(parsed, expected);
+        let parsed = ResizeGeometry::from_str("40x40%").unwrap();
+        assert_eq!(parsed, expected);
+        let parsed = ResizeGeometry::from_str("%40%x%40%").unwrap();
+        assert_eq!(parsed, expected);
+    }
 
-#[test]
-fn test_percentage_different_width_height() {
-    let mut expected = ResizeGeometry::default();
-    expected.target = ResizeTarget::Percentage {
-        width: Some(40.0),
-        height: 50.0,
-    };
-    let parsed = ResizeGeometry::from_str("40x50%").unwrap();
-    assert_eq!(parsed, expected);
-}
+    #[test]
+    fn test_percentage_different_width_height() {
+        let mut expected = ResizeGeometry::default();
+        expected.target = ResizeTarget::Percentage {
+            width: Some(40.0),
+            height: 50.0,
+        };
+        let parsed = ResizeGeometry::from_str("40x50%").unwrap();
+        assert_eq!(parsed, expected);
+    }
 
-#[test]
-fn test_percentage_only_height() {
-    let mut expected = ResizeGeometry::default();
-    expected.target = ResizeTarget::Percentage {
-        width: None,
-        height: 50.0,
-    };
-    let parsed = ResizeGeometry::from_str("x50%").unwrap();
-    assert_eq!(parsed, expected);
-}
+    #[test]
+    fn test_percentage_only_height() {
+        let mut expected = ResizeGeometry::default();
+        expected.target = ResizeTarget::Percentage {
+            width: None,
+            height: 50.0,
+        };
+        let parsed = ResizeGeometry::from_str("x50%").unwrap();
+        assert_eq!(parsed, expected);
+    }
 
-#[test]
-fn test_percentage_no_op() {
-    let expected = ResizeGeometry::default();
-    let parsed = ResizeGeometry::from_str("%").unwrap();
-    assert_eq!(parsed, expected);
-}
+    #[test]
+    fn test_percentage_no_op() {
+        let expected = ResizeGeometry::default();
+        let parsed = ResizeGeometry::from_str("%").unwrap();
+        assert_eq!(parsed, expected);
+    }
 
-#[test]
-fn test_area() {
-    let mut expected = ResizeGeometry::default();
-    expected.target = ResizeTarget::Area(200);
-    let parsed = ResizeGeometry::from_str("200@").unwrap();
-    assert_eq!(parsed, expected);
-    let parsed = ResizeGeometry::from_str("@200").unwrap();
-    assert_eq!(parsed, expected);
-}
+    #[test]
+    fn test_area() {
+        let mut expected = ResizeGeometry::default();
+        expected.target = ResizeTarget::Area(200);
+        let parsed = ResizeGeometry::from_str("200@").unwrap();
+        assert_eq!(parsed, expected);
+        let parsed = ResizeGeometry::from_str("@200").unwrap();
+        assert_eq!(parsed, expected);
+    }
 
-#[test]
-fn test_area_with_ignored_height() {
-    let mut expected = ResizeGeometry::default();
-    expected.target = ResizeTarget::Area(200);
-    let parsed = ResizeGeometry::from_str("200x500@").unwrap();
-    assert_eq!(parsed, expected);
+    #[test]
+    fn test_area_with_ignored_height() {
+        let mut expected = ResizeGeometry::default();
+        expected.target = ResizeTarget::Area(200);
+        let parsed = ResizeGeometry::from_str("200x500@").unwrap();
+        assert_eq!(parsed, expected);
+    }
 }
