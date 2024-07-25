@@ -5,7 +5,7 @@ use crate::{error::MagickError, wm_err, wm_try};
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum ResizeConstraint {
     #[default]
-    Any,
+    Unconstrained,
     OnlyEnlarge,
     OnlyShrink,
 }
