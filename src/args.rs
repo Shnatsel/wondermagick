@@ -25,8 +25,7 @@ pub enum Operation {
 }
 
 impl Operation {
-    // TODO: bubble up errors
-    pub fn execute(&self, image: &mut DynamicImage) {
+    pub fn execute(&self, image: &mut DynamicImage) -> Result<(), MagickError> {
         match self {
             Operation::Resize(geom) => operations::resize::resize(image, geom),
             Operation::Thumbnail(geom) => operations::resize::thumbnail(image, geom),

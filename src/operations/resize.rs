@@ -3,39 +3,45 @@ use image::DynamicImage;
 
 use crate::{
     arg_parsers::{ResizeConstraint, ResizeGeometry},
+    error::MagickError,
     utils::fraction::Fraction,
+    wm_try,
 };
 
 use crate::arg_parsers::ResizeTarget;
 
-pub fn resize(image: &mut DynamicImage, geometry: &ResizeGeometry) {
+pub fn resize(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
     resize_impl(image, dst_width, dst_height, Default::default())
 }
 
-pub fn thumbnail(image: &mut DynamicImage, geometry: &ResizeGeometry) {
+pub fn thumbnail(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
 
     // imagemagick first downscales to 5x the target size with the cheap nearest-neighbor algorithm
     let width = image.width().min(dst_width * 5);
     let height = image.height().min(dst_height * 5);
-    resize_impl(image, width, height, ResizeAlg::Nearest);
+    wm_try!(resize_impl(image, width, height, ResizeAlg::Nearest));
 
     // now do the actual resize to the target dimensions
-    resize_impl(image, dst_width, dst_height, Default::default());
+    resize_impl(image, dst_width, dst_height, Default::default())
 }
 
-fn resize_impl(image: &mut DynamicImage, dst_width: u32, dst_height: u32, algorithm: ResizeAlg) {
+fn resize_impl(
+    image: &mut DynamicImage,
+    dst_width: u32,
+    dst_height: u32,
+    algorithm: ResizeAlg,
+) -> Result<(), MagickError> {
     if image.width() == dst_width && image.height() == dst_height {
-        return;
+        return Ok(());
     }
     let mut resizer = Resizer::new(); // TODO: cache the resizer
     let mut dst_image = DynamicImage::new(dst_width, dst_height, image.color());
     let options = ResizeOptions::default().resize_alg(algorithm);
-    resizer
-        .resize(image, &mut dst_image, Some(&options))
-        .unwrap();
+    wm_try!(resizer.resize(image, &mut dst_image, Some(&options)));
     *image = dst_image;
+    Ok(())
 }
 
 fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, u32) {
