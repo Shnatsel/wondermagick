@@ -107,9 +107,21 @@ mod tests {
     }
 
     #[test]
+    fn preserve_aspect_ratio_wide_upscale() {
+        let image = DynamicImage::new_rgb8(100, 75);
+        assert_eq!(preserve_aspect_ratio(&image, 800, 800), (800, 600));
+    }
+
+    #[test]
     fn preserve_aspect_ratio_narrow() {
         let image = DynamicImage::new_rgb8(600, 800);
         assert_eq!(preserve_aspect_ratio(&image, 100, 100), (75, 100));
+    }
+
+    #[test]
+    fn preserve_aspect_ratio_narrow_upscale() {
+        let image = DynamicImage::new_rgb8(75, 100);
+        assert_eq!(preserve_aspect_ratio(&image, 800, 800), (600, 800));
     }
 
     #[test]
