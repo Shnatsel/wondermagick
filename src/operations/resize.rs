@@ -73,7 +73,8 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
                 (width, height)
             }
         }
-        ResizeTarget::Area(area) => resize_to_max_area(image.width(), image.height(), area),
+        // TODO: constaint handling
+        ResizeTarget::Area(area) => size_with_max_area(image.width(), image.height(), area),
     }
 }
 
@@ -131,6 +132,7 @@ fn preserve_aspect_ratio(
     }
 }
 
+#[must_use]
 fn prevent_zero(size: u32) -> u32 {
     if size == 0 {
         1
@@ -139,7 +141,8 @@ fn prevent_zero(size: u32) -> u32 {
     }
 }
 
-fn resize_to_max_area(width: u32, height: u32, max_area: u64) -> (u32, u32) {
+#[must_use]
+fn size_with_max_area(width: u32, height: u32, max_area: u64) -> (u32, u32) {
     let original_area = (width as u64) * (height as u64);
     let scale_factor = (max_area as f64 / original_area as f64).sqrt();
 
@@ -213,5 +216,11 @@ mod tests {
         let image = DynamicImage::new_rgb8(1000, 1000);
         let geometry = ResizeGeometry::from_str("4x30%").unwrap();
         assert_eq!((40, 300), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn max_area() {
+        let computed = size_with_max_area(100, 100, 900);
+        assert_eq!((30, 30), computed);
     }
 }
