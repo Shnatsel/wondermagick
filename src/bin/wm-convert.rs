@@ -21,7 +21,7 @@ fn real_main() -> Result<(), Box<dyn Error>> {
         .decode()?;
 
     for operation in &file_plan.ops {
-        operation.execute(&mut image);
+        operation.execute(&mut image)?;
     }
 
     image.save(plan.output_file)?;
