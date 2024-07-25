@@ -141,7 +141,7 @@ impl TryFrom<&OsStr> for ResizeGeometry {
                 let height = height.map(|f| f.round() as u32);
                 // passing any single dimension (width or height) will cause imagemagick
                 // to apply this rule to both dimensions
-                let width = width.unwrap_or(height.unwrap());
+                let width = width.unwrap_or_else(|| height.unwrap());
                 let height = height.unwrap_or(width);
                 target = ResizeTarget::FullyCover { width, height }
             }

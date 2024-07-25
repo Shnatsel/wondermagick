@@ -86,7 +86,7 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
                 }
             }
         }
-        ResizeTarget::FullyCover { width, height } => todo!(),
+        ResizeTarget::FullyCover { width, height } => cover_area(image, width, height),
     }
 }
 
@@ -135,6 +135,32 @@ fn preserve_aspect_ratio(
         }
         Ordering::Greater => {
             // the image is wider than the target dimensions, reduce height
+            let mut height =
+                (image_ratio.reciprocal().to_float() * target_width as f64).round() as u32;
+            height = prevent_zero(height);
+            (target_width, height)
+        }
+        Ordering::Equal => (target_width, target_height),
+    }
+}
+
+#[must_use]
+/// Almost a carbon copy of `preserve_aspect_ratio()`, but fits to cover the whole area
+/// instead of fitting inside it.
+/// Returns `(width, height)`
+fn cover_area(image: &DynamicImage, target_width: u32, target_height: u32) -> (u32, u32) {
+    // Literally the only implementation difference from preserve_aspect_ratio is the swapped contents
+    // of Ordering::Less and Ordering::Greater branches
+    let image_ratio = Fraction::new(image.width(), image.height());
+    let target_ratio = Fraction::new(target_width, target_height);
+    use std::cmp::Ordering;
+    match image_ratio.cmp(&target_ratio) {
+        Ordering::Greater => {
+            let mut width = (image_ratio.to_float() * target_height as f64).round() as u32;
+            width = prevent_zero(width);
+            (width, target_height)
+        }
+        Ordering::Less => {
             let mut height =
                 (image_ratio.reciprocal().to_float() * target_width as f64).round() as u32;
             height = prevent_zero(height);
@@ -255,5 +281,19 @@ mod tests {
         let image = DynamicImage::new_rgb8(100, 100);
         let geometry = ResizeGeometry::from_str("900@>").unwrap();
         assert_eq!((30, 30), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn cover_area_width() {
+        let image = DynamicImage::new_rgb8(200, 150);
+        let geometry = ResizeGeometry::from_str("100^").unwrap();
+        assert_eq!((133, 100), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn cover_area_height() {
+        let image = DynamicImage::new_rgb8(150, 200);
+        let geometry = ResizeGeometry::from_str("100^").unwrap();
+        assert_eq!((100, 133), compute_dimensions(&image, &geometry));
     }
 }
