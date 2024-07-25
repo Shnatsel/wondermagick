@@ -296,4 +296,18 @@ mod tests {
         let geometry = ResizeGeometry::from_str("100^").unwrap();
         assert_eq!((100, 133), compute_dimensions(&image, &geometry));
     }
+
+    #[test]
+    fn cover_area_width_upscale() {
+        let image = DynamicImage::new_rgb8(50, 25);
+        let geometry = ResizeGeometry::from_str("100^").unwrap();
+        assert_eq!((200, 100), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn cover_area_height_upscale() {
+        let image = DynamicImage::new_rgb8(25, 50);
+        let geometry = ResizeGeometry::from_str("100^").unwrap();
+        assert_eq!((100, 200), compute_dimensions(&image, &geometry));
+    }
 }
