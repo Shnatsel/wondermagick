@@ -10,12 +10,6 @@ pub enum ResizeConstraint {
     OnlyShrink,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum CoverageMode {
-    AnyDimension(u32),
-    Size { width: u32, height: u32 },
-}
-
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum ResizeTarget {
     Size {
@@ -29,7 +23,7 @@ pub enum ResizeTarget {
     /// `@` operator
     Area(u64),
     /// ^` operator
-    FullyCover,
+    FullyCover { width: u32, height: u32 },
 }
 
 impl Default for ResizeTarget {
@@ -74,6 +68,7 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         let ignore_aspect_ratio = ascii.contains(&b'!');
         let percentage_mode = ascii.contains(&b'%');
         let area_mode = ascii.contains(&b'@');
+        let cover_mode = ascii.contains(&b'^');
         let only_enlarge = ascii.contains(&b'<');
         let only_shrink = ascii.contains(&b'>');
         if only_enlarge && only_shrink {
@@ -138,9 +133,19 @@ impl TryFrom<&OsStr> for ResizeGeometry {
                     }
                 }
             }
+        } else if cover_mode {
+            // simply passing ^ without any digits is treated as a no-op and not rejected
+            if width.is_some() || height.is_some() {
+                // convert to integers
+                let width = width.map(|f| f.round() as u32);
+                let height = height.map(|f| f.round() as u32);
+                // passing any single dimension (width or height) will cause imagemagick
+                // to apply this rule to both dimensions
+                let width = width.unwrap_or(height.unwrap());
+                let height = height.unwrap_or(width);
+                target = ResizeTarget::FullyCover { width, height }
+            }
         } else {
-            // not an area or percentage
-
             // don't even set any flags if this is a no-op
             if width.is_some() || height.is_some() {
                 // convert floats that imagemagick FOR SOME REASON accepts as dimensions to integers
