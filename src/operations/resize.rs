@@ -6,6 +6,8 @@ use crate::{
     utils::fraction::Fraction,
 };
 
+use crate::arg_parsers::ResizeTarget;
+
 pub fn resize(image: &mut DynamicImage, geometry: &ResizeGeometry) {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
     resize_impl(image, dst_width, dst_height, Default::default())
@@ -37,19 +39,33 @@ fn resize_impl(image: &mut DynamicImage, dst_width: u32, dst_height: u32, algori
 }
 
 fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, u32) {
-    let mut width = compute_dimension(image.width(), geometry.width, geometry);
-    let mut height = compute_dimension(image.height(), geometry.height, geometry);
-    if !geometry.ignore_aspect_ratio {
-        (width, height) = preserve_aspect_ratio(image, width, height);
+    match geometry.target {
+        ResizeTarget::Size {
+            width,
+            height,
+            ignore_aspect_ratio,
+        } => {
+            let mut width = compute_dimension(image.width(), width, &geometry.constraint);
+            let mut height = compute_dimension(image.height(), height, &geometry.constraint);
+            if !ignore_aspect_ratio {
+                (width, height) = preserve_aspect_ratio(image, width, height);
+            }
+            (width, height)
+        }
+        ResizeTarget::Percentage { width, height } => todo!(),
+        ResizeTarget::Area(_) => todo!(),
     }
-    (width, height)
 }
 
-fn compute_dimension(image_size: u32, target_size: Option<u32>, geometry: &ResizeGeometry) -> u32 {
+fn compute_dimension(
+    image_size: u32,
+    target_size: Option<u32>,
+    constraint: &ResizeConstraint,
+) -> u32 {
     // If no size is specified for this dimension, keep the image's original size
     let target_size = target_size.unwrap_or(image_size);
 
-    let size = match geometry.constraint {
+    let size = match constraint {
         ResizeConstraint::Any => target_size,
         ResizeConstraint::OnlyEnlarge => image_size.max(target_size),
         ResizeConstraint::OnlyShrink => image_size.min(target_size),

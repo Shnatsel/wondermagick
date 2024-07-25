@@ -18,7 +18,7 @@ use crate::{
     wm_err,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Operation {
     Resize(ResizeGeometry),
     Thumbnail(ResizeGeometry),

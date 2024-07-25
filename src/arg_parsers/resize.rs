@@ -10,12 +10,46 @@ pub enum ResizeConstraint {
     OnlyShrink,
 }
 
-/// Extended geometry
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
+// #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
+// pub struct TargetSize {
+//     pub width: Option<u32>,
+//     pub height: Option<u32>,
+// }
+
+// #[derive(Copy, Clone, PartialEq, Debug, Default)]
+// pub struct Percentage {
+//     pub width: f64,
+//     pub height: f64,
+// }
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum ResizeTarget {
+    Size {
+        width: Option<u32>,
+        height: Option<u32>,
+        ignore_aspect_ratio: bool,
+    },
+    Percentage {
+        width: Option<f64>,
+        height: f64,
+    },
+    Area(u64),
+}
+
+impl Default for ResizeTarget {
+    fn default() -> Self {
+        Self::Size {
+            width: None,
+            height: None,
+            ignore_aspect_ratio: false,
+        }
+    }
+}
+
+/// "Extended geometry" according to imagemagick docs. Only used in resizing operations.
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct ResizeGeometry {
-    pub width: Option<u32>,
-    pub height: Option<u32>,
-    pub ignore_aspect_ratio: bool,
+    pub target: ResizeTarget,
     pub constraint: ResizeConstraint,
     // TODO: percentage mode, which can be fractional
     // TODO: area mode
@@ -44,6 +78,8 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         let ascii = s.as_encoded_bytes();
 
         let ignore_aspect_ratio = ascii.contains(&b'!');
+        let percentage_mode = ascii.contains(&b'%');
+        let area_mode = ascii.contains(&b'@');
         let only_enlarge = ascii.contains(&b'<');
         let only_shrink = ascii.contains(&b'>');
         if only_enlarge && only_shrink {
@@ -60,25 +96,75 @@ impl TryFrom<&OsStr> for ResizeGeometry {
 
         let mut iter = ascii.split(|c| *c == b'x');
         let width = if let Some(slice) = iter.next() {
-            wm_try!(find_and_parse_float(slice)).map(|f| f.round() as u32) // imagemagick rounds to nearest
+            wm_try!(find_and_parse_float(slice))
         } else {
             None
         };
         let height = if let Some(slice) = iter.next() {
-            wm_try!(find_and_parse_float(slice)).map(|f| f.round() as u32) // imagemagick rounds to nearest
+            wm_try!(find_and_parse_float(slice))
         } else {
             None
         };
 
+        let mut target = ResizeTarget::default();
+        // If both percentage and area are specified, area takes precedence.
+        if area_mode {
+            if let Some(width) = width {
+                // height is ignored, I've checked
+                target = ResizeTarget::Area(width.round() as u64);
+            } else {
+                // imagemagick reports "negative or zero image size" followed by the path to the image, and frankly fuck that
+                return Err(wm_err!(
+                    "please specify the area to resize to when using @ operator"
+                ));
+            }
+        } else if percentage_mode {
+            // do not run aspect-ratio-fitting machinery later to reduce bugs
+            match (width, height) {
+                (None, None) => {} // imagemagick accepts % without a number, which amounts to a no-op
+                (Some(width), None) => {
+                    // width but not height being specified means the same scaling applies to both axes
+                    target = ResizeTarget::Percentage {
+                        width: Some(width),
+                        height: width,
+                    }
+                }
+                (None, Some(height)) => {
+                    // Only height being specified means we only scale height AND ignore aspect ratio.
+                    // I could not find an equivalent mode to scale width only.
+                    target = ResizeTarget::Percentage {
+                        width: None,
+                        height,
+                    }
+                }
+                (Some(width), Some(height)) => {
+                    // imagemagick ignores aspect ratio in this case
+                    target = ResizeTarget::Percentage {
+                        width: Some(width),
+                        height,
+                    }
+                }
+            }
+        } else {
+            // not an area or percentage
+
+            // don't even set any flags if this is a no-op
+            if width.is_some() || height.is_some() {
+                // convert floats that imagemagick FOR SOME REASON accepts as dimensions to integers
+                let width = width.map(|f| f.round() as u32); // imagemagick rounds to nearest
+                let height = height.map(|f| f.round() as u32); // imagemagick rounds to nearest
+                target = ResizeTarget::Size {
+                    width,
+                    height,
+                    ignore_aspect_ratio,
+                };
+            }
+        }
+
         // The offsets after the resolution, such as +500 or -200, are accepted by the imagemagick parser but ignored.
         // We don't even bother parsing them.
 
-        Ok(ResizeGeometry {
-            width,
-            height,
-            ignore_aspect_ratio,
-            constraint,
-        })
+        Ok(ResizeGeometry { target, constraint })
     }
 }
 
@@ -103,14 +189,18 @@ fn find_and_parse_float(input: &[u8]) -> Result<Option<f64>, ParseFloatError> {
 mod tests {
     use std::str::FromStr;
 
-    use crate::arg_parsers::resize::ResizeConstraint;
+    use crate::arg_parsers::{resize::ResizeConstraint, ResizeTarget};
 
     use super::ResizeGeometry;
 
     #[test]
     fn test_width_only() {
         let mut expected = ResizeGeometry::default();
-        expected.width = Some(40);
+        expected.target = ResizeTarget::Size {
+            width: Some(40),
+            height: None,
+            ignore_aspect_ratio: false,
+        };
         let parsed = ResizeGeometry::from_str("40").unwrap();
         assert_eq!(parsed, expected);
     }
@@ -118,7 +208,11 @@ mod tests {
     #[test]
     fn test_height_only() {
         let mut expected = ResizeGeometry::default();
-        expected.height = Some(50);
+        expected.target = ResizeTarget::Size {
+            width: None,
+            height: Some(50),
+            ignore_aspect_ratio: false,
+        };
         let parsed = ResizeGeometry::from_str("x50").unwrap();
         assert_eq!(parsed, expected);
     }
@@ -126,9 +220,11 @@ mod tests {
     #[test]
     fn test_ignore_aspect_ratio() {
         let mut expected = ResizeGeometry::default();
-        expected.width = Some(40);
-        expected.height = Some(50);
-        expected.ignore_aspect_ratio = true;
+        expected.target = ResizeTarget::Size {
+            width: Some(40),
+            height: Some(50),
+            ignore_aspect_ratio: true,
+        };
         let parsed = ResizeGeometry::from_str("!40x50").unwrap();
         assert_eq!(parsed, expected);
         let parsed = ResizeGeometry::from_str("40x50!").unwrap();
@@ -144,8 +240,11 @@ mod tests {
     #[test]
     fn test_only_enlarge() {
         let mut expected = ResizeGeometry::default();
-        expected.width = Some(40);
-        expected.height = Some(50);
+        expected.target = ResizeTarget::Size {
+            width: Some(40),
+            height: Some(50),
+            ignore_aspect_ratio: false,
+        };
         expected.constraint = ResizeConstraint::OnlyEnlarge;
         let parsed = ResizeGeometry::from_str("<40x50").unwrap();
         assert_eq!(parsed, expected);
@@ -154,7 +253,11 @@ mod tests {
     #[test]
     fn test_only_enlarge_width() {
         let mut expected = ResizeGeometry::default();
-        expected.width = Some(40);
+        expected.target = ResizeTarget::Size {
+            width: Some(40),
+            height: None,
+            ignore_aspect_ratio: false,
+        };
         expected.constraint = ResizeConstraint::OnlyEnlarge;
         let parsed = ResizeGeometry::from_str("<40").unwrap();
         assert_eq!(parsed, expected);
@@ -165,7 +268,11 @@ mod tests {
     #[test]
     fn test_only_enlarge_height() {
         let mut expected = ResizeGeometry::default();
-        expected.height = Some(50);
+        expected.target = ResizeTarget::Size {
+            width: None,
+            height: Some(50),
+            ignore_aspect_ratio: false,
+        };
         expected.constraint = ResizeConstraint::OnlyEnlarge;
         let parsed = ResizeGeometry::from_str("<x50").unwrap();
         assert_eq!(parsed, expected);
@@ -176,8 +283,11 @@ mod tests {
     #[test]
     fn test_only_shrink() {
         let mut expected = ResizeGeometry::default();
-        expected.width = Some(40);
-        expected.height = Some(50);
+        expected.target = ResizeTarget::Size {
+            width: Some(40),
+            height: Some(50),
+            ignore_aspect_ratio: false,
+        };
         expected.constraint = ResizeConstraint::OnlyShrink;
         let parsed = ResizeGeometry::from_str(">40x50").unwrap();
         assert_eq!(parsed, expected);
@@ -186,8 +296,11 @@ mod tests {
     #[test]
     fn test_ignored_offsets() {
         let mut expected = ResizeGeometry::default();
-        expected.width = Some(40);
-        expected.height = Some(50);
+        expected.target = ResizeTarget::Size {
+            width: Some(40),
+            height: Some(50),
+            ignore_aspect_ratio: false,
+        };
         let parsed = ResizeGeometry::from_str("40x50-60").unwrap();
         assert_eq!(parsed, expected);
     }
