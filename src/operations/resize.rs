@@ -197,4 +197,11 @@ mod tests {
         let geometry = ResizeGeometry::from_str("4.5%").unwrap();
         assert_eq!((45, 45), compute_dimensions(&image, &geometry));
     }
+
+    #[test]
+    fn different_percentages() {
+        let image = DynamicImage::new_rgb8(1000, 1000);
+        let geometry = ResizeGeometry::from_str("4x30%").unwrap();
+        assert_eq!((40, 300), compute_dimensions(&image, &geometry));
+    }
 }
