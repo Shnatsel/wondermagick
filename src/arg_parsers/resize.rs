@@ -39,8 +39,6 @@ impl Default for ResizeTarget {
 pub struct ResizeGeometry {
     pub target: ResizeTarget,
     pub constraint: ResizeConstraint,
-    // TODO: percentage mode, which can be fractional
-    // TODO: area mode
 }
 
 impl FromStr for ResizeGeometry {
