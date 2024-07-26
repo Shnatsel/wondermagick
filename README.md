@@ -1,6 +1,6 @@
 # Wondermagick
 
-A memory-safe replacement for [imagemagick](https://en.wikipedia.org/wiki/ImageMagick). It's [really fast](BENCHMARKS.md), too!
+A memory-safe replacement for [imagemagick](https://en.wikipedia.org/wiki/ImageMagick). It's also [really fast](BENCHMARKS.md)!
 
 ## Why?
 
