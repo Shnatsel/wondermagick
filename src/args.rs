@@ -3,12 +3,7 @@
 //! We cannot use an argument parsing library because imagemagick arguments are unconventional:
 //! they are prefixed by -, not --. So we need to hand-roll our own parser.
 
-use std::{
-    ffi::{OsStr, OsString},
-    str::FromStr,
-};
-
-use strum::VariantArray;
+use std::ffi::{OsStr, OsString};
 
 use crate::{
     arg_parsers::ResizeGeometry,
@@ -18,7 +13,10 @@ use crate::{
     wm_err,
 };
 
-#[derive(VariantArray, Clone, Copy, PartialEq, Eq)]
+use strum::{EnumString, IntoStaticStr};
+
+#[derive(EnumString, IntoStaticStr, Debug, Clone, Copy, PartialEq, Eq)]
+#[strum(serialize_all = "snake_case")]
 enum Arg {
     Resize,
     Thumbnail,
@@ -36,15 +34,6 @@ impl Arg {
         }
     }
 
-    fn name(&self) -> &'static str {
-        match self {
-            Arg::Resize => "-resize",
-            Arg::Thumbnail => "-thumbnail",
-            Arg::Scale => "-scale",
-            Arg::Sample => "-sample",
-        }
-    }
-
     fn to_operation(&self, value: Option<&OsStr>) -> Result<Operation, MagickError> {
         if self.needs_value() != value.is_some() {
             return Err(wm_err!("argument requires a value"));
@@ -58,19 +47,6 @@ impl Arg {
             Arg::Scale => Ok(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?)),
             Arg::Sample => Ok(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
         }
-    }
-}
-
-impl FromStr for Arg {
-    type Err = MagickError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        for arg in Self::VARIANTS {
-            if arg.name() == s {
-                return Ok(*arg);
-            }
-        }
-        Err(wm_err!("unrecognized option `{}'", s))
     }
 }
 
@@ -102,7 +78,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     // the observed behavior on my system is that they're only ever parsed as flags.
     let output_filename = args.pop().unwrap();
     // imagemagick rejects output filenames that look like arguments
-    if starts_with_dash(&output_filename) {
+    if looks_like_argument(&output_filename) {
         return Err(wm_err!(
             "missing an image filename `{}'",
             output_filename.to_string_lossy()
@@ -115,28 +91,27 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     // TODO: parse the filename specification, there's a lot of operations that can be attached to it
 
     let mut iter = args.into_iter().skip(1); // skip argv[0], path to our binary
-    while let Some(arg) = iter.next() {
-        if arg.as_encoded_bytes() == [b'-'] {
+    while let Some(raw_arg) = iter.next() {
+        if raw_arg.as_encoded_bytes() == [b'-'] {
             todo!(); // this is stdin or stdout
-        } else if starts_with_dash(&arg) {
+        } else if looks_like_argument(&raw_arg) {
             // A file named "-foobar.jpg" will be parsed as an option.
             // Sadly imagemagick does not support the -- convention to separate options and filenames,
             // and there is nothing we can do about it without introducing incompatibility in argument parsing.
-            let string_arg = arg
-                .to_str()
-                .ok_or(wm_err!("unrecognized option `{}'", arg.to_string_lossy()))?;
-            let arg_name = Arg::from_str(string_arg)?;
-            let operation = if arg_name.needs_value() {
+            let (_sign, string_arg) = sign_and_arg_name(raw_arg)?;
+            let arg = Arg::try_from(string_arg.as_str())
+                .map_err(|_| wm_err!("unrecognized option `{}'", string_arg))?;
+            let operation = if arg.needs_value() {
                 let value = iter
                     .next()
                     .ok_or(wm_err!("argument requires a value: {}", &string_arg))?;
-                arg_name.to_operation(Some(value.as_os_str()))?
+                arg.to_operation(Some(value.as_os_str()))?
             } else {
-                arg_name.to_operation(None)?
+                arg.to_operation(None)?
             };
             plan.add_operation(operation);
         } else {
-            plan.input_files.push(FilePlan::new(arg));
+            plan.input_files.push(FilePlan::new(raw_arg));
         }
     }
     if plan.input_files.is_empty() {
@@ -145,8 +120,21 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     Ok(plan)
 }
 
-fn starts_with_dash(arg: &OsStr) -> bool {
-    arg.as_encoded_bytes().get(0) == Some(&b'-')
+/// Checks if the string starts with a `-` or a `+`
+fn looks_like_argument(arg: &OsStr) -> bool {
+    let first_byte = arg.as_encoded_bytes().first();
+    first_byte == Some(&b'-')
+        || first_byte == Some(&b'+')
     // Anything starting with two dashes instead of one is treated as filename
     && arg.as_encoded_bytes().get(1) != Some(&b'-')
+}
+
+/// Splits the string into a sign (- or +) and argument name
+fn sign_and_arg_name(raw_arg: OsString) -> Result<(u8, String), MagickError> {
+    let mut string = raw_arg
+        .into_string()
+        .map_err(|s| wm_err!("unrecognized option `{}'", s.to_string_lossy()))?;
+    let sign = string.remove(0);
+    assert!(sign == '-' || sign == '+');
+    Ok((sign as u8, string))
 }
