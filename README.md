@@ -8,13 +8,13 @@ Vulnerabilities in image processing are devastating, because image processing is
 
 It is not a theoretical concern. Every C image parsing library has a history of serious memory safety vulnerabilities. Imagemagick itself has had [many more](https://www.cvedetails.com/vulnerability-list/vendor_id-1749/Imagemagick.html). And they are being [exploited in the wild](https://chromereleases.googleblog.com/2023/09/stable-channel-update-for-desktop_11.html).
 
-Trying to secure massive memory-unsafe codebases is [untenable](https://www.usenix.org/conference/enigma2021/presentation/gaynor), but migrating to memory safe languages works [works](https://security.googleblog.com/2022/12/memory-safe-languages-in-android-13.html).
+Trying to secure massive memory-unsafe codebases is [untenable](https://www.usenix.org/conference/enigma2021/presentation/gaynor), but migrating to memory safe languages [works](https://security.googleblog.com/2022/12/memory-safe-languages-in-android-13.html).
 
-Thanks to Rust, we can now eradicate these vulnerabilities once and for all, without sacrificing performance! In fact, in our benchmarks performance has [improved](BENCHMARKS.md).
+Thanks to Rust, we can now eradicate these vulnerabilities once and for all, without sacrificing performance!
 
 ## Current status
 
-The underlying image format decoders and encoders are very mature. The Rust community has been developing them and using them in producting for years. They have been tested on millions of real-world images.
+The underlying image format decoders and encoders are very mature. The Rust community has been developing them and using them in production for years. They have been tested on millions of real-world images.
 
 `wondermagick` itself is in the early stages of development. We are currently focusing on converting and resizing images, which is the most common workload for `imagemagick`.
 
