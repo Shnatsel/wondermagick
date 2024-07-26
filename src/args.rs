@@ -8,6 +8,8 @@ use std::{
     str::FromStr,
 };
 
+use strum::VariantArray;
+
 use crate::{
     arg_parsers::ResizeGeometry,
     error::MagickError,
@@ -16,26 +18,12 @@ use crate::{
     wm_err,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(VariantArray, Clone, Copy, PartialEq, Eq)]
 enum Arg {
     Resize,
     Thumbnail,
     Scale,
     Sample,
-}
-
-impl FromStr for Arg {
-    type Err = MagickError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "-resize" => Ok(Arg::Resize),
-            "-thumbnail" => Ok(Arg::Thumbnail),
-            "-scale" => Ok(Arg::Scale),
-            "-sample" => Ok(Arg::Sample),
-            _ => Err(wm_err!("unrecognized option `{}'", s)),
-        }
-    }
 }
 
 impl Arg {
@@ -45,6 +33,15 @@ impl Arg {
             Arg::Thumbnail => true,
             Arg::Scale => true,
             Arg::Sample => true,
+        }
+    }
+
+    fn name(&self) -> &'static str {
+        match self {
+            Arg::Resize => "-resize",
+            Arg::Thumbnail => "-thumbnail",
+            Arg::Scale => "-scale",
+            Arg::Sample => "-sample",
         }
     }
 
@@ -61,6 +58,19 @@ impl Arg {
             Arg::Scale => Ok(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?)),
             Arg::Sample => Ok(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
         }
+    }
+}
+
+impl FromStr for Arg {
+    type Err = MagickError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        for arg in Self::VARIANTS {
+            if arg.name() == s {
+                return Ok(*arg);
+            }
+        }
+        Err(wm_err!("unrecognized option `{}'", s))
     }
 }
 

@@ -9,6 +9,7 @@ repository = "https://github.com/Shnatsel/wondermagick"
 [dependencies]
 fast_image_resize = { version = "4.2.0", features = ["image"]}
 image = "0.25.2"
+strum = { version = "0.26.3", features = ["derive"] }
 
 # Most of the time is spent in `image` and its dependencies,
 # so build it with optimizations in debug mode to get good performance
