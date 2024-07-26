@@ -27,7 +27,7 @@ There are several major shortcomings preventing production use:
 
 You can help by:
 
-1. Funding this project to advance both `wondermagick` and the Rust [`image`](https://github.com/image-rs/image/) library
+1. Funding this project, so that we could advance both `wondermagick` and the Rust [`image`](https://github.com/image-rs/image/) library
 1. Funding https://www.memorysafety.org/, a registered non-profit, so they could complete [`rav1d`](https://github.com/memorysafety/rav1d) which will enable us to decode AVIF images (encoding works already)
 1. Contributing to the libraries `wondermagick` relies on. We will publish a list of issues affecting us soon. TODO: publish a list
 1. Implementing more `imagemagick` commands in `wondermagick`. See <CONTRIBUTING.md> for details on code contributions.
