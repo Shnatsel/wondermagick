@@ -9,7 +9,7 @@ fn main() {
 
 fn real_main() -> Result<(), Box<dyn Error>> {
     // TODO: handle multiple images
-    args::maybe_print_help();
+    args::maybe_print_help_and_exit();
     let arguments: Vec<_> = std::env::args_os().collect();
     let plan = args::parse_args(arguments)?;
 

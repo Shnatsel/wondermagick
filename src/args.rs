@@ -50,7 +50,7 @@ impl Arg {
     }
 }
 
-pub fn maybe_print_help() {
+pub fn maybe_print_help_and_exit() {
     match std::env::args_os().nth(1) {
         None => print_help_and_exit(),
         Some(arg) => {
