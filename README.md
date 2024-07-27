@@ -18,11 +18,6 @@ The underlying image format decoders and encoders are very mature. The Rust comm
 
 `wondermagick` itself is in the early stages of development. We are currently focusing on converting and resizing images, which is the most common workload for `imagemagick`.
 
-There are several major shortcomings preventing production use:
-
-1. JPEG image rotation metadata is not handled
-1. [ICC profiles](https://en.wikipedia.org/wiki/ICC_profile) are not preserved during conversion
-
 ## Contributing
 
 You can help by:
