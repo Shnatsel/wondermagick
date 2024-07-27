@@ -93,7 +93,6 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
                 (width, height)
             }
         }
-        // TODO: constaint handling
         ResizeTarget::Area(area) => {
             let (width, height) = size_with_max_area(image.width(), image.height(), area);
             match constraint {
