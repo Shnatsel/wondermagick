@@ -1,13 +1,16 @@
 use std::ffi::OsStr;
 
-use image::{DynamicImage, ImageFormat, ImageReader, ImageResult};
+use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader, ImageResult};
 
 /// If the format has not been explicitly specified, guesses the format based on file contents.
 pub fn decode(file: &OsStr, format: Option<ImageFormat>) -> ImageResult<DynamicImage> {
-    let mut decoder = ImageReader::open(file)?;
+    let mut reader = ImageReader::open(file)?;
     match format {
-        Some(format) => decoder.set_format(format),
-        None => decoder = decoder.with_guessed_format()?,
+        Some(format) => reader.set_format(format),
+        None => reader = reader.with_guessed_format()?,
     }
-    decoder.decode()
+    let mut decoder = reader.into_decoder()?;
+    let exif = decoder.exif_metadata();
+    // TODO: apply EXIF rotation
+    DynamicImage::from_decoder(decoder)
 }
