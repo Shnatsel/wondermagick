@@ -1,6 +1,5 @@
-use image::ImageReader;
 use std::error::Error;
-use wondermagick::args;
+use wondermagick::{args, decode::decode};
 
 fn main() {
     if let Err(e) = real_main() {
@@ -16,9 +15,7 @@ fn real_main() -> Result<(), Box<dyn Error>> {
 
     // TODO: handle multiple images
     let file_plan = plan.input_files.first().unwrap();
-    let mut image = ImageReader::open(&file_plan.filename)?
-        .with_guessed_format()?
-        .decode()?;
+    let mut image = decode(&file_plan.filename, None)?;
 
     for operation in &file_plan.ops {
         operation.execute(&mut image)?;
