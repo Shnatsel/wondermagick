@@ -1,3 +1,5 @@
+use std::u32;
+
 use fast_image_resize::{FilterType, ResizeAlg, ResizeOptions, Resizer};
 use image::DynamicImage;
 
@@ -73,12 +75,13 @@ fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, 
             height,
             ignore_aspect_ratio,
         } => {
-            let mut width = compute_dimension(image.width(), width, &constraint);
-            let mut height = compute_dimension(image.height(), height, &constraint);
-            if !ignore_aspect_ratio {
-                (width, height) = preserve_aspect_ratio(image, width, height);
+            if ignore_aspect_ratio {
+                let width = compute_dimension(image.width(), width, &constraint);
+                let height = compute_dimension(image.height(), height, &constraint);
+                (width, height)
+            } else {
+                preserve_aspect_ratio(image, width, height)
             }
-            (width, height)
         }
         ResizeTarget::Percentage { width, height } => {
             // return early on a no-op
@@ -139,9 +142,12 @@ fn compute_dimension(
 /// Returns `(width, height)`
 fn preserve_aspect_ratio(
     image: &DynamicImage,
-    target_width: u32,
-    target_height: u32,
+    target_width: Option<u32>,
+    target_height: Option<u32>,
 ) -> (u32, u32) {
+    assert!(target_width.is_some() || target_height.is_some());
+    let target_width = target_width.unwrap_or(u32::MAX);
+    let target_height = target_height.unwrap_or(u32::MAX);
     let image_ratio = Fraction::new(image.width(), image.height());
     let target_ratio = Fraction::new(target_width, target_height);
     use std::cmp::Ordering;
@@ -220,31 +226,46 @@ mod tests {
     #[test]
     fn preserve_aspect_ratio_wide() {
         let image = DynamicImage::new_rgb8(800, 600);
-        assert_eq!(preserve_aspect_ratio(&image, 100, 100), (100, 75));
+        assert_eq!(
+            preserve_aspect_ratio(&image, Some(100), Some(100)),
+            (100, 75)
+        );
     }
 
     #[test]
     fn preserve_aspect_ratio_wide_upscale() {
         let image = DynamicImage::new_rgb8(100, 75);
-        assert_eq!(preserve_aspect_ratio(&image, 800, 800), (800, 600));
+        assert_eq!(
+            preserve_aspect_ratio(&image, Some(800), Some(800)),
+            (800, 600)
+        );
     }
 
     #[test]
     fn preserve_aspect_ratio_narrow() {
         let image = DynamicImage::new_rgb8(600, 800);
-        assert_eq!(preserve_aspect_ratio(&image, 100, 100), (75, 100));
+        assert_eq!(
+            preserve_aspect_ratio(&image, Some(100), Some(100)),
+            (75, 100)
+        );
     }
 
     #[test]
     fn preserve_aspect_ratio_narrow_upscale() {
         let image = DynamicImage::new_rgb8(75, 100);
-        assert_eq!(preserve_aspect_ratio(&image, 800, 800), (600, 800));
+        assert_eq!(
+            preserve_aspect_ratio(&image, Some(800), Some(800)),
+            (600, 800)
+        );
     }
 
     #[test]
     fn preserve_aspect_ratio_same() {
         let image = DynamicImage::new_rgb8(800, 800);
-        assert_eq!(preserve_aspect_ratio(&image, 100, 100), (100, 100));
+        assert_eq!(
+            preserve_aspect_ratio(&image, Some(100), Some(100)),
+            (100, 100)
+        );
     }
 
     #[test]
