@@ -249,6 +249,13 @@ mod tests {
     }
 
     #[test]
+    fn preserve_aspect_ratio_width_only() {
+        let image = DynamicImage::new_rgb8(64, 100);
+        let geometry = ResizeGeometry::from_str("200").unwrap();
+        assert_eq!((200, 313), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
     fn percentage() {
         let image = DynamicImage::new_rgb8(800, 600);
         let geometry = ResizeGeometry::from_str("50%").unwrap();
