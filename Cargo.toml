@@ -11,6 +11,9 @@ fast_image_resize = { version = "4.2.0", features = ["image"]}
 image = "0.25.2"
 strum = { version = "0.26.3", features = ["derive"] }
 
+[patch.crates-io]
+image = { git = 'https://github.com/Shnatsel/image.git' }
+
 # Most of the time is spent in `image` and its dependencies,
 # so build it with optimizations in debug mode to get good performance
 # while simultaneously having `cargo build` complete quickly for short iteration times
