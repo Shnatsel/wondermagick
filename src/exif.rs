@@ -3,6 +3,7 @@ use image::DynamicImage;
 
 use crate::{error::MagickError, wm_err, wm_try};
 
+/// Parses the provided Exif chunk to extract the orientation and rotates the image accordingly
 pub fn rotate_by_exif(image: &mut DynamicImage, raw_exif: Vec<u8>) -> Result<(), MagickError> {
     let reader = exif::Reader::new();
     let exif = wm_try!(reader.read_raw(raw_exif));
@@ -19,8 +20,9 @@ pub fn rotate_by_exif(image: &mut DynamicImage, raw_exif: Vec<u8>) -> Result<(),
 
 // TODO: uplift this into `image`, this needs to be available out of the box
 fn apply_exif_orientation(image: &mut DynamicImage, orientation: u8) -> Result<(), &'static str> {
-    // An explanation of Exif orientation:
+    // Based on an explanation of Exif orientation:
     // https://web.archive.org/web/20200412005226/https://www.impulseadventure.com/photo/exif-orientation.html
+    // Verified against `convert -auto-orient`
     match orientation {
         1 => Ok(()), // no transformations needed
         2 => Ok(image.fliph_in_place()),
