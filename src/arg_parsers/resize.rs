@@ -46,7 +46,12 @@ pub enum ResizeTarget {
         ignore_aspect_ratio: bool,
     },
     /// `%` operator
-    Percentage { width: Option<f64>, height: f64 },
+    Percentage {
+        #[cfg_attr(test, arbitrary(gen(|g| if bool::arbitrary(g) {Some(arbitrary_nonnegative_float(g))} else {None} )))]
+        width: Option<f64>,
+        #[cfg_attr(test, arbitrary(gen(|g| arbitrary_nonnegative_float(g) )))]
+        height: f64,
+    },
     /// `@` operator
     Area(u64),
     /// ^` operator
@@ -247,6 +252,18 @@ fn find_and_parse_float(input: &[u8]) -> Result<Option<f64>, ParseFloatError> {
     } else {
         let number_str = String::from_utf8(number).unwrap();
         number_str.parse::<f64>().map(|f| Some(f))
+    }
+}
+
+#[must_use]
+#[cfg(test)]
+fn arbitrary_nonnegative_float(gen: &mut quickcheck::Gen) -> f64 {
+    use quickcheck::Arbitrary;
+    let raw = f64::arbitrary(gen).abs();
+    if raw.is_infinite() || raw.is_nan() {
+        0.0
+    } else {
+        raw
     }
 }
 
