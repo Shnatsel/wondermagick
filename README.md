@@ -27,3 +27,9 @@ You can help by:
 1. Contributing to the libraries `wondermagick` relies on. We [publish a list](https://github.com/Shnatsel/wondermagick/issues/1) of such issues affecting us.
 1. Implementing more `imagemagick` commands in `wondermagick`. See [CONTRIBUTING.md](CONTRIBUTING.md) for details on code contributions.
 1. Making bindings to Rust [`image`](https://github.com/image-rs/image/) for your favourite language. Making drop-in replacements for other memory-unsafe systems. Not the whole world runs on `imagemagick`.
+
+## Related work
+
+- [cavif-rs](https://github.com/kornelski/cavif-rs): converter from PNG and JPEG to AVIF. Exposes more AVIF encoding knobs than we do.
+- [oxipng]: Memory-safe PNG optimizer. Like `pngcrush`, but much faster thanks to multi-threading.
+- [WUFFS](https://github.com/google/wuffs/): memory-safe image decoders that compile to C. No CLI interface or encoding support. If you cannot adopt Rust, at least use these.
