@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
-#[derive(Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Default, Copy, Clone, PartialEq)]
 pub struct Geometry {
-    width: Option<u32>,
-    height: Option<u32>,
-    xoffset: Option<u32>,
-    yoffset: Option<u32>,
+    width: Option<f64>,
+    height: Option<f64>,
+    xoffset: Option<f64>,
+    yoffset: Option<f64>,
 }
 
 impl Display for Geometry {
@@ -17,7 +17,7 @@ impl Display for Geometry {
             write!(f, "x{h}")?;
         }
         match (self.xoffset, self.yoffset) {
-            (Some(x), Some(y)) => write!(f, "{x:+}{y:+}"), // TODO: explicit sign
+            (Some(x), Some(y)) => write!(f, "{x:+}{y:+}"),
             (Some(x), None) => write!(f, "{x:+}"),
             (None, Some(y)) => write!(f, "+0{y:+}"),
             (None, None) => Ok(()),
