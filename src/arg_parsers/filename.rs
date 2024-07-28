@@ -8,10 +8,17 @@ use crate::{error::MagickError, wm_err};
 
 use super::{Geometry, ResizeGeometry};
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct InputFileArg {
-    path: PathBuf,
+    pub path: PathBuf,
     //format: Option<String>, // TODO: turn into an enum and enable
-    read_mod: Option<ReadModifier>,
+    pub read_mod: Option<ReadModifier>,
+}
+
+impl InputFileArg {
+    pub fn new(path: PathBuf) -> Self {
+        todo!()
+    }
 }
 
 /// The action to be taken upon loading the image.
