@@ -1,3 +1,18 @@
+// Fun fact: the geometry documentation at https://www.imagemagick.org/Magick++/Geometry.html is a lie.
+//
+// It says things like
+// > Offsets must be given as pairs; in other words, in order to specify either xoffset or yoffset both must be present.
+// but this works:
+// `convert rose: -crop 50x+0 crop_half.gif`
+//
+// It also says:
+// > Extended geometry strings should *only* be used when *resizing an image.*
+// but this works:
+// `convert rose: -crop 50% crop_half.gif`
+//
+// So we just rely on observing the actual behavior of `convert` instead.
+
+use std::str;
 use std::fmt::Display;
 
 #[derive(Default, Copy, Clone, PartialEq)]
@@ -23,4 +38,28 @@ impl Display for Geometry {
             (None, None) => Ok(()),
         }
     }
+}
+
+fn read_positive_float(input: &mut &[u8]) -> Option<f64> {
+    let mut count = count_leading_digits(input);
+    if count == 0 {
+        return None;
+    }
+    if input.get(count) == Some(&b'.') {
+        // imagemagick permits having a trailing dot with no digits following it
+        count += 1;
+        count += count_leading_digits(&input[..count]);
+    }
+    let (number, remainder) = input.split_at(count);
+    let float = str::from_utf8(number).unwrap().parse::<f64>().unwrap();
+    *input = remainder;
+    Some(float)
+}
+
+fn count_leading_digits(input: &[u8]) -> usize {
+    input
+        .iter()
+        .copied()
+        .take_while(|b| b.is_ascii_digit())
+        .count()
 }
