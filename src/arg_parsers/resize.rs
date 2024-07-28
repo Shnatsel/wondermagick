@@ -53,7 +53,11 @@ pub enum ResizeTarget {
         height: f64,
     },
     /// `@` operator
-    Area(u64),
+    Area(
+        // Do not generate unrealistically huge image areas above 16TiB that run into float precision issues
+        #[cfg_attr(test, arbitrary(gen(|g| u64::arbitrary(g).clamp(0, u64::MAX / 1024 / 1024) )))]
+        u64,
+    ),
     /// ^` operator
     FullyCover { width: u32, height: u32 },
 }
@@ -459,14 +463,6 @@ mod tests {
 
     #[quickcheck]
     fn roundtrip_is_lossless(orig: ResizeGeometry) {
-        // Skip unrealistically huge image areas that run into float precision issues
-        if let ResizeTarget::Area(area) = orig.target {
-            let huge_16tb_image_area = u64::MAX / 1024 / 1024;
-            if area >= huge_16tb_image_area {
-                return;
-            }
-        }
-
         let stringified = orig.to_string();
         let parsed = ResizeGeometry::from_str(&stringified).unwrap();
         assert_eq!(orig, parsed)

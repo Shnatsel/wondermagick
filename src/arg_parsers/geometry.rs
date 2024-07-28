@@ -15,8 +15,8 @@
 // Note that this isn't targeting any single particular command yet.
 // That is a problem, and this should be changed to adhere to something specific.
 
-use std::str;
 use std::fmt::Display;
+use std::str;
 
 #[derive(Default, Copy, Clone, PartialEq)]
 pub struct Geometry {
