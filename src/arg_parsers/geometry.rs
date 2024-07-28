@@ -29,10 +29,10 @@ use quickcheck::Arbitrary;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Geometry {
-    width: Option<f64>,
-    height: Option<f64>,
-    xoffset: Option<f64>,
-    yoffset: Option<f64>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
+    pub xoffset: Option<f64>,
+    pub yoffset: Option<f64>,
 }
 
 #[cfg(test)]

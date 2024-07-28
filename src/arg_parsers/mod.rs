@@ -5,3 +5,5 @@ mod resize;
 pub use resize::*;
 mod geometry;
 pub use geometry::*;
+mod filename;
+pub use filename::*;

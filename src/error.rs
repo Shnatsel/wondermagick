@@ -24,7 +24,7 @@ macro_rules! wm_err {
         // This is a copy of the implementation of `format!`
         let res = std::fmt::format(std::format_args!($($arg)*));
         // Now that we've lowered our arguments to a string, add the prefix and source code location
-        MagickError(format!(
+        $crate::error::MagickError(format!(
             "wondermagick: {} @ {}/{}/{}.",
             res,
             file!(),
