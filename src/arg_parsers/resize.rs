@@ -5,9 +5,13 @@ use std::{
     str::FromStr,
 };
 
+#[cfg(test)]
+use derive_quickcheck_arbitrary::Arbitrary;
+
 use crate::{error::MagickError, wm_err, wm_try};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg_attr(test, derive(Arbitrary))]
 pub enum ResizeConstraint {
     #[default]
     Unconstrained,
@@ -33,6 +37,7 @@ impl Display for ResizeConstraint {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
+#[cfg_attr(test, derive(Arbitrary))]
 pub enum ResizeTarget {
     Size {
         width: Option<u32>,
@@ -95,6 +100,7 @@ impl Default for ResizeTarget {
 
 /// "Extended geometry" according to imagemagick docs. Only used in resizing operations.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
+#[cfg_attr(test, derive(Arbitrary))]
 pub struct ResizeGeometry {
     pub target: ResizeTarget,
     pub constraint: ResizeConstraint,
@@ -247,6 +253,8 @@ fn find_and_parse_float(input: &[u8]) -> Result<Option<f64>, ParseFloatError> {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use quickcheck_macros::quickcheck;
 
     use crate::arg_parsers::{resize::ResizeConstraint, ResizeTarget};
 
@@ -433,5 +441,20 @@ mod tests {
         let expected = ResizeGeometry::default();
         let parsed = ResizeGeometry::from_str("^").unwrap();
         assert_eq!(parsed, expected);
+    }
+
+    #[quickcheck]
+    fn roundtrip_is_lossless(orig: ResizeGeometry) {
+        // Skip unrealistically huge image areas that run into float precision issues
+        if let ResizeTarget::Area(area) = orig.target {
+            let huge_16tb_image_area = u64::MAX / 1024 / 1024;
+            if area >= huge_16tb_image_area {
+                return;
+            }
+        }
+
+        let stringified = orig.to_string();
+        let parsed = ResizeGeometry::from_str(&stringified).unwrap();
+        assert_eq!(orig, parsed)
     }
 }
