@@ -26,6 +26,14 @@ pub enum ReadModifier {
     // TODO: frame selection.
 }
 
+impl FromStr for ReadModifier {
+    type Err = MagickError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::try_from(OsStr::new(s))
+    }
+}
+
 impl TryFrom<&OsStr> for ReadModifier {
     type Error = MagickError;
 
@@ -101,7 +109,7 @@ fn file_exists(path: &Path) -> bool {
 mod tests {
     use std::str::FromStr;
 
-    use super::LoadCropGeometry;
+    use super::*;
 
     #[test]
     fn load_crop_geometry() {
@@ -113,6 +121,22 @@ mod tests {
             yoffset: 4,
         };
         let parsed = LoadCropGeometry::from_str("1x2+3+4").unwrap();
+        assert_eq!(expected, parsed);
+    }
+
+    #[test]
+    fn load_crop_read_modifier() {
+        // only a basic smoke test because the underlying geometry parser is well tested already
+        let expected = ReadModifier::Crop(LoadCropGeometry::from_str("1x2+3+4").unwrap());
+        let parsed = ReadModifier::from_str("1x2+3+4").unwrap();
+        assert_eq!(expected, parsed);
+    }
+
+    #[test]
+    fn load_resize_read_modifier() {
+        // only a basic smoke test because the underlying geometry parser is well tested already
+        let expected = ReadModifier::Resize(ResizeGeometry::from_str("40x60").unwrap());
+        let parsed = ReadModifier::from_str("40x60").unwrap();
         assert_eq!(expected, parsed);
     }
 }
