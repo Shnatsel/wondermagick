@@ -218,17 +218,14 @@ impl TryFrom<&OsStr> for ResizeGeometry {
                 target = ResizeTarget::FullyCover { width, height }
             }
         } else {
-            // don't even set any flags if this is a no-op
-            if width.is_some() || height.is_some() {
-                // convert floats that imagemagick FOR SOME REASON accepts as dimensions to integers
-                let width = width.map(|f| f.round() as u32); // imagemagick rounds to nearest
-                let height = height.map(|f| f.round() as u32); // imagemagick rounds to nearest
-                target = ResizeTarget::Size {
-                    width,
-                    height,
-                    ignore_aspect_ratio,
-                };
-            }
+            // convert floats that imagemagick FOR SOME REASON accepts as dimensions to integers
+            let width = width.map(|f| f.round() as u32); // imagemagick rounds to nearest
+            let height = height.map(|f| f.round() as u32); // imagemagick rounds to nearest
+            target = ResizeTarget::Size {
+                width,
+                height,
+                ignore_aspect_ratio,
+            };
         }
 
         // The offsets after the resolution, such as +500 or -200, are accepted by the imagemagick parser but ignored.
