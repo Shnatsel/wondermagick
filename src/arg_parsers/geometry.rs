@@ -15,10 +15,14 @@
 // Note that this isn't targeting any single particular command yet.
 // That is a problem, and this should be changed to adhere to something specific.
 
+use std::ffi::OsStr;
 use std::fmt::Display;
-use std::str;
+use std::str::{self, FromStr};
 
-#[derive(Default, Copy, Clone, PartialEq)]
+use crate::error::MagickError;
+use crate::wm_err;
+
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Geometry {
     width: Option<f64>,
     height: Option<f64>,
@@ -43,16 +47,85 @@ impl Display for Geometry {
     }
 }
 
-fn read_positive_float(input: &mut &[u8]) -> Option<f64> {
-    let mut count = count_leading_digits(input);
-    if count == 0 {
-        return None;
+impl FromStr for Geometry {
+    type Err = MagickError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::try_from(OsStr::new(s))
     }
+}
+
+impl TryFrom<&OsStr> for Geometry {
+    type Error = MagickError;
+
+    fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
+        let invalid_geometry_err = || wm_err!("invalid geometry: {}", s.to_string_lossy());
+
+        if !s.is_ascii() {
+            return Err(invalid_geometry_err());
+        }
+
+        let mut ascii = s.as_encoded_bytes();
+        let mut result = Geometry::default();
+
+        if ascii.len() == 0 {
+            // emptry string yields empty geometry
+            return Ok(result);
+        }
+
+        if let Some(next_char) = ascii.first() {
+            if ![b'x', b'+', b'-'].contains(next_char) {
+                result.width =
+                    Some(read_positive_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+            }
+        }
+        if let Some(next_char) = ascii.first() {
+            if next_char == &b'x' {
+                ascii = &ascii[1..]; // skip the 'x'
+                result.height =
+                    Some(read_positive_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+            }
+        }
+        if let Some(next_char) = ascii.first() {
+            if [b'+', b'-'].contains(next_char) {
+                result.xoffset =
+                    Some(read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+            }
+        }
+        if let Some(next_char) = ascii.first() {
+            if [b'+', b'-'].contains(next_char) {
+                result.yoffset =
+                    Some(read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+            }
+        }
+
+        Ok(result)
+    }
+}
+
+fn read_positive_float(input: &mut &[u8]) -> Option<f64> {
+    read_float(input, false)
+}
+
+fn read_signed_float(input: &mut &[u8]) -> Option<f64> {
+    read_float(input, true)
+}
+
+fn read_float(input: &mut &[u8], allow_sign: bool) -> Option<f64> {
+    let mut count = 0;
+    if [Some(&b'+'), Some(&b'-')].contains(&input.first()) {
+        match allow_sign {
+            true => count += 1,
+            false => return None,
+        }
+    }
+    count += count_leading_digits(&input[count..]);
     if input.get(count) == Some(&b'.') {
         // imagemagick permits having a trailing dot with no digits following it
         count += 1;
         count += count_leading_digits(&input[..count]);
     }
+
     let (number, remainder) = input.split_at(count);
     let float = str::from_utf8(number).unwrap().parse::<f64>().unwrap();
     *input = remainder;
@@ -65,4 +138,21 @@ fn count_leading_digits(input: &[u8]) -> usize {
         .copied()
         .take_while(|b| b.is_ascii_digit())
         .count()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_full_positive_geometry() {
+        let expected = Geometry {
+            width: Some(5.0),
+            height: Some(10.0),
+            xoffset: Some(15.0),
+            yoffset: Some(20.0),
+        };
+        let parsed = Geometry::from_str("5x10+15+20").unwrap();
+        assert_eq!(parsed, expected);
+    }
 }
