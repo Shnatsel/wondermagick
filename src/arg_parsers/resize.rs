@@ -1,4 +1,9 @@
-use std::{ffi::OsStr, num::ParseFloatError, str::FromStr};
+use std::{
+    ffi::OsStr,
+    fmt::{Display, Write},
+    num::ParseFloatError,
+    str::FromStr,
+};
 
 use crate::{error::MagickError, wm_err, wm_try};
 
@@ -8,6 +13,23 @@ pub enum ResizeConstraint {
     Unconstrained,
     OnlyEnlarge,
     OnlyShrink,
+}
+
+impl From<&ResizeConstraint> for &'static str {
+    fn from(value: &ResizeConstraint) -> Self {
+        match value {
+            ResizeConstraint::Unconstrained => "",
+            ResizeConstraint::OnlyEnlarge => "<",
+            ResizeConstraint::OnlyShrink => ">",
+        }
+    }
+}
+
+impl Display for ResizeConstraint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let string: &'static str = self.into();
+        f.write_str(string)
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -26,6 +48,41 @@ pub enum ResizeTarget {
     FullyCover { width: u32, height: u32 },
 }
 
+impl Display for ResizeTarget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResizeTarget::Size {
+                width,
+                height,
+                ignore_aspect_ratio,
+            } => {
+                if let Some(w) = width {
+                    write!(f, "{}", w)?;
+                }
+                if let Some(h) = height {
+                    write!(f, "x{}", h)?;
+                }
+                if *ignore_aspect_ratio {
+                    f.write_char('!')?;
+                }
+                Ok(())
+            }
+            ResizeTarget::Percentage { width, height } => {
+                if let Some(w) = width {
+                    write!(f, "{}", w)?;
+                }
+                write!(f, "x{}%", height)
+            }
+            ResizeTarget::Area(area) => {
+                write!(f, "@{}", area)
+            }
+            ResizeTarget::FullyCover { width, height } => {
+                write!(f, "^{}x{}", width, height)
+            }
+        }
+    }
+}
+
 impl Default for ResizeTarget {
     fn default() -> Self {
         Self::Size {
@@ -41,6 +98,12 @@ impl Default for ResizeTarget {
 pub struct ResizeGeometry {
     pub target: ResizeTarget,
     pub constraint: ResizeConstraint,
+}
+
+impl Display for ResizeGeometry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.target, self.constraint)
+    }
 }
 
 impl FromStr for ResizeGeometry {
