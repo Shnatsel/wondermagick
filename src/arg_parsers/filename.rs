@@ -11,7 +11,7 @@ use super::{Geometry, ResizeGeometry};
 pub struct InputFileArg {
     path: PathBuf,
     //format: Option<String>, // TODO: turn into an enum and enable
-    read_mod: ReadModifier,
+    read_mod: Option<ReadModifier>,
 }
 
 /// The action to be taken upon loading the image.
@@ -19,6 +19,7 @@ pub struct InputFileArg {
 ///
 /// See <https://imagemagick.org/Usage/files/#read_mods> for details.
 /// I've also verified it behaves according to the documentation.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ReadModifier {
     Resize(ResizeGeometry),
     Crop(LoadCropGeometry),

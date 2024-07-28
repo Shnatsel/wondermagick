@@ -1,8 +1,12 @@
+mod crop;
 mod resize;
 
 use image::DynamicImage;
 
-use crate::{arg_parsers::ResizeGeometry, error::MagickError};
+use crate::{
+    arg_parsers::{LoadCropGeometry, ResizeGeometry},
+    error::MagickError,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Operation {
@@ -10,6 +14,7 @@ pub enum Operation {
     Thumbnail(ResizeGeometry),
     Scale(ResizeGeometry),
     Sample(ResizeGeometry),
+    CropOnLoad(LoadCropGeometry),
 }
 
 impl Operation {
@@ -19,6 +24,7 @@ impl Operation {
             Operation::Thumbnail(geom) => resize::thumbnail(image, geom),
             Operation::Scale(geom) => resize::scale(image, geom),
             Operation::Sample(geom) => resize::sample(image, geom),
+            Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
         }
     }
 }
