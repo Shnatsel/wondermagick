@@ -27,15 +27,6 @@ pub fn finite_float(gen: &mut quickcheck::Gen) -> f64 {
 }
 
 #[must_use]
-pub fn optional_float(gen: &mut quickcheck::Gen) -> Option<f64> {
-    if bool::arbitrary(gen) {
-        Some(positive_float(gen))
-    } else {
-        None
-    }
-}
-
-#[must_use]
 pub fn nonzero_float(gen: &mut quickcheck::Gen) -> f64 {
     let float = finite_float(gen);
     if float == 0.0 || float == -0.0 {
