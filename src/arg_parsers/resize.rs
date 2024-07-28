@@ -6,6 +6,8 @@ use std::{
 };
 
 #[cfg(test)]
+use crate::utils::arbitrary;
+#[cfg(test)]
 use derive_quickcheck_arbitrary::Arbitrary;
 
 use crate::{error::MagickError, wm_err, wm_try};
@@ -47,9 +49,9 @@ pub enum ResizeTarget {
     },
     /// `%` operator
     Percentage {
-        #[cfg_attr(test, arbitrary(gen(|g| if bool::arbitrary(g) {Some(arbitrary_nonnegative_float(g))} else {None} )))]
+        #[cfg_attr(test, arbitrary(gen(|g| arbitrary::optional_positive_float(g) )))]
         width: Option<f64>,
-        #[cfg_attr(test, arbitrary(gen(|g| arbitrary_nonnegative_float(g) )))]
+        #[cfg_attr(test, arbitrary(gen(|g| arbitrary::positive_float(g) )))]
         height: f64,
     },
     /// `@` operator
@@ -253,18 +255,6 @@ fn find_and_parse_float(input: &[u8]) -> Result<Option<f64>, ParseFloatError> {
     } else {
         let number_str = String::from_utf8(number).unwrap();
         number_str.parse::<f64>().map(|f| Some(f))
-    }
-}
-
-#[must_use]
-#[cfg(test)]
-fn arbitrary_nonnegative_float(gen: &mut quickcheck::Gen) -> f64 {
-    use quickcheck::Arbitrary;
-    let raw = f64::arbitrary(gen).abs();
-    if raw.is_infinite() || raw.is_nan() {
-        0.0
-    } else {
-        raw
     }
 }
 

@@ -22,12 +22,29 @@ use std::str::{self, FromStr};
 use crate::error::MagickError;
 use crate::wm_err;
 
+#[cfg(test)]
+use crate::utils::arbitrary;
+#[cfg(test)]
+use quickcheck::Arbitrary;
+
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Geometry {
     width: Option<f64>,
     height: Option<f64>,
     xoffset: Option<f64>,
     yoffset: Option<f64>,
+}
+
+#[cfg(test)]
+impl Arbitrary for Geometry {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        Self {
+            width: arbitrary::optional_positive_float(g),
+            height: arbitrary::optional_positive_float(g),
+            xoffset: arbitrary::optional_nonzero_float(g),
+            yoffset: arbitrary::optional_nonzero_float(g),
+        }
+    }
 }
 
 impl Display for Geometry {
@@ -88,14 +105,18 @@ impl TryFrom<&OsStr> for Geometry {
         }
         if let Some(next_char) = ascii.first() {
             if [b'+', b'-'].contains(next_char) {
-                result.xoffset =
-                    Some(read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+                let offset = read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?;
+                if offset != 0.0 && offset != -0.0 {
+                    result.xoffset = Some(offset);
+                }
             }
         }
         if let Some(next_char) = ascii.first() {
             if [b'+', b'-'].contains(next_char) {
-                result.yoffset =
-                    Some(read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+                let offset = read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?;
+                if offset != 0.0 && offset != -0.0 {
+                    result.yoffset = Some(offset);
+                }
             }
         }
 
@@ -123,7 +144,7 @@ fn read_float(input: &mut &[u8], allow_sign: bool) -> Option<f64> {
     if input.get(count) == Some(&b'.') {
         // imagemagick permits having a trailing dot with no digits following it
         count += 1;
-        count += count_leading_digits(&input[..count]);
+        count += count_leading_digits(&input[count..]);
     }
 
     let (number, remainder) = input.split_at(count);
@@ -144,6 +165,8 @@ fn count_leading_digits(input: &[u8]) -> usize {
 mod tests {
     use super::*;
 
+    use quickcheck_macros::quickcheck;
+
     #[test]
     fn test_full_positive_geometry() {
         let expected = Geometry {
@@ -154,5 +177,38 @@ mod tests {
         };
         let parsed = Geometry::from_str("5x10+15+20").unwrap();
         assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn test_missing_height() {
+        // TODO: not actually tested against anything specific in imagick
+        let expected = Geometry {
+            width: Some(5.0),
+            height: None,
+            xoffset: Some(15.0),
+            yoffset: Some(20.0),
+        };
+        let parsed = Geometry::from_str("5+15+20").unwrap();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn test_negative_yoffset() {
+        let orig = Geometry {
+            width: Some(1.0),
+            height: Some(2.404677232457912e106),
+            xoffset: Some(-22.454616716202054),
+            yoffset: Some(-3.938307476584102e33),
+        };
+        let stringified = orig.to_string();
+        let parsed = Geometry::from_str(&stringified).unwrap();
+        assert_eq!(orig, parsed)
+    }
+
+    #[quickcheck]
+    fn roundtrip_is_lossless(orig: Geometry) {
+        let stringified = orig.to_string();
+        let parsed = Geometry::from_str(&stringified).unwrap();
+        assert_eq!(orig, parsed)
     }
 }
