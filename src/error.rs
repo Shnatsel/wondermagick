@@ -73,7 +73,7 @@ macro_rules! wm_try {
                     // we still need this to compile for any type.
                     // We achieve this by using `to_string()` from the `Display` trait
                     // because anything that implements `Error` also implements `Display`.
-                    MagickError(err.to_string())
+                    $crate::error::MagickError(err.to_string())
                 } else {
                     // Convert the foreign error into our format
                     wm_err!("{}", err)
