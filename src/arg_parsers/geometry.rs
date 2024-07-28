@@ -9,8 +9,11 @@
 // > Extended geometry strings should *only* be used when *resizing an image.*
 // but this works:
 // `convert rose: -crop 50% crop_half.gif`
+// (but maybe -crop is just magical, and other places where geometry can appear aren't like that?)
 //
 // So we just rely on observing the actual behavior of `convert` instead.
+// Note that this isn't targeting any single particular command yet.
+// That is a problem, and this should be changed to adhere to something specific.
 
 use std::str;
 use std::fmt::Display;
