@@ -30,6 +30,9 @@ You can help by:
 
 ## Related work
 
-- [cavif-rs](https://github.com/kornelski/cavif-rs): converter from PNG and JPEG to AVIF. Exposes more AVIF encoding knobs than we do.
+Other memory-safe image processing tools include:
+
+- [gifski](https://crates.io/crates/gifski): create efficient GIF animations with thousands of colors per frame
+- [cavif-rs](https://github.com/kornelski/cavif-rs): converts images to AVIF. Can read PNG and JPEG.
 - [oxipng]: Memory-safe PNG optimizer. Like `pngcrush`, but much faster thanks to multi-threading.
 - [WUFFS](https://github.com/google/wuffs/): memory-safe image decoders that compile to C. No CLI interface or encoding support. If you cannot adopt Rust, at least use these.
