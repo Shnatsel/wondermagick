@@ -32,7 +32,7 @@ You can help by:
 
 ### Tools
 
-- [oxipng]: Memory-safe PNG optimizer. Like `pngcrush`, but much faster thanks to multi-threading.
+- [oxipng](https://github.com/shssoichiro/oxipng): Memory-safe PNG optimizer. Like `pngcrush`, but much faster thanks to multi-threading.
 - [gifski](https://crates.io/crates/gifski): create efficient GIF animations with thousands of colors per frame
 - [cavif-rs](https://github.com/kornelski/cavif-rs): converts images to AVIF. Can read PNG and JPEG.
 
