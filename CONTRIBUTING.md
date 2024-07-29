@@ -23,4 +23,4 @@ There are two main ways to contribute code:
 
 `wondermagick` commands should be backed by algorithms available elsewhere, not just in `wondermagick`. If you are contributing e.g. a blur implementation, ideally it should be in `image` or `imageproc`. If you really need to write it yourself and contributing to an existing crate is not an option (e.g. the maintainers rejected it), please structure it as a separate crate within this repository.
 
-Command implementations go in `src/operations/`. To add the command-line argument for it and wire it up to the rest of `wondermagick`, add your argument to the `Arg` enum in `src/args.rs` and follow the trail of compiler errors. Once it compiles, you're done! 
+To add a new command to `wondermagick`, add your argument to the `Arg` enum in `src/args.rs` and follow the trail of compiler errors. Once it compiles, you're done! 
