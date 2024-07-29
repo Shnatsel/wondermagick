@@ -6,7 +6,7 @@ Note that you could improve the performance of both of them using arcane compila
 
 Due to `wondermagick` being still in development, the numbers should be taken with a grain of salt. Think "extremely promising in early tests", *not* "already faster across the board" - even though we believe it has the potential to be!
 
-Thumbnailing a JPEG:
+### Thumbnailing a JPEG:
 
 ```
 $ hyperfine --warmup=3 './wm-convert ~/Sun_over_Lake_Hawea,_New_Zealand.jpg -thumbnail 120x120 ~/out.jpg' 'convert ~/Sun_over_Lake_Hawea,_New_Zealand.jpg -thumbnail 120x120 ~/out.jpg'
@@ -23,7 +23,7 @@ Summary
     1.62 ± 0.06 times faster than convert ~/Sun_over_Lake_Hawea,_New_Zealand.jpg -thumbnail 120x120 ~/out.jpg
 ```
 
-Thumbnailing a PNG:
+### Thumbnailing a PNG:
 
 ```
 hyperfine --warmup=3 './wm-convert ~/"Exoplanet_Phase_Curve_(Diagram)_(01HK57P2YHV18MMV0RG5N7HY70).png" -thumbnail 120x120 ~/out.png' 'convert ~/"Exoplanet_Phase_Curve_(Diagram)_(01HK57P2YHV18MMV0RG5N7HY70).png" -thumbnail 120x120 ~/out.png'
@@ -40,7 +40,7 @@ Summary
     3.04 ± 0.13 times faster than convert ~/"Exoplanet_Phase_Curve_(Diagram)_(01HK57P2YHV18MMV0RG5N7HY70).png" -thumbnail 120x120 ~/out.png
 ```
 
-Converting a WebP to PNG with light compression so that a legacy system could read it:
+### Converting a WebP to PNG with light compression so that a legacy system could read it:
 
 Curiously, we come out ahead on this test despite our WebP decoder being slow. We more than make up for it with the extremely fast encoding of lightly compressed PNGs, and *still* produce a 4x smaller file than `imagemagick`.
 
