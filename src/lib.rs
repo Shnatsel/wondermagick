@@ -7,6 +7,7 @@
 mod arg_parsers;
 pub mod args;
 pub mod decode;
+pub mod help;
 mod error;
 mod exif;
 mod operations;

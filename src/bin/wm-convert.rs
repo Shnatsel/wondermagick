@@ -1,5 +1,5 @@
 use std::error::Error;
-use wondermagick::{args, decode::decode};
+use wondermagick::{help, args, decode::decode};
 
 fn main() {
     if let Err(e) = real_main() {
@@ -8,8 +8,7 @@ fn main() {
 }
 
 fn real_main() -> Result<(), Box<dyn Error>> {
-    // TODO: handle multiple images
-    args::maybe_print_help_and_exit();
+    help::maybe_print_help_and_exit(env!("CARGO_BIN_NAME"));
     let arguments: Vec<_> = std::env::args_os().collect();
     let plan = args::parse_args(arguments)?;
 

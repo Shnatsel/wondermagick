@@ -13,11 +13,11 @@ use crate::{
     wm_err,
 };
 
-use strum::{EnumString, IntoStaticStr};
+use strum::{EnumString, IntoStaticStr, VariantArray};
 
-#[derive(EnumString, IntoStaticStr, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(EnumString, IntoStaticStr, VariantArray, Debug, Clone, Copy, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
-enum Arg {
+pub enum Arg {
     Resize,
     Thumbnail,
     Scale,
@@ -48,26 +48,15 @@ impl Arg {
             Arg::Sample => Ok(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
         }
     }
-}
 
-pub fn maybe_print_help_and_exit() {
-    match std::env::args_os().nth(1) {
-        None => print_help_and_exit(),
-        Some(arg) => {
-            if arg.as_os_str() == OsStr::new("--help") || arg.as_os_str() == OsStr::new("-help") {
-                print_help_and_exit()
-            }
+    pub fn help_text(&self) -> &'static str {
+        match self {
+            Arg::Resize => "resize the image",
+            Arg::Thumbnail => "create a thumbnail of the image",
+            Arg::Scale => "scale the image",
+            Arg::Sample => "scale image with pixel sampling",
         }
     }
-}
-
-fn print_help_and_exit() -> ! {
-    print_help();
-    std::process::exit(0);
-}
-
-fn print_help() {
-
 }
 
 pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError> {

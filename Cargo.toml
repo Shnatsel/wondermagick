@@ -7,6 +7,7 @@ description = "Memory-safe replacement for imagemagick"
 repository = "https://github.com/Shnatsel/wondermagick"
 
 [dependencies]
+current_platform = "0.2.0"
 fast_image_resize = { version = "4.2.0", features = ["image"]}
 image = "0.25.2"
 kamadak-exif = "0.5.5"
