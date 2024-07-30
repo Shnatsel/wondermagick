@@ -18,7 +18,7 @@ pub fn rotate_by_exif(image: &mut DynamicImage, raw_exif: Vec<u8>) -> Result<(),
     }
 }
 
-// TODO: uplift this into `image`, this needs to be available out of the box
+// PR for uplifting this into `image`: https://github.com/image-rs/image/pull/2299
 fn apply_exif_orientation(image: &mut DynamicImage, orientation: u8) -> Result<(), &'static str> {
     // Based on an explanation of Exif orientation:
     // https://web.archive.org/web/20200412005226/https://www.impulseadventure.com/photo/exif-orientation.html
