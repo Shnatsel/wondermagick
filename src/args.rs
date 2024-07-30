@@ -62,7 +62,12 @@ pub fn maybe_print_help_and_exit() {
 }
 
 fn print_help_and_exit() -> ! {
-    todo!();
+    print_help();
+    std::process::exit(0);
+}
+
+fn print_help() {
+
 }
 
 pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError> {
