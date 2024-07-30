@@ -39,4 +39,4 @@ You can help by:
 ### Libraries
 
 - [image-rs](https://github.com/image-rs/image/): does all the heavy lifting for `wondermagick`.
-- [WUFFS](https://github.com/google/wuffs/): memory-safe image decoders that compile to C. No CLI interface or encoding support. If you cannot adopt Rust, at least use these.
+- [WUFFS](https://github.com/google/wuffs/): memory-safe image decoders that compile to C. No support for encoding images or operations like resize. If you cannot adopt Rust, at least use these.
