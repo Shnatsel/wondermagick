@@ -27,6 +27,7 @@ fn print_help(bin_name: &str) {
     println!("License: {}", env!("CARGO_PKG_LICENSE"));
     // TODO: "Features:"
     // TODO: "Delegates (built-in):"
+    println!("");
     println!("Usage: {bin_name} [options ...] file [options ...] file");
     println!("Image Operators:");
     for arg in Arg::VARIANTS {
