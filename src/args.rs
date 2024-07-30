@@ -25,7 +25,7 @@ enum Arg {
 }
 
 impl Arg {
-    fn needs_value(&self) -> bool {
+    pub fn needs_value(&self) -> bool {
         match self {
             Arg::Resize => true,
             Arg::Thumbnail => true,
@@ -34,7 +34,7 @@ impl Arg {
         }
     }
 
-    fn to_operation(&self, value: Option<&OsStr>) -> Result<Operation, MagickError> {
+    pub fn to_operation(&self, value: Option<&OsStr>) -> Result<Operation, MagickError> {
         if self.needs_value() != value.is_some() {
             return Err(wm_err!("argument requires a value"));
         };
