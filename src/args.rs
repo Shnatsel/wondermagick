@@ -83,7 +83,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     // the observed behavior on my system is that they're only ever parsed as flags.
     let output_filename = args.pop().unwrap();
     // imagemagick rejects output filenames that look like arguments
-    if looks_like_argument(&output_filename) {
+    if starts_with_sign(&output_filename) {
         return Err(wm_err!(
             "missing an image filename `{}'",
             output_filename.to_string_lossy()
@@ -99,7 +99,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     while let Some(raw_arg) = iter.next() {
         if raw_arg.as_encoded_bytes() == [b'-'] {
             todo!(); // this is stdin or stdout
-        } else if looks_like_argument(&raw_arg) {
+        } else if starts_with_sign(&raw_arg) {
             // A file named "-foobar.jpg" will be parsed as an option.
             // Sadly imagemagick does not support the -- convention to separate options and filenames,
             // and there is nothing we can do about it without introducing incompatibility in argument parsing.
@@ -126,7 +126,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
 }
 
 /// Checks if the string starts with a `-` or a `+`
-fn looks_like_argument(arg: &OsStr) -> bool {
+fn starts_with_sign(arg: &OsStr) -> bool {
     let first_byte = arg.as_encoded_bytes().first();
     first_byte == Some(&b'-')
         || first_byte == Some(&b'+')
