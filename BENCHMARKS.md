@@ -63,7 +63,7 @@ We do not (yet) test encoding speed for other formats and scenarios because the 
 
 The gist of encoding performance is that encoding PNG, GIF, WebP and AVIF is fast. Encoding JPEG is slow, but it is easy to speed up.
 
-All measurements were taken on commit `d6bfe2956281f9cef7c4e332599adb0ffa89d8bd` on an AMD Zen 4 desktop CPU.
+All measurements were taken on commit `d6bfe2956281f9cef7c4e332599adb0ffa89d8bd` on an AMD Zen 4 desktop CPU. Imagemagick version `8:6.9.11.60+dfsg-1.3ubuntu0.22.04.5` from the Ubuntu repositories was used as a point of reference.
 
 Test files used:
 
