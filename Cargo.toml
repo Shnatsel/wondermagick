@@ -14,7 +14,7 @@ kamadak-exif = "0.5.5"
 strum = { version = "0.26.3", features = ["derive"] }
 
 [patch.crates-io]
-image = { git = 'https://github.com/Shnatsel/image.git', branch = "main" }
+image = { git = 'https://github.com/Shnatsel/image.git', branch = "exif-rotation" }
 
 [dev-dependencies]
 quickcheck = "1"
