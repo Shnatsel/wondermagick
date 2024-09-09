@@ -11,6 +11,9 @@ pub fn rotate_by_exif(image: &mut DynamicImage, raw_exif: Vec<u8>) -> Result<(),
     if let Some(orientation) = exif.get_field(Tag::Orientation, In::PRIMARY) {
         match orientation.value.get_uint(0) {
             Some(v @ 1..=8) => {
+                // Only orientations 1 through 8 are valid, so if it's outside that range we just error out:
+                // https://web.archive.org/web/20200412005226/https://www.impulseadventure.com/photo/exif-orientation.html
+                // We've already checked that it's within the right range, so we can cast and unwrap here.
                 let orientation = Orientation::from_exif(v as u8).unwrap();
                 image.apply_orientation(orientation);
                 Ok(())
