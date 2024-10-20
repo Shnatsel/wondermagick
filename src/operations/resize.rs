@@ -68,12 +68,19 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageLumaA8(src) => {
-            let resized = wm_try!(resize_plane8_with_alpha(
+            let alpha_varies = !has_constant_alpha(src);
+            if alpha_varies {
+                premultiply_la8(src.as_mut());
+            }
+            let mut resized = wm_try!(resize_plane8_with_alpha(
                 src.as_raw(),
                 src_size,
                 dst_size,
                 alg
             ));
+            if alpha_varies {
+                unpremultiply_la8(resized.as_mut());
+            }
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgb8(src) => {
@@ -96,13 +103,20 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageLumaA16(src) => {
-            let resized = wm_try!(resize_plane16_with_alpha(
+            let alpha_varies = !has_constant_alpha(src);
+            if alpha_varies {
+                premultiply_la16(src.as_mut(), 16);
+            }
+            let mut resized = wm_try!(resize_plane16_with_alpha(
                 src.as_raw(),
                 src_size,
                 dst_size,
                 16,
                 alg
             ));
+            if alpha_varies {
+                unpremultiply_la16(resized.as_mut(), 16);
+            }
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgb16(src) => {
@@ -110,7 +124,14 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgba16(src) => {
-            let resized = wm_try!(resize_rgba16(src.as_raw(), src_size, dst_size, 16, alg));
+            let alpha_varies = !has_constant_alpha(src);
+            if alpha_varies {
+                premultiply_rgba16(src.as_mut(), 16);
+            }
+            let mut resized = wm_try!(resize_rgba16(src.as_raw(), src_size, dst_size, 16, alg));
+            if alpha_varies {
+                unpremultiply_rgba16(resized.as_mut(), 16);
+            }
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgb32F(src) => {
@@ -118,7 +139,14 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgba32F(src) => {
-            let resized = wm_try!(resize_rgba_f32(src.as_raw(), src_size, dst_size, alg));
+            let alpha_varies = !has_constant_alpha(src);
+            if alpha_varies {
+                premultiply_rgba_f32(src.as_mut());
+            }
+            let mut resized = wm_try!(resize_rgba_f32(src.as_raw(), src_size, dst_size, alg));
+            if alpha_varies {
+                unpremultiply_rgba_f32(resized.as_mut());
+            }
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         _ => unreachable!(),
