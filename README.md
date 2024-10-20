@@ -4,7 +4,7 @@ A memory-safe replacement for [imagemagick](https://en.wikipedia.org/wiki/ImageM
 
 ## Why?
 
-Vulnerabilities in image processing are devastating, because image processing is *everywhere.* And while the share of memory safety vulnerabilities [across all software is 70%](https://alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/), in image manipulation it is closer to 100%. Binary format parsing is notorious for these kinds of vulnerabilities.
+Vulnerabilities in image processing are devastating, because image processing is *everywhere.* The share of memory safety vulnerabilities [across all software is 70%](https://alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/), and in image manipulation it is even higher: binary format parsing is notorious for these kinds of vulnerabilities.
 
 It is not a theoretical concern. Every C image parsing library has a history of serious memory safety vulnerabilities. Imagemagick itself has had [many more](https://www.cvedetails.com/vulnerability-list/vendor_id-1749/Imagemagick.html). And they are being [exploited in the wild](https://chromereleases.googleblog.com/2023/09/stable-channel-update-for-desktop_11.html).
 
