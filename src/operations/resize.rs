@@ -81,7 +81,14 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgba8(src) => {
-            let resized = wm_try!(resize_rgba8(src.as_raw(), src_size, dst_size, alg));
+            let alpha_varies = !has_constant_alpha(src);
+            if alpha_varies {
+                premultiply_rgba8(src.as_mut());
+            }
+            let mut resized = wm_try!(resize_rgba8(src.as_raw(), src_size, dst_size, alg));
+            if alpha_varies {
+                unpremultiply_rgba8(resized.as_mut());
+            }
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageLuma16(src) => {
