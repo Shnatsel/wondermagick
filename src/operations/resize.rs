@@ -88,7 +88,10 @@ fn resize_impl(
             let resized = wm_try!(resize_plane16(src.as_raw(), src_size, dst_size, 16, alg));
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
-        DynamicImage::ImageLumaA16(src) => unimplemented!(), // doesn't seem to be implemented in pic-scale-safe
+        DynamicImage::ImageLumaA16(src) => {
+            let resized = wm_try!(resize_plane16_with_alpha(src.as_raw(), src_size, dst_size, 16, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        },
         DynamicImage::ImageRgb16(src) => {
             let resized = wm_try!(resize_rgb16(src.as_raw(), src_size, dst_size, 16, alg));
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();

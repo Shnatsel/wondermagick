@@ -572,9 +572,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pic-scale-safe"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32c567b4d15ab7242614b963a25d7d9de90e2abf8086ae2093ad408884074fb3"
+checksum = "2afe8c3f072f8d9ce7af833e149581f68ea0ad1b52e266be611bb2ea0a157d1d"
 dependencies = [
  "num-traits",
 ]
