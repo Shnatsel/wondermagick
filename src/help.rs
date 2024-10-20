@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 
-use strum::VariantArray;
 use current_platform::CURRENT_PLATFORM;
+use strum::VariantArray;
 
 use crate::args::Arg;
 

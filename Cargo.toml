@@ -10,7 +10,6 @@ repository = "https://github.com/Shnatsel/wondermagick"
 current_platform = "0.2.0"
 fast_image_resize = { version = "4.2.0", features = ["image"]}
 image = "0.25.4"
-kamadak-exif = "0.5.5"
 strum = { version = "0.26.3", features = ["derive"] }
 
 [dev-dependencies]

@@ -1,5 +1,5 @@
 use std::error::Error;
-use wondermagick::{help, args, decode::decode};
+use wondermagick::{args, decode::decode, help};
 
 fn main() {
     if let Err(e) = real_main() {
