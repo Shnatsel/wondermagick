@@ -1,5 +1,3 @@
-use std::{ops::AddAssign, u32};
-
 use image::{DynamicImage, ImageBuffer, Pixel};
 use pic_scale_safe::ResamplingFunction;
 
