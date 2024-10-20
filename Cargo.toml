@@ -8,8 +8,8 @@ repository = "https://github.com/Shnatsel/wondermagick"
 
 [dependencies]
 current_platform = "0.2.0"
-fast_image_resize = { version = "4.2.0", features = ["image"]}
 image = "0.25.4"
+pic-scale-safe = "0.1.0"
 strum = { version = "0.26.3", features = ["derive"] }
 
 [dev-dependencies]

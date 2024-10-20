@@ -1,7 +1,7 @@
 use std::u32;
 
-use fast_image_resize::{FilterType, ResizeAlg, ResizeOptions, Resizer};
-use image::DynamicImage;
+use image::{DynamicImage, ImageBuffer};
+use pic_scale_safe::ResamplingFunction;
 
 use crate::{
     arg_parsers::{ResizeConstraint, ResizeGeometry},
@@ -22,18 +22,13 @@ pub fn resize(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(),
 /// Implements `-scale` command
 pub fn scale(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
-    resize_impl(
-        image,
-        dst_width,
-        dst_height,
-        ResizeAlg::Convolution(FilterType::Box),
-    )
+    resize_impl(image, dst_width, dst_height, ResamplingFunction::Box)
 }
 
 /// Implements `-sample` command
 pub fn sample(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
-    resize_impl(image, dst_width, dst_height, ResizeAlg::Nearest)
+    resize_impl(image, dst_width, dst_height, ResamplingFunction::Nearest)
 }
 
 /// Implements `-thumbnail` command
@@ -43,7 +38,12 @@ pub fn thumbnail(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<
     // imagemagick first downscales to 5x the target size with the cheap nearest-neighbor algorithm
     let width = image.width().min(dst_width * 5);
     let height = image.height().min(dst_height * 5);
-    wm_try!(resize_impl(image, width, height, ResizeAlg::Nearest));
+    wm_try!(resize_impl(
+        image,
+        width,
+        height,
+        ResamplingFunction::Nearest
+    ));
 
     // now do the actual resize to the target dimensions
     resize_impl(image, dst_width, dst_height, Default::default())
@@ -53,16 +53,60 @@ fn resize_impl(
     image: &mut DynamicImage,
     dst_width: u32,
     dst_height: u32,
-    algorithm: ResizeAlg,
+    algorithm: ResamplingFunction,
 ) -> Result<(), MagickError> {
     if image.width() == dst_width && image.height() == dst_height {
         return Ok(());
     }
-    let mut resizer = Resizer::new(); // TODO: cache the resizer
-    let mut dst_image = DynamicImage::new(dst_width, dst_height, image.color());
-    let options = ResizeOptions::default().resize_alg(algorithm);
-    wm_try!(resizer.resize(image, &mut dst_image, Some(&options)));
-    *image = dst_image;
+    let alg = algorithm; // otherwise rustfmt breaks up too-long-lines and the formatting is amess
+    let src_size = pic_scale_safe::ImageSize::new(image.width() as usize, image.height() as usize);
+    let dst_size = pic_scale_safe::ImageSize::new(dst_width as usize, dst_height as usize);
+    use pic_scale_safe::*;
+    match image {
+        DynamicImage::ImageLuma8(src) => {
+            let resized = wm_try!(resize_plane8(src.as_raw(), src_size, dst_size, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        DynamicImage::ImageLumaA8(src) => {
+            let resized = wm_try!(resize_plane8_with_alpha(
+                src.as_raw(),
+                src_size,
+                dst_size,
+                alg
+            ));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        DynamicImage::ImageRgb8(src) => {
+            let resized = wm_try!(resize_rgb8(src.as_raw(), src_size, dst_size, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        DynamicImage::ImageRgba8(src) => {
+            let resized = wm_try!(resize_rgba8(src.as_raw(), src_size, dst_size, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        DynamicImage::ImageLuma16(src) => {
+            let resized = wm_try!(resize_plane16(src.as_raw(), src_size, dst_size, 16, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        DynamicImage::ImageLumaA16(src) => unimplemented!(), // doesn't seem to be implemented in pic-scale-safe
+        DynamicImage::ImageRgb16(src) => {
+            let resized = wm_try!(resize_rgb16(src.as_raw(), src_size, dst_size, 16, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        DynamicImage::ImageRgba16(src) => {
+            let resized = wm_try!(resize_rgba16(src.as_raw(), src_size, dst_size, 16, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        DynamicImage::ImageRgb32F(src) => {
+            let resized = wm_try!(resize_rgb_f32(src.as_raw(), src_size, dst_size, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        DynamicImage::ImageRgba32F(src) => {
+            let resized = wm_try!(resize_rgba_f32(src.as_raw(), src_size, dst_size, alg));
+            *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
+        }
+        _ => unreachable!(),
+    }
     Ok(())
 }
 
