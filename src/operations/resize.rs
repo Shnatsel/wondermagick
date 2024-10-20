@@ -1,6 +1,6 @@
-use std::u32;
+use std::{ops::AddAssign, u32};
 
-use image::{DynamicImage, ImageBuffer};
+use image::{DynamicImage, ImageBuffer, Pixel};
 use pic_scale_safe::ResamplingFunction;
 
 use crate::{
@@ -89,9 +89,15 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageLumaA16(src) => {
-            let resized = wm_try!(resize_plane16_with_alpha(src.as_raw(), src_size, dst_size, 16, alg));
+            let resized = wm_try!(resize_plane16_with_alpha(
+                src.as_raw(),
+                src_size,
+                dst_size,
+                16,
+                alg
+            ));
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
-        },
+        }
         DynamicImage::ImageRgb16(src) => {
             let resized = wm_try!(resize_rgb16(src.as_raw(), src_size, dst_size, 16, alg));
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
@@ -111,6 +117,22 @@ fn resize_impl(
         _ => unreachable!(),
     }
     Ok(())
+}
+
+#[must_use]
+fn has_constant_alpha<P, Container>(img: &ImageBuffer<P, Container>) -> bool
+where
+    P: Pixel + 'static,
+    Container: std::ops::Deref<Target = [P::Subpixel]>,
+{
+    let first_pixel_alpha = match img.pixels().next() {
+        Some(pixel) => pixel.channels().last().unwrap(), // there doesn't seem to be a better way to retrieve the alpha channel
+        None => return true,                             // empty input image
+    };
+    // TODO: optimize conditionals to not short-cirquit on every pixel, to reduce the amount of branching we do
+    img.pixels()
+        .map(|pixel| pixel.channels().last().unwrap())
+        .all(|alpha| alpha == first_pixel_alpha)
 }
 
 #[must_use]
