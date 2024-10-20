@@ -9,12 +9,9 @@ repository = "https://github.com/Shnatsel/wondermagick"
 [dependencies]
 current_platform = "0.2.0"
 fast_image_resize = { version = "4.2.0", features = ["image"]}
-image = "0.25.2"
+image = "0.25.4"
 kamadak-exif = "0.5.5"
 strum = { version = "0.26.3", features = ["derive"] }
-
-[patch.crates-io]
-image = { git = 'https://github.com/image-rs/image.git' }
 
 [dev-dependencies]
 quickcheck = "1"

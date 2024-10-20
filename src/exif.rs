@@ -1,5 +1,5 @@
 use exif::{In, Tag};
-use image::{DynamicImage, Orientation};
+use image::{DynamicImage, metadata::Orientation};
 
 use crate::{error::MagickError, wm_err, wm_try};
 
