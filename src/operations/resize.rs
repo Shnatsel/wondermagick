@@ -56,9 +56,18 @@ fn resize_impl(
     if image.width() == dst_width && image.height() == dst_height {
         return Ok(());
     }
-    let alg = algorithm; // otherwise rustfmt breaks up too-long-lines and the formatting is amess
+    let alg = algorithm; // otherwise rustfmt breaks up too-long-lines and the formatting is a mess
     let src_size = pic_scale_safe::ImageSize::new(image.width() as usize, image.height() as usize);
     let dst_size = pic_scale_safe::ImageSize::new(dst_width as usize, dst_height as usize);
+
+    // Premultiply the image by alpha channel to avoid color bleed from fully transparent pixels.
+    let mut premultiplied_by_alpha = false;
+    // There is no need to premultiply for nearest-neighbor resampling because it does not perform any blending.
+    // This is actually a valuable optimization because -thumbnail uses nearest-neighbor for a part of the process.
+    if algorithm != ResamplingFunction::Nearest {
+        premultiplied_by_alpha = premultiply_alpha_if_needed(image);
+    }
+
     use pic_scale_safe::*;
     match image {
         DynamicImage::ImageLuma8(src) => {
@@ -66,19 +75,12 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageLumaA8(src) => {
-            let alpha_varies = !has_constant_alpha(src);
-            if alpha_varies {
-                premultiply_la8(src.as_mut());
-            }
-            let mut resized = wm_try!(resize_plane8_with_alpha(
+            let resized = wm_try!(resize_plane8_with_alpha(
                 src.as_raw(),
                 src_size,
                 dst_size,
                 alg
             ));
-            if alpha_varies {
-                unpremultiply_la8(resized.as_mut());
-            }
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgb8(src) => {
@@ -86,14 +88,7 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgba8(src) => {
-            let alpha_varies = !has_constant_alpha(src);
-            if alpha_varies {
-                premultiply_rgba8(src.as_mut());
-            }
-            let mut resized = wm_try!(resize_rgba8(src.as_raw(), src_size, dst_size, alg));
-            if alpha_varies {
-                unpremultiply_rgba8(resized.as_mut());
-            }
+            let resized = wm_try!(resize_rgba8(src.as_raw(), src_size, dst_size, alg));
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageLuma16(src) => {
@@ -101,20 +96,13 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageLumaA16(src) => {
-            let alpha_varies = !has_constant_alpha(src);
-            if alpha_varies {
-                premultiply_la16(src.as_mut(), 16);
-            }
-            let mut resized = wm_try!(resize_plane16_with_alpha(
+            let resized = wm_try!(resize_plane16_with_alpha(
                 src.as_raw(),
                 src_size,
                 dst_size,
                 16,
                 alg
             ));
-            if alpha_varies {
-                unpremultiply_la16(resized.as_mut(), 16);
-            }
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgb16(src) => {
@@ -122,14 +110,7 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgba16(src) => {
-            let alpha_varies = !has_constant_alpha(src);
-            if alpha_varies {
-                premultiply_rgba16(src.as_mut(), 16);
-            }
-            let mut resized = wm_try!(resize_rgba16(src.as_raw(), src_size, dst_size, 16, alg));
-            if alpha_varies {
-                unpremultiply_rgba16(resized.as_mut(), 16);
-            }
+            let resized = wm_try!(resize_rgba16(src.as_raw(), src_size, dst_size, 16, alg));
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgb32F(src) => {
@@ -137,23 +118,92 @@ fn resize_impl(
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         DynamicImage::ImageRgba32F(src) => {
-            let alpha_varies = !has_constant_alpha(src);
-            if alpha_varies {
-                premultiply_rgba_f32(src.as_mut());
-            }
-            let mut resized = wm_try!(resize_rgba_f32(src.as_raw(), src_size, dst_size, alg));
-            if alpha_varies {
-                unpremultiply_rgba_f32(resized.as_mut());
-            }
+            let resized = wm_try!(resize_rgba_f32(src.as_raw(), src_size, dst_size, alg));
             *src = ImageBuffer::from_raw(dst_width, dst_height, resized).unwrap();
         }
         _ => unreachable!(),
     }
+    if premultiplied_by_alpha {
+        unpremultiply_alpha(image);
+    }
     Ok(())
 }
 
+/// Return value indicates whether the image was in premultiplied by alpha
 #[must_use]
-fn has_constant_alpha<P, Container>(img: &ImageBuffer<P, Container>) -> bool
+fn premultiply_alpha_if_needed(image: &mut DynamicImage) -> bool {
+    use pic_scale_safe::*;
+    if !has_constant_alpha(image) {
+        match image {
+            DynamicImage::ImageLuma8(_) => false,
+            DynamicImage::ImageLumaA8(buf) => {
+                premultiply_la8(buf.as_mut());
+                true
+            }
+            DynamicImage::ImageRgb8(_) => false,
+            DynamicImage::ImageRgba8(buf) => {
+                premultiply_rgba8(buf.as_mut());
+                true
+            }
+            DynamicImage::ImageLuma16(_) => false,
+            DynamicImage::ImageLumaA16(buf) => {
+                premultiply_la16(buf.as_mut(), 16);
+                true
+            }
+            DynamicImage::ImageRgb16(_) => false,
+            DynamicImage::ImageRgba16(buf) => {
+                premultiply_rgba16(buf.as_mut(), 16);
+                true
+            }
+            DynamicImage::ImageRgb32F(_) => false,
+            DynamicImage::ImageRgba32F(buf) => {
+                premultiply_rgba_f32(buf.as_mut());
+                true
+            }
+            _ => unreachable!(),
+        }
+    } else {
+        false
+    }
+}
+
+/// Reverses premultiplication by alpha
+fn unpremultiply_alpha(image: &mut DynamicImage) {
+    use pic_scale_safe::*;
+    match image {
+        DynamicImage::ImageLuma8(_) => (),
+        DynamicImage::ImageLumaA8(buf) => unpremultiply_la8(buf.as_mut()),
+        DynamicImage::ImageRgb8(_) => (),
+        DynamicImage::ImageRgba8(buf) => unpremultiply_rgba8(buf.as_mut()),
+        DynamicImage::ImageLuma16(_) => (),
+        DynamicImage::ImageLumaA16(buf) => unpremultiply_la16(buf.as_mut(), 16),
+        DynamicImage::ImageRgb16(_) => (),
+        DynamicImage::ImageRgba16(buf) => unpremultiply_rgba16(buf.as_mut(), 16),
+        DynamicImage::ImageRgb32F(_) => (),
+        DynamicImage::ImageRgba32F(buf) => unpremultiply_rgba_f32(buf),
+        _ => todo!(),
+    }
+}
+
+#[must_use]
+fn has_constant_alpha(image: &DynamicImage) -> bool {
+    match image {
+        DynamicImage::ImageLuma8(_) => true,
+        DynamicImage::ImageLumaA8(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageRgb8(_) => true,
+        DynamicImage::ImageRgba8(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageLuma16(_) => true,
+        DynamicImage::ImageLumaA16(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageRgb16(_) => true,
+        DynamicImage::ImageRgba16(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageRgb32F(_) => true,
+        DynamicImage::ImageRgba32F(buf) => has_constant_alpha_inner(buf),
+        _ => unreachable!(),
+    }
+}
+
+#[must_use]
+fn has_constant_alpha_inner<P, Container>(img: &ImageBuffer<P, Container>) -> bool
 where
     P: Pixel + 'static,
     Container: std::ops::Deref<Target = [P::Subpixel]>,
