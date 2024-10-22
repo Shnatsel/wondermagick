@@ -199,7 +199,7 @@ fn has_constant_alpha(image: &DynamicImage) -> bool {
         DynamicImage::ImageRgb16(_) => true,
         DynamicImage::ImageRgba16(buf) => has_constant_alpha_integer(buf),
         DynamicImage::ImageRgb32F(_) => true,
-        //DynamicImage::ImageRgba32F(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageRgba32F(buf) => has_constant_alpha_f32(buf),
         _ => unreachable!(),
     }
 }
@@ -233,6 +233,18 @@ where
         }
     }
     true
+}
+
+#[must_use]
+fn has_constant_alpha_f32(img: &ImageBuffer<image::Rgba<f32>, Vec<f32>>) -> bool {
+    // Optimizing correctly in presence of NaNs and infinities is tricky, so just do the naive thing for now
+    let first_pixel_alpha = match img.pixels().next() {
+        Some(pixel) => pixel.channels().last().unwrap(), // there doesn't seem to be a better way to retrieve the alpha channel
+        None => return true,                             // empty input image
+    };
+    img.pixels()
+        .map(|pixel| pixel.channels().last().unwrap())
+        .all(|alpha| alpha == first_pixel_alpha)
 }
 
 #[must_use]
