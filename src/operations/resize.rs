@@ -1,3 +1,5 @@
+use std::ops::{AddAssign, BitXor};
+
 use image::{DynamicImage, ImageBuffer, Pixel};
 use pic_scale_safe::ResamplingFunction;
 
@@ -189,33 +191,48 @@ fn unpremultiply_alpha(image: &mut DynamicImage) {
 fn has_constant_alpha(image: &DynamicImage) -> bool {
     match image {
         DynamicImage::ImageLuma8(_) => true,
-        DynamicImage::ImageLumaA8(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageLumaA8(buf) => has_constant_alpha_integer(buf),
         DynamicImage::ImageRgb8(_) => true,
-        DynamicImage::ImageRgba8(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageRgba8(buf) => has_constant_alpha_integer(buf),
         DynamicImage::ImageLuma16(_) => true,
-        DynamicImage::ImageLumaA16(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageLumaA16(buf) => has_constant_alpha_integer(buf),
         DynamicImage::ImageRgb16(_) => true,
-        DynamicImage::ImageRgba16(buf) => has_constant_alpha_inner(buf),
+        DynamicImage::ImageRgba16(buf) => has_constant_alpha_integer(buf),
         DynamicImage::ImageRgb32F(_) => true,
-        DynamicImage::ImageRgba32F(buf) => has_constant_alpha_inner(buf),
+        //DynamicImage::ImageRgba32F(buf) => has_constant_alpha_inner(buf),
         _ => unreachable!(),
     }
 }
 
 #[must_use]
-fn has_constant_alpha_inner<P, Container>(img: &ImageBuffer<P, Container>) -> bool
+fn has_constant_alpha_integer<P, Container>(img: &ImageBuffer<P, Container>) -> bool
 where
     P: Pixel + 'static,
     Container: std::ops::Deref<Target = [P::Subpixel]>,
+    P::Subpixel:
+        Copy + PartialEq + BitXor<P::Subpixel, Output = P::Subpixel> + AddAssign + Into<u64>,
 {
-    let first_pixel_alpha = match img.pixels().next() {
+    let first_pixel_alpha = *match img.pixels().next() {
         Some(pixel) => pixel.channels().last().unwrap(), // there doesn't seem to be a better way to retrieve the alpha channel
         None => return true,                             // empty input image
     };
-    // TODO: optimize conditionals to not short-cirquit on every pixel, to reduce the amount of branching we do
-    img.pixels()
-        .map(|pixel| pixel.channels().last().unwrap())
-        .all(|alpha| alpha == first_pixel_alpha)
+    // A naive, slower implementation that branches on every pixel:
+    //
+    // img.pixels().map(|pixel| pixel.channels().last().unwrap()).all(|alpha| alpha == first_pixel_alpha);
+    //
+    // Instead of doing that we scan every row first with cheap arithmetic instructions
+    // and only compare the sum of divergences on every row, which should be 0
+    let mut sum_of_diffs: u64 = 0;
+    for row in img.rows() {
+        row.for_each(|pixel| {
+            let alpha = pixel.channels().last().unwrap(); // there doesn't seem to be a better way to retrieve the alpha channel :(
+            sum_of_diffs += alpha.bitxor(first_pixel_alpha).into();
+        });
+        if sum_of_diffs != 0 {
+            return false;
+        }
+    }
+    true
 }
 
 #[must_use]
