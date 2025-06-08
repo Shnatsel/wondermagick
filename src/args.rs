@@ -6,10 +6,7 @@
 use std::ffi::{OsStr, OsString};
 
 use crate::{
-    arg_parsers::ResizeGeometry,
-    error::MagickError,
-    operations::Operation,
-    plan::{ExecutionPlan, FilePlan},
+    arg_parsers::ResizeGeometry, error::MagickError, operations::Operation, plan::ExecutionPlan,
     wm_err,
 };
 

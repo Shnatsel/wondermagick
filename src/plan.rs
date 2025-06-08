@@ -1,6 +1,8 @@
 use std::ffi::OsString;
 
-use crate::operations::Operation;
+use crate::decode::decode;
+use crate::filename_utils::insert_suffix_before_extension_in_path;
+use crate::{error::MagickError, operations::Operation, wm_try};
 
 /// Plan of operations for the whole run over multiple files
 #[derive(Debug, Default)]
@@ -31,6 +33,36 @@ impl ExecutionPlan {
             filename,
             ops: self.global_ops.clone(),
         });
+    }
+
+    pub fn execute(&self) -> Result<(), MagickError> {
+        for (file_plan, output_file) in self.input_files.iter().zip(self.output_filenames().iter())
+        {
+            let mut image = wm_try!(decode(&file_plan.filename, None));
+
+            for operation in &file_plan.ops {
+                operation.execute(&mut image)?;
+            }
+
+            wm_try!(image.save(output_file));
+        }
+
+        Ok(())
+    }
+
+    fn output_filenames(&self) -> Vec<OsString> {
+        if self.input_files.len() == 1 {
+            vec![self.output_file.clone()]
+        } else {
+            let mut names = Vec::new();
+            for i in 1..=self.input_files.len() {
+                let name = self.output_file.clone();
+                let suffix = OsString::from(format!("-{}", i)); // indexing for output images starts at 1
+                let name = insert_suffix_before_extension_in_path(&name, &suffix);
+                names.push(name);
+            }
+            names
+        }
     }
 }
 
