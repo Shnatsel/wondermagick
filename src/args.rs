@@ -83,8 +83,6 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     let mut plan = ExecutionPlan::default();
     plan.output_file = output_filename;
 
-    // TODO: parse the filename specification, there's a lot of operations that can be attached to it
-
     let mut iter = args.into_iter().skip(1); // skip argv[0], path to our binary
     while let Some(raw_arg) = iter.next() {
         if raw_arg.as_encoded_bytes() == [b'-'] {
