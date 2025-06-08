@@ -15,12 +15,6 @@ pub struct InputFileArg {
     pub read_mod: Option<ReadModifier>,
 }
 
-impl InputFileArg {
-    pub fn new(path: PathBuf) -> Self {
-        todo!()
-    }
-}
-
 /// The action to be taken upon loading the image.
 /// `convert` accepts any single one of: frame selection, resize, or crop.
 ///
