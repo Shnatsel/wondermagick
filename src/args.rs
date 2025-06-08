@@ -35,8 +35,9 @@ impl Arg {
     }
 
     pub fn to_operation(&self, value: Option<&OsStr>) -> Result<Operation, MagickError> {
+        let arg_string: &'static str = self.into();
         if self.needs_value() != value.is_some() {
-            return Err(wm_err!("argument requires a value"));
+            return Err(wm_err!("argument requires a value: {arg_string}"));
         };
 
         match self {
@@ -96,10 +97,8 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             let arg = Arg::try_from(string_arg.as_str())
                 .map_err(|_| wm_err!("unrecognized option `{}'", string_arg))?;
             let operation = if arg.needs_value() {
-                let value = iter
-                    .next()
-                    .ok_or(wm_err!("argument requires a value: {}", &string_arg))?;
-                arg.to_operation(Some(value.as_os_str()))?
+                let value = iter.next();
+                arg.to_operation(value.as_deref())?
             } else {
                 arg.to_operation(None)?
             };
