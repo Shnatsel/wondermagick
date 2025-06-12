@@ -8,6 +8,7 @@ mod arg_parsers;
 pub mod args;
 pub mod decode;
 pub mod error;
+pub mod image;
 mod filename_utils;
 pub mod help;
 mod operations;

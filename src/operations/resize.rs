@@ -7,32 +7,34 @@ use crate::{
     arg_parsers::{ResizeConstraint, ResizeGeometry},
     error::MagickError,
     utils::fraction::Fraction,
+    image::Image,
     wm_try,
 };
 
 use crate::arg_parsers::ResizeTarget;
 
 /// Implements `-resize` command
-pub fn resize(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
-    let (dst_width, dst_height) = compute_dimensions(image, geometry);
+pub fn resize(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+    let (dst_width, dst_height) = compute_dimensions(&image.pixels, geometry);
     // The default algorithm is Sinc/Lancsoz3, a very high-quality one
-    resize_impl(image, dst_width, dst_height, Default::default())
+    resize_impl(&mut image.pixels, dst_width, dst_height, Default::default())
 }
 
 /// Implements `-scale` command
-pub fn scale(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
-    let (dst_width, dst_height) = compute_dimensions(image, geometry);
-    resize_impl(image, dst_width, dst_height, ResamplingFunction::Box)
+pub fn scale(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+    let (dst_width, dst_height) = compute_dimensions(&image.pixels, geometry);
+    resize_impl(&mut image.pixels, dst_width, dst_height, ResamplingFunction::Box)
 }
 
 /// Implements `-sample` command
-pub fn sample(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
-    let (dst_width, dst_height) = compute_dimensions(image, geometry);
-    resize_impl(image, dst_width, dst_height, ResamplingFunction::Nearest)
+pub fn sample(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+    let (dst_width, dst_height) = compute_dimensions(&image.pixels, geometry);
+    resize_impl(&mut image.pixels, dst_width, dst_height, ResamplingFunction::Nearest)
 }
 
 /// Implements `-thumbnail` command
-pub fn thumbnail(image: &mut DynamicImage, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+pub fn thumbnail(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+    let image = &mut image.pixels;
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
 
     // imagemagick first downscales to 5x the target size with the cheap nearest-neighbor algorithm
