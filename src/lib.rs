@@ -10,6 +10,7 @@ pub mod decode;
 pub mod error;
 mod filename_utils;
 pub mod help;
+pub mod image;
 mod operations;
 mod plan;
 mod utils;

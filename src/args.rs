@@ -13,12 +13,13 @@ use crate::{
 use strum::{EnumString, IntoStaticStr, VariantArray};
 
 #[derive(EnumString, IntoStaticStr, VariantArray, Debug, Clone, Copy, PartialEq, Eq)]
-#[strum(serialize_all = "snake_case")]
+#[strum(serialize_all = "kebab-case")]
 pub enum Arg {
     Resize,
     Thumbnail,
     Scale,
     Sample,
+    AutoOrient,
 }
 
 impl Arg {
@@ -28,6 +29,7 @@ impl Arg {
             Arg::Thumbnail => true,
             Arg::Scale => true,
             Arg::Sample => true,
+            Arg::AutoOrient => false,
         }
     }
 
@@ -44,6 +46,7 @@ impl Arg {
             )?)),
             Arg::Scale => Ok(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?)),
             Arg::Sample => Ok(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::AutoOrient => Ok(Operation::AutoOrient),
         }
     }
 
@@ -53,6 +56,7 @@ impl Arg {
             Arg::Thumbnail => "create a thumbnail of the image",
             Arg::Scale => "scale the image",
             Arg::Sample => "scale image with pixel sampling",
+            Arg::AutoOrient => "automagically orient (rotate) image",
         }
     }
 }
