@@ -46,6 +46,7 @@ impl Arg {
             )?)),
             Arg::Scale => Ok(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?)),
             Arg::Sample => Ok(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::AutoOrient => Ok(Operation::AutoOrient),
         }
     }
 
