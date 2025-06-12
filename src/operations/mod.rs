@@ -1,3 +1,4 @@
+mod auto_orient;
 mod crop;
 mod resize;
 
@@ -25,7 +26,7 @@ impl Operation {
             Operation::Scale(geom) => resize::scale(image, geom),
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
-            Operation::AutoOrient => todo!(),
+            Operation::AutoOrient => auto_orient::auto_orient(image),
         }
     }
 }
