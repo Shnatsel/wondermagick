@@ -6,8 +6,8 @@ use pic_scale_safe::ResamplingFunction;
 use crate::{
     arg_parsers::{ResizeConstraint, ResizeGeometry},
     error::MagickError,
-    utils::fraction::Fraction,
     image::Image,
+    utils::fraction::Fraction,
     wm_try,
 };
 
@@ -23,13 +23,23 @@ pub fn resize(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), Magick
 /// Implements `-scale` command
 pub fn scale(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(&image.pixels, geometry);
-    resize_impl(&mut image.pixels, dst_width, dst_height, ResamplingFunction::Box)
+    resize_impl(
+        &mut image.pixels,
+        dst_width,
+        dst_height,
+        ResamplingFunction::Box,
+    )
 }
 
 /// Implements `-sample` command
 pub fn sample(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(&image.pixels, geometry);
-    resize_impl(&mut image.pixels, dst_width, dst_height, ResamplingFunction::Nearest)
+    resize_impl(
+        &mut image.pixels,
+        dst_width,
+        dst_height,
+        ResamplingFunction::Nearest,
+    )
 }
 
 /// Implements `-thumbnail` command
