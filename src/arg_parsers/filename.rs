@@ -23,6 +23,44 @@ pub struct InputFileArg {
     pub read_mod: Option<ReadModifier>,
 }
 
+impl InputFileArg {
+    pub fn parse(input: &OsStr) -> Result<Self, MagickError> {
+        if file_exists(input) {
+            Ok(Self {
+                path: PathBuf::from(input),
+                read_mod: None,
+            })
+        } else {
+            let parse_result = split_off_bracketed_suffix(input).and_then(|(path, modifier)| {
+                if let Ok(valid_modifier) = ReadModifier::try_from(modifier) {
+                    Some((path, valid_modifier))
+                } else {
+                    None
+                }
+            });
+            if let Some((path, modifier)) = parse_result {
+                if file_exists(path) {
+                    Ok(Self {
+                        path: PathBuf::from(input),
+                        read_mod: Some(modifier),
+                    })
+                } else {
+                    Err(wm_err!(
+                        "unable to open image `{}': No such file or directory",
+                        path.display()
+                    )) // TODO: more accurate error reporting
+                }
+            } else {
+                // the file does not exist and there is no valid modifier on it
+                Err(wm_err!(
+                    "unable to open image `{}': No such file or directory",
+                    input.display()
+                )) // TODO: more accurate error reporting
+            }
+        }
+    }
+}
+
 /// The action to be taken upon loading the image.
 /// `convert` accepts any single one of: frame selection, resize, or crop.
 ///
@@ -109,8 +147,8 @@ impl TryFrom<&OsStr> for LoadCropGeometry {
     }
 }
 
-fn file_exists(path: &Path) -> bool {
-    // This is wrapped into our own function so that we could mock it for unit tests
+fn file_exists(path: &OsStr) -> bool {
+    let path = Path::new(path);
     path.is_file()
 }
 
