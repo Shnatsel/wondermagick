@@ -25,6 +25,11 @@ pub struct InputFileArg {
 
 impl InputFileArg {
     pub fn parse(input: &OsStr) -> Result<Self, MagickError> {
+        // if given "foo.jpg[50x50]" as input
+        // and files "foo.jpg" and "foo.jpg[50x50]",
+        // imagemagick will pick "foo.jpg[50x50]".
+        // So we have to check if the file exists and if it does,
+        // completely skip parsing the read modifiers.
         if file_exists(input) {
             Ok(Self {
                 path: PathBuf::from(input),
