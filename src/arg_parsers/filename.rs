@@ -1,5 +1,5 @@
 use std::{
-    ffi::OsStr,
+    ffi::{OsStr, OsString},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -39,14 +39,14 @@ impl InputFileArg {
             // imagemagick only interprets the modifier as a modifier if the entire thing is valid;
             // there is no "error: invalid modifier" error state, the whole thing is ignored if it is invalid
             let parse_result = split_off_bracketed_suffix(input).and_then(|(path, modifier)| {
-                if let Ok(valid_modifier) = ReadModifier::try_from(modifier) {
+                if let Ok(valid_modifier) = ReadModifier::try_from(modifier.as_ref()) {
                     Some((path, valid_modifier))
                 } else {
                     None
                 }
             });
             if let Some((path, modifier)) = parse_result {
-                if file_exists(path) {
+                if file_exists(&path) {
                     Ok(Self {
                         path: PathBuf::from(path),
                         read_mod: Some(modifier),
@@ -159,44 +159,101 @@ fn file_exists(path: &OsStr) -> bool {
     path.is_file()
 }
 
-fn split_off_bracketed_suffix(input: &OsStr) -> Option<(&OsStr, &OsStr)> {
-    let bytes = input.as_bytes();
-
-    if bytes.is_empty() || bytes.last() != Some(&b']') {
-        return None;
-    }
-
-    // Search for the last '[' before the final ']'.
-    // bytes.len() - 1 is the index of the final ']'
-    // So we search in the slice bytes[0 .. bytes.len() - 1]
-    let slice_before_closing_bracket = &bytes[0..bytes.len() - 1];
-
-    match slice_before_closing_bracket
-        .iter()
-        .rposition(|&b| b == b'[')
+fn split_off_bracketed_suffix(input: &OsStr) -> Option<(OsString, OsString)> {
+    #[cfg(any(unix, target_os = "wasi"))]
     {
-        Some(open_bracket_idx) => {
-            // `open_bracket_idx` is the index of '[' in the original `bytes` slice.
+        let bytes = input.as_bytes(); // Provided by std::os::unix::ffi::OsStrExt
 
-            // Part before the '['
-            let prefix_bytes = &bytes[0..open_bracket_idx];
-
-            // Part between '[' and ']'
-            // It starts one after open_bracket_idx and ends one before the closing ']'
-            // (which is at bytes.len() - 1)
-            let inner_content_bytes = &bytes[open_bracket_idx + 1..bytes.len() - 1];
-
-            // OsStr is guaranteed to be a superset of UTF-8 and of 7-bit ascii.
-            // Slicing by ASCII characters `[` and `]` means that if the original `OsStr`
-            // was valid, these byte sub-slices will also form valid `OsStr`s.
-            // OsStr::from_bytes is the counterpart to as_bytes.
-            let prefix_os_str = OsStr::from_bytes(prefix_bytes);
-            let inner_content_os_str = OsStr::from_bytes(inner_content_bytes);
-
-            Some((prefix_os_str, inner_content_os_str))
+        if bytes.is_empty() || bytes.last() != Some(&b']') {
+            return None;
         }
-        None => {
-            // Found ']' at the end, but no matching '[' before it.
+
+        let slice_before_closing_bracket = &bytes[0..bytes.len() - 1];
+
+        match slice_before_closing_bracket
+            .iter()
+            .rposition(|&b| b == b'[')
+        {
+            Some(open_bracket_idx) => {
+                let prefix_bytes = &bytes[0..open_bracket_idx];
+                let inner_content_bytes = &bytes[open_bracket_idx + 1..bytes.len() - 1];
+
+                // OsStr::from_bytes is available via std::os::unix::ffi::OsStrExt
+                // Convert to OsString for consistent return type with Windows path.
+                let prefix_os_string = OsStr::from_bytes(prefix_bytes).to_os_string();
+                let inner_content_os_string = OsStr::from_bytes(inner_content_bytes).to_os_string();
+                Some((prefix_os_string, inner_content_os_string))
+            }
+            None => None,
+        }
+    }
+    #[cfg(windows)]
+    {
+        // Use encode_wide and from_wide on Windows to avoid `unsafe` I'm not confident in.
+        // OsStr::encode_wide() is provided by std::os::windows::ffi::OsStrExt
+        let wide_chars: Vec<u16> = input.encode_wide().collect();
+
+        if wide_chars.is_empty() {
+            return None;
+        }
+        // Check the last wide character for ']'
+        // ']' as a u16 is 93.
+        if wide_chars.last() != Some(&(b']' as u16)) {
+            return None;
+        }
+
+        // Search for the last '[' before the final ']'.
+        // Slice of wide_chars excluding the last ']'
+        let slice_before_closing_bracket = &wide_chars[0..wide_chars.len() - 1];
+
+        // '[' as a u16 is 91.
+        match slice_before_closing_bracket
+            .iter()
+            .rposition(|&wc| wc == (b'[' as u16))
+        {
+            Some(open_bracket_u16_idx) => {
+                let prefix_u16_slice = &wide_chars[0..open_bracket_u16_idx];
+                let inner_u16_slice = &wide_chars[open_bracket_u16_idx + 1..wide_chars.len() - 1];
+
+                // OsString::from_wide is provided by std::os::windows::ffi::OsStringExt
+                let prefix_os_string = OsString::from_wide(prefix_u16_slice);
+                let inner_os_string = OsString::from_wide(inner_u16_slice);
+                Some((prefix_os_string, inner_os_string))
+            }
+            None => {
+                // Found ']' at the end, but no matching '[' before it.
+                None
+            }
+        }
+    }
+    #[cfg(not(any(unix, windows, target_os = "wasi")))]
+    {
+        // Fallback for other platforms:
+        // This is a simplified attempt. Real-world handling for other platforms
+        // would depend on their OsStr specifics and available APIs in older Rust.
+        // The most portable thing to try is to_str() if the content is UTF-8.
+        if let Some(s_ref) = input.to_str() {
+            let bytes = s_ref.as_bytes();
+            if bytes.is_empty() || bytes.last() != Some(&b']') {
+                return None;
+            }
+            let slice_before_closing_bracket = &bytes[0..bytes.len() - 1];
+            match slice_before_closing_bracket
+                .iter()
+                .rposition(|&b| b == b'[')
+            {
+                Some(open_bracket_idx) => {
+                    let prefix_str_slice = &s_ref[0..open_bracket_idx];
+                    let inner_content_str_slice = &s_ref[open_bracket_idx + 1..bytes.len() - 1];
+                    Some((
+                        OsString::from(prefix_str_slice), // Convert &str to OsString
+                        OsString::from(inner_content_str_slice),
+                    ))
+                }
+                None => None,
+            }
+        } else {
+            // non-utf-8 path on an unknown platform
             None
         }
     }
@@ -262,7 +319,7 @@ mod tests {
             let input_os_str = OsStr::new(input_str);
             let result = split_off_bracketed_suffix(input_os_str);
 
-            match (result, expected_output) {
+            match (&result, expected_output) {
                 (Some((res_prefix, res_suffix)), Some((exp_prefix, exp_suffix))) => {
                     assert_eq!(
                         res_prefix,
