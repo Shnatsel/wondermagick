@@ -76,11 +76,16 @@ impl InputFileArg {
 ///
 /// See <https://imagemagick.org/Usage/files/#read_mods> for details.
 /// I've also verified it behaves according to the documentation.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ReadModifier {
     Resize(ResizeGeometry),
     Crop(LoadCropGeometry),
-    // TODO: frame selection.
+    // TODO: actually parse this nonsense.
+    // So selectors can be `[5-7]` or negative like `[-5--7]`,
+    // and that's all documented.
+    // Did you know that `[+5-7]` is valid AND different from `[5-7]`?
+    // I don't know why. I shouldn't have to wonder why.
+    FrameSelect(OsString),
 }
 
 impl FromStr for ReadModifier {
@@ -108,7 +113,14 @@ impl TryFrom<&OsStr> for ReadModifier {
         } else if x_count == 1 && plus_count == 2 {
             Ok(Self::Crop(LoadCropGeometry::try_from(s)?))
         } else {
-            Err(wm_err!("frame selection is not yet supported")) // TODO: support [0] at least
+            if ascii
+                .iter()
+                .all(|c| c.is_ascii_digit() || *c == b'-' || *c == b'+' || *c == b',')
+            {
+                Ok(Self::FrameSelect(s.to_owned()))
+            } else {
+                return Err(wm_err!("invalid read modifier: {}", s.display()));
+            }
         }
     }
 }

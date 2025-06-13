@@ -1,4 +1,4 @@
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 
 use crate::arg_parsers::InputFileArg;
 use crate::decode::decode;
@@ -40,10 +40,18 @@ impl ExecutionPlan {
         if let Some(modifier) = file.read_mod {
             use crate::arg_parsers::ReadModifier::*;
             let op = match modifier {
-                Resize(geom) => Operation::Resize(geom),
-                Crop(geom) => Operation::CropOnLoad(geom),
+                Resize(geom) => Some(Operation::Resize(geom)),
+                Crop(geom) => Some(Operation::CropOnLoad(geom)),
+                FrameSelect(s) => {
+                    if s != OsStr::new("0") {
+                        panic!("frame selection is not yet supported");
+                    }
+                    None
+                }
             };
-            file_plan.ops.insert(0, op);
+            if let Some(op) = op {
+                file_plan.ops.insert(0, op);
+            }
         }
 
         self.input_files.push(file_plan);
