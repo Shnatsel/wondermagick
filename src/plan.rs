@@ -31,12 +31,22 @@ impl ExecutionPlan {
 
     pub fn add_input_file(&mut self, file: InputFileArg) {
         let filename = file.path.into_os_string();
-        // TODO: process the modifiers
 
-        self.input_files.push(FilePlan {
+        let mut file_plan = FilePlan {
             filename,
             ops: self.global_ops.clone(),
-        });
+        };
+
+        if let Some(modifier) = file.read_mod {
+            use crate::arg_parsers::ReadModifier::*;
+            let op = match modifier {
+                Resize(geom) => Operation::Resize(geom),
+                Crop(geom) => Operation::CropOnLoad(geom),
+            };
+            file_plan.ops.insert(0, op);
+        }
+
+        self.input_files.push(file_plan);
     }
 
     pub fn execute(&self) -> Result<(), MagickError> {
