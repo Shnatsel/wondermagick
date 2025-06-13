@@ -50,6 +50,7 @@ impl InputFileArg {
                         read_mod: Some(modifier),
                     })
                 } else {
+                    // here imagemagick reports the path of the file with modifier removed
                     Err(wm_err!(
                         "unable to open image `{}': No such file or directory",
                         path.display()
