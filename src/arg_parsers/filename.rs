@@ -48,7 +48,7 @@ impl InputFileArg {
             if let Some((path, modifier)) = parse_result {
                 if file_exists(path) {
                     Ok(Self {
-                        path: PathBuf::from(input),
+                        path: PathBuf::from(path),
                         read_mod: Some(modifier),
                     })
                 } else {
