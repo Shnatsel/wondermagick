@@ -36,6 +36,8 @@ impl InputFileArg {
                 read_mod: None,
             })
         } else {
+            // imagemagick only interprets the modifier as a modifier if the entire thing is valid;
+            // there is no "error: invalid modifier" error state, the whole thing is ignored if it is invalid
             let parse_result = split_off_bracketed_suffix(input).and_then(|(path, modifier)| {
                 if let Ok(valid_modifier) = ReadModifier::try_from(modifier) {
                     Some((path, valid_modifier))
