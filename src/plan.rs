@@ -1,5 +1,6 @@
 use std::ffi::OsString;
 
+use crate::arg_parsers::InputFileArg;
 use crate::decode::decode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
 use crate::{error::MagickError, operations::Operation, wm_try};
@@ -28,11 +29,24 @@ impl ExecutionPlan {
         }
     }
 
-    pub fn add_input_file(&mut self, filename: OsString) {
-        self.input_files.push(FilePlan {
+    pub fn add_input_file(&mut self, file: InputFileArg) {
+        let filename = file.path.into_os_string();
+
+        let mut file_plan = FilePlan {
             filename,
             ops: self.global_ops.clone(),
-        });
+        };
+
+        if let Some(modifier) = file.read_mod {
+            use crate::arg_parsers::ReadModifier::*;
+            let op = match modifier {
+                Resize(geom) => Operation::Resize(geom),
+                Crop(geom) => Operation::CropOnLoad(geom),
+            };
+            file_plan.ops.insert(0, op);
+        }
+
+        self.input_files.push(file_plan);
     }
 
     pub fn execute(&self) -> Result<(), MagickError> {
