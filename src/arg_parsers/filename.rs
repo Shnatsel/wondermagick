@@ -11,6 +11,8 @@ use std::os::unix::ffi::OsStrExt;
 use std::os::wasi::ffi::OsStrExt;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStrExt;
+#[cfg(windows)]
+use std::os::windows::ffi::OsStringExt;
 
 use crate::{error::MagickError, wm_err};
 
