@@ -137,8 +137,7 @@ impl TryFrom<&OsStr> for LoadCropGeometry {
         let geom = Geometry::try_from(s)?;
 
         let convert_field = |field: Option<f64>| -> Result<u32, MagickError> {
-            let f =
-                field.ok_or_else(|| wm_err!("invalid crop geometry: {}", s.display()))?;
+            let f = field.ok_or_else(|| wm_err!("invalid crop geometry: {}", s.display()))?;
             if f.is_sign_negative() {
                 Err(wm_err!("invalid crop geometry: {}", s.display()))
             } else {

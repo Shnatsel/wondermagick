@@ -1,5 +1,6 @@
 use std::ffi::OsString;
 
+use crate::arg_parsers::InputFileArg;
 use crate::decode::decode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
 use crate::{error::MagickError, operations::Operation, wm_try};
@@ -28,7 +29,10 @@ impl ExecutionPlan {
         }
     }
 
-    pub fn add_input_file(&mut self, filename: OsString) {
+    pub fn add_input_file(&mut self, file: InputFileArg) {
+        let filename = file.path.into_os_string();
+        // TODO: process the modifiers
+
         self.input_files.push(FilePlan {
             filename,
             ops: self.global_ops.clone(),

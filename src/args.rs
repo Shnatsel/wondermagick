@@ -6,7 +6,10 @@
 use std::ffi::{OsStr, OsString};
 
 use crate::{
-    arg_parsers::ResizeGeometry, error::MagickError, operations::Operation, plan::ExecutionPlan,
+    arg_parsers::{InputFileArg, ResizeGeometry},
+    error::MagickError,
+    operations::Operation,
+    plan::ExecutionPlan,
     wm_err,
 };
 
@@ -103,7 +106,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             };
             plan.add_operation(operation);
         } else {
-            plan.add_input_file(raw_arg);
+            plan.add_input_file(InputFileArg::parse(&raw_arg)?);
         }
     }
     if plan.input_files.is_empty() {
