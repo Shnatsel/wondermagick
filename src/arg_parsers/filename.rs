@@ -57,14 +57,14 @@ impl InputFileArg {
                     // here imagemagick reports the path of the file with modifier removed
                     Err(wm_err!(
                         "unable to open image `{}': No such file or directory",
-                        path.display()
+                        path.to_string_lossy()
                     )) // TODO: more accurate error reporting
                 }
             } else {
                 // the file does not exist and there is no valid modifier on it
                 Err(wm_err!(
                     "unable to open image `{}': No such file or directory",
-                    input.display()
+                    input.to_string_lossy()
                 )) // TODO: more accurate error reporting
             }
         }
@@ -119,7 +119,7 @@ impl TryFrom<&OsStr> for ReadModifier {
             {
                 Ok(Self::FrameSelect(s.to_owned()))
             } else {
-                return Err(wm_err!("invalid read modifier: {}", s.display()));
+                return Err(wm_err!("invalid read modifier: {}", s.to_string_lossy()));
             }
         }
     }
