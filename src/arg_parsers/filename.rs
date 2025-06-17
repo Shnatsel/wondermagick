@@ -101,7 +101,7 @@ impl TryFrom<&OsStr> for ReadModifier {
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
         if !s.is_ascii() {
-            return Err(wm_err!("invalid read modifier: {}", s.display()));
+            return Err(wm_err!("invalid read modifier: {}", s.to_string_lossy()));
         }
 
         let ascii = s.as_encoded_bytes();
@@ -151,9 +151,10 @@ impl TryFrom<&OsStr> for LoadCropGeometry {
         let geom = Geometry::try_from(s)?;
 
         let convert_field = |field: Option<f64>| -> Result<u32, MagickError> {
-            let f = field.ok_or_else(|| wm_err!("invalid crop geometry: {}", s.display()))?;
+            let f =
+                field.ok_or_else(|| wm_err!("invalid crop geometry: {}", s.to_string_lossy()))?;
             if f.is_sign_negative() {
-                Err(wm_err!("invalid crop geometry: {}", s.display()))
+                Err(wm_err!("invalid crop geometry: {}", s.to_string_lossy()))
             } else {
                 Ok(f as u32)
             }
