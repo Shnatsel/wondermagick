@@ -36,7 +36,7 @@ fn quality_to_compression_parameters(quality: Option<u8>) -> (CompressionType, F
             // imagemagick uses filter=None here, but our Fast mode needs filtering
             // to deliver reasonable compression, so use the fastest filter instead
             9 => return (CompressionType::Fast, FilterType::Up),
-            _ => unreachable!(),
+            10.. => unreachable!(),
         };
 
         if filter == FilterType::NoFilter && compression == CompressionType::Fast {
