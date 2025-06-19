@@ -5,7 +5,11 @@ use image::ImageEncoder;
 
 use crate::{error::MagickError, image::Image, wm_try};
 
-pub fn encode<W: Write>(image: &Image, writer: &mut W,  quality: Option<u8>) -> Result<(), MagickError> { 
+pub fn encode<W: Write>(
+    image: &Image,
+    writer: &mut W,
+    quality: Option<u8>,
+) -> Result<(), MagickError> {
     let (compression, filter) = quality_to_compression_parameters(quality);
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     if let Some(icc) = image.icc.clone() {

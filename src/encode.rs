@@ -4,7 +4,12 @@ use image::ImageFormat;
 
 use crate::{encoders, image::Image, wm_try};
 
-pub fn encode(image: &Image, file_path: &OsStr, format: Option<ImageFormat>, quality: Option<u8>) -> Result<(), crate::error::MagickError> {
+pub fn encode(
+    image: &Image,
+    file_path: &OsStr,
+    format: Option<ImageFormat>,
+    quality: Option<u8>,
+) -> Result<(), crate::error::MagickError> {
     // `File::create` automatically truncates (overwrites) the file if it exists.
     let file = wm_try!(File::create(file_path));
     // Wrap in BufWriter for performance
@@ -24,7 +29,7 @@ pub fn encode(image: &Image, file_path: &OsStr, format: Option<ImageFormat>, qua
         _ => wm_try!(image.pixels.write_to(&mut writer, format)),
     }
 
-    // Flush the buffers to write everything to disk. 
+    // Flush the buffers to write everything to disk.
     // The buffers will be flushed automatically when the writer goes out of scope,
     // but that will not report any errors. This handles errors.
     wm_try!(writer.flush());
