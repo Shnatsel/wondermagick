@@ -2,6 +2,7 @@ use std::ffi::{OsStr, OsString};
 
 use crate::arg_parsers::InputFileArg;
 use crate::decode::decode;
+use crate::encode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
 use crate::{error::MagickError, operations::Operation, wm_try};
 
@@ -66,7 +67,7 @@ impl ExecutionPlan {
                 operation.execute(&mut image)?;
             }
 
-            wm_try!(image.save(output_file));
+            encode::encode(&image, &output_file, None, None)?;
         }
 
         Ok(())
