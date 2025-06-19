@@ -2,14 +2,15 @@ use std::ffi::OsStr;
 
 use image::codecs::png::{CompressionType, FilterType, PngEncoder};
 
-use crate::image::Image;
+use crate::{error::MagickError, image::Image};
 
-pub fn encode<W: Write>(image: &Image, writer: W,  quality: Option<u8>) { 
+pub fn encode<W: Write>(image: &Image, writer: W,  quality: Option<u8>) -> Result<(), MagickError> { 
     let (compression, filter) = quality_to_compression_parameters(quality);
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     if let Some(icc) = image.icc.clone() {
         encoder.set_icc_profile(icc);
-    }
+    };
+    Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
 }
 
 // for documentation on conversion of quality to encoding parameters see
