@@ -1,9 +1,32 @@
-use std::ffi::OsStr;
+use std::{ffi::OsStr, fs::File, io::BufWriter, io::Write};
 
 use image::ImageFormat;
 
-use crate::image::Image;
+use crate::{encoders, image::Image, wm_try};
 
-pub fn encode(image: &Image, filepath: &OsStr, format: Option<ImageFormat>, quality: Option<u8>) {
-    
+pub fn encode(image: &Image, file_path: &OsStr, format: Option<ImageFormat>, quality: Option<u8>) -> Result<(), crate::error::MagickError> {
+    // `File::create` automatically truncates (overwrites) the file if it exists.
+    let file = wm_try!(File::create(file_path));
+    let mut writer = BufWriter::new(file);
+
+    let format = if let Some(format) = format {
+        format
+    } else {
+        wm_try!(ImageFormat::from_path(file_path))
+    };
+
+    match format {
+        // TODO: dedicated encoders for way more formats
+        ImageFormat::Png => encoders::png::encode(image, &mut writer, quality)?,
+        // TODO: handle format conversions such as RGBA -> RGB, 16-bit to 8-bit, etc.
+        // Blocked on https://github.com/image-rs/image/issues/2498
+        _ => todo!(),
+    }
+
+    // Flush the buffers to write everything to disk. 
+    // The buffers will be flushed automatically when the writer goes out of scope,
+    // but that will not report any errors. This handles errors.
+    wm_try!(writer.flush());
+
+    Ok(())
 }

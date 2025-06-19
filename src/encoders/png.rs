@@ -1,14 +1,15 @@
-use std::ffi::OsStr;
+use std::io::Write;
 
 use image::codecs::png::{CompressionType, FilterType, PngEncoder};
+use image::ImageEncoder;
 
-use crate::{error::MagickError, image::Image};
+use crate::{error::MagickError, image::Image, wm_try};
 
-pub fn encode<W: Write>(image: &Image, writer: W,  quality: Option<u8>) -> Result<(), MagickError> { 
+pub fn encode<W: Write>(image: &Image, writer: &mut W,  quality: Option<u8>) -> Result<(), MagickError> { 
     let (compression, filter) = quality_to_compression_parameters(quality);
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     if let Some(icc) = image.icc.clone() {
-        encoder.set_icc_profile(icc);
+        let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError
     };
     Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
 }
