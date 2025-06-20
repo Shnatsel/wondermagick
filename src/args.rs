@@ -5,12 +5,7 @@
 
 use std::ffi::{OsStr, OsString};
 
-use crate::{
-    arg_parsers::{InputFileArg},
-    error::MagickError,
-    plan::ExecutionPlan,
-    wm_err,
-};
+use crate::{arg_parsers::InputFileArg, error::MagickError, plan::ExecutionPlan, wm_err};
 
 use strum::{EnumString, IntoStaticStr, VariantArray};
 
@@ -80,11 +75,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             let (_sign, string_arg) = sign_and_arg_name(raw_arg)?;
             let arg = Arg::try_from(string_arg.as_str())
                 .map_err(|_| wm_err!("unrecognized option `{}'", string_arg))?;
-            let value = if arg.needs_value() {
-                iter.next()
-            } else {
-                None
-            };
+            let value = if arg.needs_value() { iter.next() } else { None };
             plan.apply_arg(arg, value.as_deref())?;
         } else {
             plan.add_input_file(InputFileArg::parse(&raw_arg)?);

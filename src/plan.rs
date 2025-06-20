@@ -3,8 +3,8 @@ use std::ffi::{OsStr, OsString};
 use crate::arg_parsers::{InputFileArg, ResizeGeometry};
 use crate::args::Arg;
 use crate::decode::decode;
-use crate::{encode, wm_err};
 use crate::filename_utils::insert_suffix_before_extension_in_path;
+use crate::{encode, wm_err};
 use crate::{error::MagickError, operations::Operation, wm_try};
 
 /// Plan of operations for the whole run over multiple files
@@ -24,12 +24,18 @@ impl ExecutionPlan {
         };
 
         match arg {
-            Arg::Resize => self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::Resize => {
+                self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))
+            }
             Arg::Thumbnail => self.add_operation(Operation::Thumbnail(ResizeGeometry::try_from(
                 value.unwrap(),
             )?)),
-            Arg::Scale => self.add_operation(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?)),
-            Arg::Sample => self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::Scale => {
+                self.add_operation(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?))
+            }
+            Arg::Sample => {
+                self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?))
+            }
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
         };
 
