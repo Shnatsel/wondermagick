@@ -37,6 +37,7 @@ impl ExecutionPlan {
                 self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?))
             }
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
+            Arg::Quality => todo!(),
         };
 
         Ok(())
