@@ -14,7 +14,7 @@ use std::os::windows::ffi::OsStrExt;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStringExt;
 
-use crate::{error::MagickError, wm_err, wm_try};
+use crate::{error::MagickError, wm_err};
 
 use super::{Geometry, ResizeGeometry};
 
