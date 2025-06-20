@@ -20,12 +20,12 @@ mimalloc = { version = "0.1.47", optional = true }
 
 [features]
 default = ["hardened_malloc"]
-# Enables use of nasm by rav1e for a big performance boost in encoding AVIF.
-# Requires nasm to be installed.
-asm = ["image/nasm"]
 # Use a hardened memory allocator for defense-in-depth against memory corruption:
 # https://github.com/microsoft/mimalloc?tab=readme-ov-file#secure-mode
 hardened_malloc = ["mimalloc/secure"]
+# Enables use of nasm by rav1e for a big performance boost in encoding AVIF.
+# Requires nasm to be installed.
+asm = ["image/nasm"]
 
 [dev-dependencies]
 quickcheck = "1"
