@@ -6,13 +6,13 @@
 
 mod arg_parsers;
 pub mod args;
-pub mod decode;
+mod decode;
 mod encode;
 mod encoders;
 pub mod error;
 mod filename_utils;
 pub mod help;
-pub mod image;
+mod image;
 mod operations;
 mod plan;
 mod utils;
