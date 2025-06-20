@@ -25,6 +25,7 @@ pub fn encode(
     match format {
         // TODO: dedicated encoders for way more formats
         ImageFormat::Png => encoders::png::encode(image, &mut writer, modifiers)?,
+        ImageFormat::Jpeg => encoders::jpeg::encode(image, &mut writer, modifiers)?,
         // TODO: handle format conversions such as RGBA -> RGB, 16-bit to 8-bit, etc.
         // Blocked on https://github.com/image-rs/image/issues/2498
         _ => wm_try!(image.pixels.write_to(&mut writer, format)),
