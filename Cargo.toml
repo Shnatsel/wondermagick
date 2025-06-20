@@ -12,10 +12,6 @@ image = "0.25.4"
 pic-scale-safe = "0.1.1"
 strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.0"
-# Use mimalloc on musl unconditionally because musl allocator is very slow
-[target.'cfg(any(target_env = "musl", target_vendor = "apple"))'.dependencies]
-mimalloc = { version = "0.1.47" }
-[target.'cfg(not(any(target_env = "musl", target_vendor = "apple")))'.dependencies]
 mimalloc = { version = "0.1.47", optional = true }
 
 [features]

@@ -4,11 +4,7 @@
 
 #![forbid(unsafe_code)]
 
-#[cfg(any(
-    target_env = "musl",
-    target_vendor = "apple",
-    feature = "hardened_malloc"
-))]
+#[cfg(feature = "hardened_malloc")]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
