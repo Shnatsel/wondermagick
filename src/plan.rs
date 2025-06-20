@@ -13,7 +13,7 @@ pub struct ExecutionPlan {
     /// Operations to be applied to ALL input files
     global_ops: Vec<Operation>,
     pub output_file: OsString,
-    pub input_files: Vec<FilePlan>,
+    input_files: Vec<FilePlan>,
 }
 
 impl ExecutionPlan {
@@ -86,6 +86,9 @@ impl ExecutionPlan {
     }
 
     pub fn execute(&self) -> Result<(), MagickError> {
+        if self.input_files.is_empty() {
+            return Err(wm_err!("no images defined")); // mimics imagemagick
+        }
         for (file_plan, output_file) in self.input_files.iter().zip(self.output_filenames().iter())
         {
             let mut image = wm_try!(decode(&file_plan.filename, None));
