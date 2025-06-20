@@ -14,7 +14,7 @@ use std::os::windows::ffi::OsStrExt;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStringExt;
 
-use crate::{error::MagickError, wm_err};
+use crate::{error::MagickError, wm_err, wm_try};
 
 use super::{Geometry, ResizeGeometry};
 
@@ -109,7 +109,12 @@ impl TryFrom<&OsStr> for ReadModifier {
         let plus_count = ascii.iter().copied().filter(|c| *c == b'+').take(3).count();
 
         if x_count == 1 && plus_count == 0 {
-            Ok(Self::Resize(ResizeGeometry::try_from(s)?))
+            Ok(Self::Resize(ResizeGeometry::try_from(s).map_err(
+                |e| match &e.message {
+                    Some(msg) => wm_err!("invalid resize geometry: {msg}"),
+                    None => wm_err!("invalid resize geometry"),
+                },
+            )?))
         } else if x_count == 1 && plus_count == 2 {
             Ok(Self::Crop(LoadCropGeometry::try_from(s)?))
         } else {

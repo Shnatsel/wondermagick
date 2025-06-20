@@ -1,5 +1,6 @@
 use std::ffi::{OsStr, OsString};
 
+use crate::arg_parse_err::ArgParseErr;
 use crate::arg_parsers::{InputFileArg, ResizeGeometry};
 use crate::args::Arg;
 use crate::decode::decode;
@@ -23,10 +24,10 @@ impl ExecutionPlan {
             return Err(wm_err!("argument requires a value: {arg_string}"));
         };
 
-        self.apply_arg_inner(arg, value).map_err(|_err| {
+        self.apply_arg_inner(arg, value).map_err(|arg_err| {
             wm_err!(
-                "invalid argument for option `-{arg_string}': {}",
-                value.unwrap().to_string_lossy()
+                "{}",
+                arg_err.display_with_arg(arg_string, value.unwrap_or_default())
             )
         })?;
 
@@ -36,7 +37,7 @@ impl ExecutionPlan {
     /// Currently this can only fail due to argument parsing.
     /// Split into its own function due to lack of try{} blocks on stable Rust.
     /// TODO: make it return ArgParseErr and match imagemagick error reporting more closely
-    fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), MagickError> {
+    fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), ArgParseErr> {
         match arg {
             Arg::Resize => {
                 self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))

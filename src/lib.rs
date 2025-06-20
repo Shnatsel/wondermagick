@@ -4,6 +4,7 @@
 
 #![forbid(unsafe_code)]
 
+mod arg_parse_err;
 mod arg_parsers;
 pub mod args;
 mod decode;

@@ -10,7 +10,7 @@ use crate::utils::arbitrary;
 #[cfg(test)]
 use derive_quickcheck_arbitrary::Arbitrary;
 
-use crate::{error::MagickError, wm_err, wm_try};
+use crate::arg_parse_err::ArgParseErr;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 #[cfg_attr(test, derive(Arbitrary))]
@@ -124,7 +124,7 @@ impl Display for ResizeGeometry {
 }
 
 impl FromStr for ResizeGeometry {
-    type Err = MagickError;
+    type Err = ArgParseErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_from(OsStr::new(s))
@@ -132,14 +132,11 @@ impl FromStr for ResizeGeometry {
 }
 
 impl TryFrom<&OsStr> for ResizeGeometry {
-    type Error = MagickError;
+    type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
         if !s.is_ascii() {
-            return Err(wm_err!(
-                "invalid argument for option `-resize': {}",
-                s.to_string_lossy()
-            ));
+            return Err(ArgParseErr::new());
         }
         let ascii = s.as_encoded_bytes();
 
@@ -150,8 +147,8 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         let only_enlarge = ascii.contains(&b'<');
         let only_shrink = ascii.contains(&b'>');
         if only_enlarge && only_shrink {
-            return Err(wm_err!(
-                "invalid argument for option `-resize': < and > cannot be specified together"
+            return Err(ArgParseErr::with_msg(
+                "< and > cannot be specified together",
             ));
         }
         let mut constraint = ResizeConstraint::default();
@@ -163,12 +160,12 @@ impl TryFrom<&OsStr> for ResizeGeometry {
 
         let mut iter = ascii.split(|c| *c == b'x');
         let width = if let Some(slice) = iter.next() {
-            wm_try!(find_and_parse_float(slice))
+            find_and_parse_float(slice)?
         } else {
             None
         };
         let height = if let Some(slice) = iter.next() {
-            wm_try!(find_and_parse_float(slice))
+            find_and_parse_float(slice)?
         } else {
             None
         };
@@ -181,8 +178,8 @@ impl TryFrom<&OsStr> for ResizeGeometry {
                 target = ResizeTarget::Area(width.round() as u64);
             } else {
                 // imagemagick reports "negative or zero image size" followed by the path to the image, and frankly fuck that
-                return Err(wm_err!(
-                    "please specify the area to resize to when using @ operator"
+                return Err(ArgParseErr::with_msg(
+                    "please specify the area to resize to when using @ operator",
                 ));
             }
         } else if percentage_mode {
