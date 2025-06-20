@@ -19,7 +19,7 @@ use std::str::FromStr;
 /// ```
 pub fn strip_and_parse_number<T>(input: &str) -> Result<T, T::Err>
 where
-    T: FromStr,         // The target type T must be parsable from a string.
+    T: FromStr, // The target type T must be parsable from a string.
     T::Err: std::error::Error,
 {
     let trimmed_str = input.trim();
@@ -45,7 +45,10 @@ mod tests {
 
     #[test]
     fn test_parse_usize_valid() {
-        assert_eq!(strip_and_parse_number::<usize>("  9876543210  "), Ok(9876543210));
+        assert_eq!(
+            strip_and_parse_number::<usize>("  9876543210  "),
+            Ok(9876543210)
+        );
     }
 
     #[test]
