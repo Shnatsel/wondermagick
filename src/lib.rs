@@ -9,6 +9,7 @@ mod arg_parsers;
 pub mod args;
 mod decode;
 mod encode;
+mod encoders;
 pub mod error;
 mod filename_utils;
 pub mod help;
