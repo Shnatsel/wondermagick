@@ -2,13 +2,13 @@ use std::{ffi::OsStr, fs::File, io::BufWriter, io::Write};
 
 use image::ImageFormat;
 
-use crate::{encoders, image::Image, wm_try};
+use crate::{encoders, image::Image, plan::Modifiers, wm_try};
 
 pub fn encode(
     image: &Image,
     file_path: &OsStr,
     format: Option<ImageFormat>,
-    quality: Option<u8>,
+    modifiers: &Modifiers,
 ) -> Result<(), crate::error::MagickError> {
     // `File::create` automatically truncates (overwrites) the file if it exists.
     let file = wm_try!(File::create(file_path));
@@ -24,7 +24,7 @@ pub fn encode(
 
     match format {
         // TODO: dedicated encoders for way more formats
-        ImageFormat::Png => encoders::png::encode(image, &mut writer, quality)?,
+        ImageFormat::Png => encoders::png::encode(image, &mut writer, modifiers)?,
         // TODO: handle format conversions such as RGBA -> RGB, 16-bit to 8-bit, etc.
         // Blocked on https://github.com/image-rs/image/issues/2498
         _ => wm_try!(image.pixels.write_to(&mut writer, format)),

@@ -113,7 +113,7 @@ impl ExecutionPlan {
                 operation.execute(&mut image)?;
             }
 
-            encode::encode(&image, &output_file, None, None)?;
+            encode::encode(&image, &output_file, None, &self.modifiers)?;
         }
 
         Ok(())
@@ -144,5 +144,5 @@ pub struct FilePlan {
 
 #[derive(Debug, Default)]
 pub struct Modifiers {
-    quality: Option<u8>,
+    pub quality: Option<u8>,
 }

@@ -3,14 +3,15 @@ use std::io::Write;
 use image::codecs::png::{CompressionType, FilterType, PngEncoder};
 use image::ImageEncoder;
 
+use crate::plan::Modifiers;
 use crate::{error::MagickError, image::Image, wm_try};
 
 pub fn encode<W: Write>(
     image: &Image,
     writer: &mut W,
-    quality: Option<u8>,
+    modifiers: &Modifiers,
 ) -> Result<(), MagickError> {
-    let (compression, filter) = quality_to_compression_parameters(quality);
+    let (compression, filter) = quality_to_compression_parameters(modifiers.quality);
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     if let Some(icc) = image.icc.clone() {
         let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError
