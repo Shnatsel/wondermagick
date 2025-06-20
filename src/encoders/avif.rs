@@ -1,0 +1,19 @@
+use std::io::Write;
+
+use image::codecs::avif::AvifEncoder;
+use image::ImageEncoder;
+
+use crate::{error::MagickError, image::Image, plan::Modifiers, wm_try};
+
+pub fn encode<W: Write>(
+    image: &Image,
+    writer: &mut W,
+    modifiers: &Modifiers,
+) -> Result<(), MagickError> {
+    let quality = modifiers.quality.unwrap_or(50);
+    let mut encoder = AvifEncoder::new_with_speed_quality(writer, 4, quality);
+    if let Some(icc) = image.icc.clone() {
+        let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError
+    };
+    Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
+}
