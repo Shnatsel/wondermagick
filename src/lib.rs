@@ -4,6 +4,10 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(any(target_env = "musl", feature = "hardened_malloc"))]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 mod arg_parse_err;
 mod arg_parsers;
 pub mod args;

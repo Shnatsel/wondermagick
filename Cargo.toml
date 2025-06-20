@@ -12,11 +12,20 @@ image = "0.25.4"
 pic-scale-safe = "0.1.1"
 strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.0"
+# Use mimalloc on musl unconditionally because musl allocator is very slow
+[target.'cfg(target_env = "musl")'.dependencies]
+mimalloc = { version = "0.1.47" }
+[target.'cfg(not(target_env = "musl"))'.dependencies]
+mimalloc = { version = "0.1.47", optional = true }
 
 [features]
-# Enables use of nasm by rav1e AVIF encoder for a big performance boost.
+default = ["hardened_malloc"]
+# Enables use of nasm by rav1e for a big performance boost in encoding AVIF.
 # Requires nasm to be installed.
 asm = ["image/nasm"]
+# Use a hardened memory allocator for defense-in-depth against memory corruption:
+# https://github.com/microsoft/mimalloc?tab=readme-ov-file#secure-mode
+hardened_malloc = ["mimalloc/secure"]
 
 [dev-dependencies]
 quickcheck = "1"
