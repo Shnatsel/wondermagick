@@ -1,7 +1,7 @@
 use std::ffi::{OsStr, OsString};
 
 use crate::arg_parse_err::ArgParseErr;
-use crate::arg_parsers::{InputFileArg, ResizeGeometry};
+use crate::arg_parsers::{parse_numeric_arg, InputFileArg, ResizeGeometry};
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
@@ -15,6 +15,7 @@ pub struct ExecutionPlan {
     global_ops: Vec<Operation>,
     pub output_file: OsString,
     input_files: Vec<FilePlan>,
+    modifiers: Modifiers,
 }
 
 impl ExecutionPlan {
@@ -52,7 +53,7 @@ impl ExecutionPlan {
                 self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?))
             }
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
-            Arg::Quality => todo!(),
+            Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
         };
 
         Ok(())
@@ -139,4 +140,9 @@ impl ExecutionPlan {
 pub struct FilePlan {
     pub filename: OsString,
     pub ops: Vec<Operation>,
+}
+
+#[derive(Debug, Default)]
+pub struct Modifiers {
+    quality: Option<u8>,
 }

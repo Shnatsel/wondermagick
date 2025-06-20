@@ -1,4 +1,15 @@
-use std::str::FromStr;
+use std::{ffi::OsStr, str::FromStr};
+
+use crate::arg_parse_err::ArgParseErr;
+
+pub fn parse_numeric_arg<T>(input: &OsStr) -> Result<T, ArgParseErr>
+where
+    T: FromStr, // The target type T must be parsable from a string.
+    T::Err: std::error::Error,
+{
+    let string: &str = input.try_into().map_err(|_e| ArgParseErr::new())?;
+    strip_and_parse_number(string).map_err(|_e| ArgParseErr::new())
+}
 
 /// Strips leading and trailing whitespace from an input string slice
 /// and attempts to parse the remaining string into a specified numeric type `T`.
@@ -17,7 +28,7 @@ use std::str::FromStr;
 /// * `Ok(T)`: If stripping and parsing are successful, containing the parsed number.
 /// * `Err(T::Err)`: If parsing fails, containing the error from `T::from_str`.
 /// ```
-pub fn strip_and_parse_number<T>(input: &str) -> Result<T, T::Err>
+fn strip_and_parse_number<T>(input: &str) -> Result<T, T::Err>
 where
     T: FromStr, // The target type T must be parsable from a string.
     T::Err: std::error::Error,
