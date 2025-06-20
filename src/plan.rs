@@ -35,6 +35,7 @@ impl ExecutionPlan {
 
     /// Currently this can only fail due to argument parsing.
     /// Split into its own function due to lack of try{} blocks on stable Rust.
+    /// TODO: make it return ArgParseErr and match imagemagick error reporting more closely
     fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), MagickError> {
         match arg {
             Arg::Resize => {
