@@ -18,6 +18,7 @@ pub fn encode(
     let format = if let Some(format) = format {
         format
     } else {
+        // TODO: instead of rejecting unknown format, reuse the input format as imagemagick does
         wm_try!(ImageFormat::from_path(file_path))
     };
 
