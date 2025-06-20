@@ -13,6 +13,11 @@ pic-scale-safe = "0.1.1"
 strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.0"
 
+[features]
+# Enables use of nasm by rav1e AVIF encoder for a big performance boost.
+# Requires nasm to be installed.
+asm = ["image/nasm"]
+
 [dev-dependencies]
 quickcheck = "1"
 quickcheck_macros = "1"
