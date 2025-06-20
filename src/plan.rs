@@ -1,8 +1,9 @@
 use std::ffi::{OsStr, OsString};
 
-use crate::arg_parsers::InputFileArg;
+use crate::arg_parsers::{InputFileArg, ResizeGeometry};
+use crate::args::Arg;
 use crate::decode::decode;
-use crate::encode;
+use crate::{encode, wm_err};
 use crate::filename_utils::insert_suffix_before_extension_in_path;
 use crate::{error::MagickError, operations::Operation, wm_try};
 
@@ -16,7 +17,26 @@ pub struct ExecutionPlan {
 }
 
 impl ExecutionPlan {
-    pub fn add_operation(&mut self, op: Operation) {
+    pub fn apply_arg(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), MagickError> {
+        let arg_string: &'static str = arg.into();
+        if arg.needs_value() != value.is_some() {
+            return Err(wm_err!("argument requires a value: {arg_string}"));
+        };
+
+        match arg {
+            Arg::Resize => self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::Thumbnail => self.add_operation(Operation::Thumbnail(ResizeGeometry::try_from(
+                value.unwrap(),
+            )?)),
+            Arg::Scale => self.add_operation(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::Sample => self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
+            Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
+        };
+
+        Ok(())
+    }
+
+    fn add_operation(&mut self, op: Operation) {
         // Operations such as -resize apply to all the files already listed,
         // but not subsequent ones,
         // UNLESS they are specified before any of the files,

@@ -6,9 +6,8 @@
 use std::ffi::{OsStr, OsString};
 
 use crate::{
-    arg_parsers::{InputFileArg, ResizeGeometry},
+    arg_parsers::{InputFileArg},
     error::MagickError,
-    operations::Operation,
     plan::ExecutionPlan,
     wm_err,
 };
@@ -33,23 +32,6 @@ impl Arg {
             Arg::Scale => true,
             Arg::Sample => true,
             Arg::AutoOrient => false,
-        }
-    }
-
-    pub fn to_operation(&self, value: Option<&OsStr>) -> Result<Operation, MagickError> {
-        let arg_string: &'static str = self.into();
-        if self.needs_value() != value.is_some() {
-            return Err(wm_err!("argument requires a value: {arg_string}"));
-        };
-
-        match self {
-            Arg::Resize => Ok(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?)),
-            Arg::Thumbnail => Ok(Operation::Thumbnail(ResizeGeometry::try_from(
-                value.unwrap(),
-            )?)),
-            Arg::Scale => Ok(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?)),
-            Arg::Sample => Ok(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?)),
-            Arg::AutoOrient => Ok(Operation::AutoOrient),
         }
     }
 
@@ -98,13 +80,12 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             let (_sign, string_arg) = sign_and_arg_name(raw_arg)?;
             let arg = Arg::try_from(string_arg.as_str())
                 .map_err(|_| wm_err!("unrecognized option `{}'", string_arg))?;
-            let operation = if arg.needs_value() {
-                let value = iter.next();
-                arg.to_operation(value.as_deref())?
+            let value = if arg.needs_value() {
+                iter.next()
             } else {
-                arg.to_operation(None)?
+                None
             };
-            plan.add_operation(operation);
+            plan.apply_arg(arg, value.as_deref())?;
         } else {
             plan.add_input_file(InputFileArg::parse(&raw_arg)?);
         }
