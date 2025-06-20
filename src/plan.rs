@@ -23,6 +23,19 @@ impl ExecutionPlan {
             return Err(wm_err!("argument requires a value: {arg_string}"));
         };
 
+        self.apply_arg_inner(arg, value).map_err(|_err| {
+            wm_err!(
+                "invalid argument for option `-{arg_string}': {}",
+                value.unwrap().to_string_lossy()
+            )
+        })?;
+
+        Ok(())
+    }
+
+    /// Currently this can only fail due to argument parsing.
+    /// Split into its own function due to lack of try{} blocks on stable Rust.
+    fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), MagickError> {
         match arg {
             Arg::Resize => {
                 self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))
