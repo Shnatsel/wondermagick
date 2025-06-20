@@ -7,3 +7,4 @@ mod geometry;
 pub use geometry::*;
 mod filename;
 pub use filename::*;
+mod quality;
