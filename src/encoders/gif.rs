@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use image::codecs::gif::GifEncoder;
+use image::ExtendedColorType;
 
 use crate::{error::MagickError, image::Image, plan::Modifiers, wm_try};
 
@@ -34,18 +35,12 @@ pub fn encode<W: Write>(
 
     let image = converted_image.as_ref().unwrap_or(&image.pixels);
     Ok(match image {
-        ImageRgb8(image_buffer) => wm_try!(encoder.encode(
-            image_buffer.as_raw(),
-            width,
-            height,
-            image::ExtendedColorType::Rgb8
-        )),
-        ImageRgba8(image_buffer) => wm_try!(encoder.encode(
-            image_buffer.as_raw(),
-            width,
-            height,
-            image::ExtendedColorType::Rgba8
-        )),
+        ImageRgb8(data) => {
+            wm_try!(encoder.encode(data.as_raw(), width, height, ExtendedColorType::Rgb8))
+        }
+        ImageRgba8(data) => {
+            wm_try!(encoder.encode(data.as_raw(), width, height, ExtendedColorType::Rgba8))
+        }
         _ => unreachable!(), // we've just converted it to RGB(A)
     })
 }
