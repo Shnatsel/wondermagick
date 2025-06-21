@@ -20,17 +20,13 @@ pub fn encode<W: Write>(
     let height = pixels.height();
     use image::DynamicImage::*;
     let converted_image = match pixels {
-        ImageLuma8(_) => Some(ImageRgb8(pixels.to_rgb8())),
-        ImageLumaA8(_) => Some(ImageRgba8(pixels.to_rgba8())),
         ImageRgb8(_) => None,
         ImageRgba8(_) => None,
-        ImageLuma16(_) => Some(ImageRgb8(pixels.to_rgb8())),
-        ImageLumaA16(_) => Some(ImageRgba8(pixels.to_rgba8())),
-        ImageRgb16(_) => Some(ImageRgb8(pixels.to_rgb8())),
-        ImageRgba16(_) => Some(ImageRgba8(pixels.to_rgba8())),
-        ImageRgb32F(_) => Some(ImageRgb8(pixels.to_rgb8())),
-        ImageRgba32F(_) => Some(ImageRgba8(pixels.to_rgba8())),
-        _ => unimplemented!(),
+        _ => if pixels.has_alpha() {
+            Some(ImageRgba8(pixels.to_rgba8()))
+        } else {
+            Some(ImageRgb8(pixels.to_rgb8()))
+        },
     };
 
     let image = converted_image.as_ref().unwrap_or(&image.pixels);
