@@ -40,3 +40,4 @@ panic = "abort"
 
 [patch.crates-io]
 image = {git = "https://github.com/image-rs/image"}
+webp = {git = "https://github.com/Shnatsel/webp", branch = "encoder-soundness"}
