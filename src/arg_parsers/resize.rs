@@ -109,29 +109,19 @@ impl Default for ResizeTarget {
     }
 }
 
-/// "Extended geometry" according to imagemagick docs. Only used in resizing operations.
+/// Intermediate result of extended geometry parsing
+///
+/// Imagemagick uses the same parser for all [extended geometry](https://www.imagemagick.org/Magick++/Geometry.html).
+/// Parsing is implemented on this struct, and we convert it into more specific structs like [ResizeGeometry] later.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 #[cfg_attr(test, derive(Arbitrary))]
-pub struct ResizeGeometry {
+pub(super) struct ExtendedGeometry {
     pub target: ResizeTarget,
     pub constraint: ResizeConstraint,
+    // TODO: offsets
 }
 
-impl Display for ResizeGeometry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}", self.target, self.constraint)
-    }
-}
-
-impl FromStr for ResizeGeometry {
-    type Err = ArgParseErr;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(OsStr::new(s))
-    }
-}
-
-impl TryFrom<&OsStr> for ResizeGeometry {
+impl TryFrom<&OsStr> for ExtendedGeometry {
     type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
@@ -234,7 +224,46 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         // The offsets after the resolution, such as +500 or -200, are accepted by the imagemagick parser but ignored.
         // We don't even bother parsing them.
 
-        Ok(ResizeGeometry { target, constraint })
+        Ok(Self { target, constraint })
+    }
+}
+
+/// "Extended geometry" according to imagemagick docs. Only used in resizing operations.
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+#[cfg_attr(test, derive(Arbitrary))]
+pub struct ResizeGeometry {
+    pub target: ResizeTarget,
+    pub constraint: ResizeConstraint,
+}
+
+impl Display for ResizeGeometry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.target, self.constraint)
+    }
+}
+
+impl FromStr for ResizeGeometry {
+    type Err = ArgParseErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::try_from(OsStr::new(s))
+    }
+}
+
+impl From<ExtendedGeometry> for ResizeGeometry {
+    fn from(ext: ExtendedGeometry) -> Self {
+        Self {
+            target: ext.target,
+            constraint: ext.constraint,
+        }
+    }
+}
+
+impl TryFrom<&OsStr> for ResizeGeometry {
+    type Error = ArgParseErr;
+
+    fn try_from(value: &OsStr) -> Result<Self, Self::Error> {
+        ExtendedGeometry::try_from(value).map(|geom| geom.into())
     }
 }
 
