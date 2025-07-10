@@ -19,17 +19,17 @@ use crate::{arg_parse_err::ArgParseErr, arg_parsers::Geometry};
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct ExtGeometryFlags {
     /// !
-    exclamation: bool,
+    pub exclamation: bool,
     /// %
-    percent: bool,
+    pub percent: bool,
     /// @
-    at: bool,
+    pub at: bool,
     /// ^
-    caret: bool,
+    pub caret: bool,
     /// <
-    less_than: bool,
+    pub less_than: bool,
     /// >
-    greater_than: bool,
+    pub greater_than: bool,
 }
 
 /// Intermediate result of extended geometry parsing
@@ -38,8 +38,8 @@ pub struct ExtGeometryFlags {
 /// Parsing is implemented on this struct, and we convert it into more specific structs like [ResizeGeometry] later.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct ExtGeometry {
-    flags: ExtGeometryFlags,
-    geom: Geometry,
+    pub geom: Geometry,
+    pub flags: ExtGeometryFlags,
 }
 
 impl TryFrom<&OsStr> for ExtGeometry {
@@ -49,8 +49,10 @@ impl TryFrom<&OsStr> for ExtGeometry {
         if !s.is_ascii() {
             return Err(ArgParseErr::new());
         }
+
         let ascii = s.as_encoded_bytes();
         let mut ascii = ascii.to_vec();
+        let orig_len = ascii.len();
 
         // "50!0!x+0!+0" parses as "500x+0+0",
         // so my guess is that imagemagick scans for special characters and removes them,
@@ -65,8 +67,14 @@ impl TryFrom<&OsStr> for ExtGeometry {
             greater_than: find_and_remove_byte(b'>', &mut ascii),
         };
 
-        let geom_str = str::from_utf8(&ascii).unwrap(); // it's ascii, should never panic
-        let geom = Geometry::from_str(geom_str)?;
+        let geom = if orig_len > 0 && ascii.len() == 0 {
+            Geometry::default()
+            // imagemagick permits extended geometry with only one symbol such as @ or ^ and nothing else, which is a no-op
+        } else {
+            // attempt to parse the remainder as a geometry, which will fail for an emtry string
+            let geom_str = str::from_utf8(&ascii).unwrap(); // it's ascii, should never panic
+            Geometry::from_str(geom_str)?
+        };
 
         Ok(Self { flags, geom })
     }
