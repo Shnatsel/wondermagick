@@ -1,6 +1,6 @@
 use std::{
     ffi::{OsStr, OsString},
-    path::{Path, PathBuf},
+    path::PathBuf,
     str::FromStr,
 };
 
@@ -192,12 +192,6 @@ impl TryFrom<&OsStr> for LoadCropGeometry {
             yoffset: convert_field(geom.yoffset)?,
         })
     }
-}
-
-fn is_a_folder(path: &OsStr) -> Result<bool, std::io::Error> {
-    // imagemagick traverses symlinks, so using fs::metadata is appropriate
-    let data = std::fs::metadata(path)?;
-    Ok(data.is_dir())
 }
 
 fn split_off_bracketed_suffix(input: &OsStr) -> Option<(OsString, OsString)> {
