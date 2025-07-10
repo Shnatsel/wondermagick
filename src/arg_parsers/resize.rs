@@ -437,6 +437,11 @@ mod tests {
         assert_eq!(parsed, expected);
     }
 
+    #[test]
+    fn test_empty_string() {
+        assert!(ResizeGeometry::from_str("").is_err());
+    }
+
     #[quickcheck]
     fn roundtrip_is_lossless(orig: ResizeGeometry) {
         let stringified = orig.to_string();
