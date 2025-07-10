@@ -13,7 +13,7 @@ use crate::{error::MagickError, operations::Operation, wm_try};
 pub struct ExecutionPlan {
     /// Operations to be applied to ALL input files
     global_ops: Vec<Operation>,
-    pub output_file: OsString,
+    output_file: OsString,
     input_files: Vec<FilePlan>,
     modifiers: Modifiers,
 }
@@ -98,6 +98,10 @@ impl ExecutionPlan {
         }
 
         self.input_files.push(file_plan);
+    }
+
+    pub fn set_output_file(&mut self, file: OsString) {
+        self.output_file = file;
     }
 
     pub fn execute(&self) -> Result<(), MagickError> {
