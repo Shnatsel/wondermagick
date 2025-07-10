@@ -4,7 +4,9 @@
 mod resize;
 pub use resize::*;
 mod geometry;
-pub use geometry::*;
+pub(self) use geometry::*;
+mod geometry_ext;
+pub(self) use geometry_ext::*;
 mod filename;
 pub use filename::*;
 mod numbers;

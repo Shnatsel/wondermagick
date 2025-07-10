@@ -5,22 +5,13 @@
 // but this works:
 // `convert rose: -crop 50x+0 crop_half.gif`
 //
-// It also says:
-// > Extended geometry strings should *only* be used when *resizing an image.*
-// but this works:
-// `convert rose: -crop 50% crop_half.gif`
-// (but maybe -crop is just magical, and other places where geometry can appear aren't like that?)
-//
-// So we just rely on observing the actual behavior of `convert` instead.
-// Note that this isn't targeting any single particular command yet.
-// That is a problem, and this should be changed to adhere to something specific.
+// Maybe it's an extended geometry feature, or maybe it just always works that way and documentation is a lie!
 
 use std::ffi::OsStr;
 use std::fmt::Display;
 use std::str::{self, FromStr};
 
-use crate::error::MagickError;
-use crate::wm_err;
+use crate::arg_parse_err::ArgParseErr;
 
 #[cfg(test)]
 use crate::utils::arbitrary;
@@ -65,7 +56,7 @@ impl Display for Geometry {
 }
 
 impl FromStr for Geometry {
-    type Err = MagickError;
+    type Err = ArgParseErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_from(OsStr::new(s))
@@ -73,13 +64,11 @@ impl FromStr for Geometry {
 }
 
 impl TryFrom<&OsStr> for Geometry {
-    type Error = MagickError;
+    type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
-        let invalid_geometry_err = || wm_err!("invalid geometry: {}", s.to_string_lossy());
-
         if !s.is_ascii() {
-            return Err(invalid_geometry_err());
+            return Err(ArgParseErr::new());
         }
 
         let mut ascii = s.as_encoded_bytes();
@@ -92,20 +81,18 @@ impl TryFrom<&OsStr> for Geometry {
 
         if let Some(next_char) = ascii.first() {
             if ![b'x', b'+', b'-'].contains(next_char) {
-                result.width =
-                    Some(read_positive_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+                result.width = Some(read_positive_float(&mut ascii).ok_or(ArgParseErr::new())?);
             }
         }
         if let Some(next_char) = ascii.first() {
             if next_char == &b'x' {
                 ascii = &ascii[1..]; // skip the 'x'
-                result.height =
-                    Some(read_positive_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+                result.height = Some(read_positive_float(&mut ascii).ok_or(ArgParseErr::new())?);
             }
         }
         if let Some(next_char) = ascii.first() {
             if [b'+', b'-'].contains(next_char) {
-                let offset = read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?;
+                let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
                 if offset != 0.0 && offset != -0.0 {
                     result.xoffset = Some(offset);
                 }
@@ -113,7 +100,7 @@ impl TryFrom<&OsStr> for Geometry {
         }
         if let Some(next_char) = ascii.first() {
             if [b'+', b'-'].contains(next_char) {
-                let offset = read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?;
+                let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
                 if offset != 0.0 && offset != -0.0 {
                     result.yoffset = Some(offset);
                 }
@@ -181,15 +168,21 @@ mod tests {
 
     #[test]
     fn test_missing_height() {
-        // TODO: not actually tested against anything specific in imagick
+        // Needed for resize and crop (extended) geometry parsing
         let expected = Geometry {
             width: Some(5.0),
             height: None,
             xoffset: Some(15.0),
             yoffset: Some(20.0),
         };
-        let parsed = Geometry::from_str("5+15+20").unwrap();
+        let parsed = Geometry::from_str("5x+15+20").unwrap();
         assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn test_missing_height_invalid() {
+        // resize command rejects this
+        assert!(Geometry::from_str("5x+15+20").is_err());
     }
 
     #[test]

@@ -14,7 +14,7 @@ use std::os::windows::ffi::OsStrExt;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStringExt;
 
-use crate::{error::MagickError, wm_err};
+use crate::{arg_parse_err::ArgParseErr, error::MagickError, wm_err};
 
 use super::{Geometry, ResizeGeometry};
 
@@ -116,7 +116,10 @@ impl TryFrom<&OsStr> for ReadModifier {
                 },
             )?))
         } else if x_count == 1 && plus_count == 2 {
-            Ok(Self::Crop(LoadCropGeometry::try_from(s)?))
+            match LoadCropGeometry::try_from(s) {
+                Ok(geom) => Ok(Self::Crop(geom)),
+                Err(_) => Err(wm_err!("invalid crop geometry: {s:?}")),
+            }
         } else {
             if ascii
                 .iter()
@@ -142,7 +145,7 @@ pub struct LoadCropGeometry {
 }
 
 impl FromStr for LoadCropGeometry {
-    type Err = MagickError;
+    type Err = ArgParseErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_from(OsStr::new(s))
@@ -150,16 +153,15 @@ impl FromStr for LoadCropGeometry {
 }
 
 impl TryFrom<&OsStr> for LoadCropGeometry {
-    type Error = MagickError;
+    type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
         let geom = Geometry::try_from(s)?;
 
-        let convert_field = |field: Option<f64>| -> Result<u32, MagickError> {
-            let f =
-                field.ok_or_else(|| wm_err!("invalid crop geometry: {}", s.to_string_lossy()))?;
+        let convert_field = |field: Option<f64>| -> Result<u32, ArgParseErr> {
+            let f = field.ok_or(ArgParseErr::new())?;
             if f.is_sign_negative() {
-                Err(wm_err!("invalid crop geometry: {}", s.to_string_lossy()))
+                Err(ArgParseErr::new())
             } else {
                 Ok(f as u32)
             }
