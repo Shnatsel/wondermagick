@@ -3,7 +3,7 @@ mod crop;
 mod resize;
 
 use crate::{
-    arg_parsers::{LoadCropGeometry, ResizeGeometry},
+    arg_parsers::{CropGeometry, LoadCropGeometry, ResizeGeometry},
     error::MagickError,
     image::Image,
 };
@@ -15,6 +15,7 @@ pub enum Operation {
     Scale(ResizeGeometry),
     Sample(ResizeGeometry),
     CropOnLoad(LoadCropGeometry),
+    Crop(CropGeometry),
     AutoOrient,
 }
 
@@ -26,6 +27,7 @@ impl Operation {
             Operation::Scale(geom) => resize::scale(image, geom),
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
+            Operation::Crop(geom) => todo!(),
             Operation::AutoOrient => auto_orient::auto_orient(image),
         }
     }

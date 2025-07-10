@@ -1,7 +1,7 @@
 use std::ffi::{OsStr, OsString};
 
 use crate::arg_parse_err::ArgParseErr;
-use crate::arg_parsers::{parse_numeric_arg, InputFileArg, ResizeGeometry};
+use crate::arg_parsers::{parse_numeric_arg, CropGeometry, InputFileArg, ResizeGeometry};
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
@@ -39,7 +39,9 @@ impl ExecutionPlan {
     /// Split into its own function due to lack of try{} blocks on stable Rust.
     fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), ArgParseErr> {
         match arg {
-            Arg::Crop => todo!(),
+            Arg::Crop => {
+                self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
+            }
             Arg::Resize => {
                 self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))
             }
