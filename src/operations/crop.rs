@@ -1,4 +1,4 @@
-use crate::arg_parsers::LoadCropGeometry;
+use crate::arg_parsers::{CropGeometry, LoadCropGeometry};
 use crate::image::Image;
 
 pub fn crop_on_load(
@@ -13,4 +13,30 @@ pub fn crop_on_load(
     let cropped = image.crop_imm(geom.xoffset, geom.yoffset, geom.width, geom.height);
     *image = cropped;
     Ok(())
+}
+
+pub fn crop(image: &mut Image, geom: &CropGeometry) -> Result<(), crate::error::MagickError> {
+    // TODO: lots of flags and edge cases
+    if geom.percentage_mode {
+        panic!("Percentage crop is not yet implemented")
+    }
+
+    let area = geom.area;
+
+    let new_geom = LoadCropGeometry {
+        width: area.width.unwrap_or(image.pixels.width()),
+        height: area.height.unwrap_or(image.pixels.height()),
+        xoffset: area
+            .xoffset
+            .unwrap_or(0)
+            .try_into()
+            .expect("negative crop offsets are not yet implemented"),
+        yoffset: area
+            .yoffset
+            .unwrap_or(0)
+            .try_into()
+            .expect("negative crop offsets are not yet implemented"),
+    };
+
+    crop_on_load(image, &new_geom)
 }

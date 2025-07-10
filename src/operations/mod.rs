@@ -27,7 +27,7 @@ impl Operation {
             Operation::Scale(geom) => resize::scale(image, geom),
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
-            Operation::Crop(geom) => todo!(),
+            Operation::Crop(geom) => crop::crop(image, geom),
             Operation::AutoOrient => auto_orient::auto_orient(image),
         }
     }
