@@ -12,24 +12,71 @@
 //
 // So we just rely on observing the actual behavior of `convert` instead.
 
-use crate::arg_parsers::Geometry;
+use std::{ffi::OsStr, str::FromStr};
+
+use crate::{arg_parse_err::ArgParseErr, arg_parsers::Geometry};
+
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
+pub struct ExtGeometryFlags {
+    /// !
+    exclamation: bool,
+    /// %
+    percent: bool,
+    /// @
+    at: bool,
+    /// ^
+    caret: bool,
+    /// <
+    less_than: bool,
+    /// >
+    greater_than: bool,
+}
 
 /// Intermediate result of extended geometry parsing
 ///
 /// Imagemagick uses the same parser for all [extended geometry](https://www.imagemagick.org/Magick++/Geometry.html).
 /// Parsing is implemented on this struct, and we convert it into more specific structs like [ResizeGeometry] later.
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
-pub struct ExtendedGeometry {
-    flags: ExtendedGeometryFlags,
+pub struct ExtGeometry {
+    flags: ExtGeometryFlags,
     geom: Geometry,
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-pub struct ExtendedGeometryFlags {
-    ignore_aspect_ratio: bool,
-    percentage_mode: bool,
-    area_mode: bool,
-    cover_mode: bool,
-    only_enlarge: bool,
-    only_shrink: bool,
+impl TryFrom<&OsStr> for ExtGeometry {
+    type Error = ArgParseErr;
+
+    fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
+        if !s.is_ascii() {
+            return Err(ArgParseErr::new());
+        }
+        let ascii = s.as_encoded_bytes();
+        let mut ascii = ascii.to_vec();
+
+        // "50!0!x+0!+0" parses as "500x+0+0",
+        // so my guess is that imagemagick scans for special characters and removes them,
+        // then parses the rest as a regular geometry.
+
+        let flags = ExtGeometryFlags {
+            exclamation: find_and_remove_byte(b'!', &mut ascii),
+            percent: find_and_remove_byte(b'%', &mut ascii),
+            at: find_and_remove_byte(b'@', &mut ascii),
+            caret: find_and_remove_byte(b'^', &mut ascii),
+            less_than: find_and_remove_byte(b'<', &mut ascii),
+            greater_than: find_and_remove_byte(b'>', &mut ascii),
+        };
+
+        let geom_str = str::from_utf8(&ascii).unwrap(); // it's ascii, should never panic
+        let geom = Geometry::from_str(geom_str)?;
+
+        Ok(Self { flags, geom })
+    }
 }
+
+/// Returns whether the specified byte was found. Keeps the slice intact if not.
+fn find_and_remove_byte(byte: u8, vec: &mut Vec<u8>) -> bool {
+    let orig_len = vec.len();
+    vec.retain(|elem| *elem != byte);
+    vec.len() != orig_len
+}
+
+// no tests in this module because this parser underpins resize geometry parsing and we test it through that
