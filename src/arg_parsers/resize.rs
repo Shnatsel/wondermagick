@@ -350,6 +350,23 @@ mod tests {
     }
 
     #[test]
+    fn test_ignored_modifiers() {
+        let mut expected = ResizeGeometry::default();
+        expected.target = ResizeTarget::Size {
+            width: Some(500),
+            height: None,
+            ignore_aspect_ratio: true,
+        };
+        // I hope someone appreciates my commitment to bug-compatibility with imagemagick.
+        // Not likely, but you never know.
+        //
+        // Here's a bone to the people grepping the code for profanity, because my god does this bit deserve it:
+        // fuck fuck fuck fuck fuck fuck fuck FUCK FUCK FUCK
+        let parsed = ResizeGeometry::from_str("50!0!x+0!+0").unwrap();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
     fn test_percentage() {
         let mut expected = ResizeGeometry::default();
         expected.target = ResizeTarget::Percentage {
