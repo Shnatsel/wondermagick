@@ -12,6 +12,7 @@ use strum::{EnumString, IntoStaticStr, VariantArray};
 #[derive(EnumString, IntoStaticStr, VariantArray, Debug, Clone, Copy, PartialEq, Eq)]
 #[strum(serialize_all = "kebab-case")]
 pub enum Arg {
+    Crop,
     Resize,
     Thumbnail,
     Scale,
@@ -23,6 +24,7 @@ pub enum Arg {
 impl Arg {
     pub fn needs_value(&self) -> bool {
         match self {
+            Arg::Crop => true,
             Arg::Resize => true,
             Arg::Thumbnail => true,
             Arg::Scale => true,
@@ -34,6 +36,7 @@ impl Arg {
 
     pub fn help_text(&self) -> &'static str {
         match self {
+            Arg::Crop => "cut out a rectangular region of the image",
             Arg::Resize => "resize the image",
             Arg::Thumbnail => "create a thumbnail of the image",
             Arg::Scale => "scale the image",

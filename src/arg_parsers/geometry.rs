@@ -5,22 +5,13 @@
 // but this works:
 // `convert rose: -crop 50x+0 crop_half.gif`
 //
-// It also says:
-// > Extended geometry strings should *only* be used when *resizing an image.*
-// but this works:
-// `convert rose: -crop 50% crop_half.gif`
-// (but maybe -crop is just magical, and other places where geometry can appear aren't like that?)
-//
-// So we just rely on observing the actual behavior of `convert` instead.
-// Note that this isn't targeting any single particular command yet.
-// That is a problem, and this should be changed to adhere to something specific.
+// Maybe it's an extended geometry feature, or maybe it just always works that way and documentation is a lie!
 
 use std::ffi::OsStr;
 use std::fmt::Display;
 use std::str::{self, FromStr};
 
-use crate::error::MagickError;
-use crate::wm_err;
+use crate::arg_parse_err::ArgParseErr;
 
 #[cfg(test)]
 use crate::utils::arbitrary;
@@ -49,11 +40,22 @@ impl Arbitrary for Geometry {
 
 impl Display for Geometry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // fully empty geometry is 'x'
+        if [self.width, self.height, self.xoffset, self.yoffset]
+            .iter()
+            .all(|v| v.is_none())
+        {
+            return write!(f, "x");
+        }
+
         if let Some(w) = self.width {
             write!(f, "{w}")?;
         }
+        if self.height.is_some() || self.xoffset.is_some() || self.yoffset.is_some() {
+            write!(f, "x")?;
+        }
         if let Some(h) = self.height {
-            write!(f, "x{h}")?;
+            write!(f, "{h}")?;
         }
         match (self.xoffset, self.yoffset) {
             (Some(x), Some(y)) => write!(f, "{x:+}{y:+}"),
@@ -65,7 +67,7 @@ impl Display for Geometry {
 }
 
 impl FromStr for Geometry {
-    type Err = MagickError;
+    type Err = ArgParseErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_from(OsStr::new(s))
@@ -73,54 +75,60 @@ impl FromStr for Geometry {
 }
 
 impl TryFrom<&OsStr> for Geometry {
-    type Error = MagickError;
+    type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
-        let invalid_geometry_err = || wm_err!("invalid geometry: {}", s.to_string_lossy());
-
         if !s.is_ascii() {
-            return Err(invalid_geometry_err());
+            return Err(ArgParseErr::new());
         }
 
         let mut ascii = s.as_encoded_bytes();
         let mut result = Geometry::default();
 
         if ascii.len() == 0 {
-            // emptry string yields empty geometry
-            return Ok(result);
+            // emptry string is an error in -resize, -crop and crop-on-load in `convert`
+            return Err(ArgParseErr::new());
         }
 
         if let Some(next_char) = ascii.first() {
             if ![b'x', b'+', b'-'].contains(next_char) {
-                result.width =
-                    Some(read_positive_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
+                result.width = Some(read_positive_float(&mut ascii).ok_or(ArgParseErr::new())?);
             }
         }
         if let Some(next_char) = ascii.first() {
             if next_char == &b'x' {
                 ascii = &ascii[1..]; // skip the 'x'
-                result.height =
-                    Some(read_positive_float(&mut ascii).ok_or_else(invalid_geometry_err)?);
-            }
-        }
-        if let Some(next_char) = ascii.first() {
-            if [b'+', b'-'].contains(next_char) {
-                let offset = read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?;
-                if offset != 0.0 && offset != -0.0 {
-                    result.xoffset = Some(offset);
+
+                if let Some(next_char) = ascii.first() {
+                    // width cannot be signed, if there's a sign it's an offset
+                    if ![b'+', b'-'].contains(next_char) {
+                        result.height =
+                            Some(read_positive_float(&mut ascii).ok_or(ArgParseErr::new())?);
+                    }
                 }
-            }
-        }
-        if let Some(next_char) = ascii.first() {
-            if [b'+', b'-'].contains(next_char) {
-                let offset = read_signed_float(&mut ascii).ok_or_else(invalid_geometry_err)?;
-                if offset != 0.0 && offset != -0.0 {
-                    result.yoffset = Some(offset);
+
+                // We try to read signed offsets afterwards ONLY if there was an 'x' to mimic imagemagick
+                if let Some(next_char) = ascii.first() {
+                    if [b'+', b'-'].contains(next_char) {
+                        let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
+                        result.xoffset = Some(offset);
+                    }
+                }
+                if let Some(next_char) = ascii.first() {
+                    if [b'+', b'-'].contains(next_char) {
+                        let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
+                        result.yoffset = Some(offset);
+                    }
                 }
             }
         }
 
-        Ok(result)
+        if !ascii.is_empty() {
+            // there was some unexpected content at the end we didn't parse
+            Err(ArgParseErr::new())
+        } else {
+            Ok(result)
+        }
     }
 }
 
@@ -181,15 +189,21 @@ mod tests {
 
     #[test]
     fn test_missing_height() {
-        // TODO: not actually tested against anything specific in imagick
+        // Needed for resize and crop (extended) geometry parsing
         let expected = Geometry {
             width: Some(5.0),
             height: None,
             xoffset: Some(15.0),
             yoffset: Some(20.0),
         };
-        let parsed = Geometry::from_str("5+15+20").unwrap();
+        let parsed = Geometry::from_str("5x+15+20").unwrap();
         assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn test_missing_height_invalid() {
+        // resize command rejects this
+        assert!(Geometry::from_str("5+15+20").is_err());
     }
 
     #[test]
@@ -208,7 +222,17 @@ mod tests {
     #[quickcheck]
     fn roundtrip_is_lossless(orig: Geometry) {
         let stringified = orig.to_string();
-        let parsed = Geometry::from_str(&stringified).unwrap();
+        let mut parsed = Geometry::from_str(&stringified).unwrap();
+
+        // In order to express some sort of y offset we need to specify a zero x offset,
+        // so roundtrip cannot be entirely lossless.
+        // We special-case that here.
+        if orig.yoffset.is_some() {
+            if orig.xoffset == Some(0.0) || orig.xoffset == None {
+                parsed.xoffset = orig.xoffset;
+            }
+        }
+
         assert_eq!(orig, parsed)
     }
 }

@@ -1,7 +1,6 @@
 use std::{
     ffi::OsStr,
     fmt::{Display, Write},
-    num::ParseFloatError,
     str::FromStr,
 };
 
@@ -10,7 +9,7 @@ use crate::utils::arbitrary;
 #[cfg(test)]
 use derive_quickcheck_arbitrary::Arbitrary;
 
-use crate::arg_parse_err::ArgParseErr;
+use crate::{arg_parse_err::ArgParseErr, arg_parsers::ExtGeometry};
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 #[cfg_attr(test, derive(Arbitrary))]
@@ -75,8 +74,9 @@ impl Display for ResizeTarget {
                 if let Some(w) = width {
                     write!(f, "{}", w)?;
                 }
+                write!(f, "x")?;
                 if let Some(h) = height {
-                    write!(f, "x{}", h)?;
+                    write!(f, "{}", h)?;
                 }
                 if *ignore_aspect_ratio {
                     f.write_char('!')?;
@@ -138,14 +138,18 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         if !s.is_ascii() {
             return Err(ArgParseErr::new());
         }
-        let ascii = s.as_encoded_bytes();
 
-        let ignore_aspect_ratio = ascii.contains(&b'!');
-        let percentage_mode = ascii.contains(&b'%');
-        let area_mode = ascii.contains(&b'@');
-        let cover_mode = ascii.contains(&b'^');
-        let only_enlarge = ascii.contains(&b'<');
-        let only_shrink = ascii.contains(&b'>');
+        let geom_ext = ExtGeometry::try_from(s)?;
+        let geom = geom_ext.geom;
+        let flags = geom_ext.flags;
+
+        let ignore_aspect_ratio = flags.exclamation;
+        let percentage_mode = flags.percent;
+        let area_mode = flags.at;
+        let cover_mode = flags.caret;
+        let only_enlarge = flags.less_than;
+        let only_shrink = flags.greater_than;
+
         if only_enlarge && only_shrink {
             return Err(ArgParseErr::with_msg(
                 "< and > cannot be specified together",
@@ -158,22 +162,10 @@ impl TryFrom<&OsStr> for ResizeGeometry {
             constraint = ResizeConstraint::OnlyShrink;
         }
 
-        let mut iter = ascii.split(|c| *c == b'x');
-        let width = if let Some(slice) = iter.next() {
-            find_and_parse_float(slice)?
-        } else {
-            None
-        };
-        let height = if let Some(slice) = iter.next() {
-            find_and_parse_float(slice)?
-        } else {
-            None
-        };
-
         let mut target = ResizeTarget::default();
         // If both percentage and area are specified, area takes precedence.
         if area_mode {
-            if let Some(width) = width {
+            if let Some(width) = geom.width {
                 // height is ignored, I've checked
                 target = ResizeTarget::Area(width.round() as u64);
             } else {
@@ -183,7 +175,7 @@ impl TryFrom<&OsStr> for ResizeGeometry {
                 ));
             }
         } else if percentage_mode {
-            match (width, height) {
+            match (geom.width, geom.height) {
                 (None, None) => {} // imagemagick accepts % without a number, which amounts to a no-op
                 (Some(width), None) => {
                     // width but not height being specified means the same scaling applies to both axes
@@ -210,10 +202,10 @@ impl TryFrom<&OsStr> for ResizeGeometry {
             }
         } else if cover_mode {
             // simply passing ^ without any digits is treated as a no-op and not rejected
-            if width.is_some() || height.is_some() {
+            if geom.width.is_some() || geom.height.is_some() {
                 // convert to integers
-                let width = width.map(|f| f.round() as u32);
-                let height = height.map(|f| f.round() as u32);
+                let width = geom.width.map(|f| f.round() as u32);
+                let height = geom.height.map(|f| f.round() as u32);
                 // passing any single dimension (width or height) will cause imagemagick
                 // to apply this rule to both dimensions
                 let width = width.unwrap_or_else(|| height.unwrap());
@@ -222,8 +214,8 @@ impl TryFrom<&OsStr> for ResizeGeometry {
             }
         } else {
             // convert floats that imagemagick FOR SOME REASON accepts as dimensions to integers
-            let width = width.map(|f| f.round() as u32); // imagemagick rounds to nearest
-            let height = height.map(|f| f.round() as u32); // imagemagick rounds to nearest
+            let width = geom.width.map(|f| f.round() as u32); // imagemagick rounds to nearest
+            let height = geom.height.map(|f| f.round() as u32); // imagemagick rounds to nearest
             target = ResizeTarget::Size {
                 width,
                 height,
@@ -231,27 +223,7 @@ impl TryFrom<&OsStr> for ResizeGeometry {
             };
         }
 
-        // The offsets after the resolution, such as +500 or -200, are accepted by the imagemagick parser but ignored.
-        // We don't even bother parsing them.
-
-        Ok(ResizeGeometry { target, constraint })
-    }
-}
-
-fn find_and_parse_float(input: &[u8]) -> Result<Option<f64>, ParseFloatError> {
-    // Yes, imagemagick accepts floating-point image dimensions for resizing.
-    // No, I don't know why either.
-    let number: Vec<u8> = input
-        .iter()
-        .copied()
-        .skip_while(|c| !c.is_ascii_digit())
-        .take_while(|c| c.is_ascii_digit() || *c == b'.')
-        .collect();
-    if number.is_empty() {
-        Ok(None)
-    } else {
-        let number_str = String::from_utf8(number).unwrap();
-        number_str.parse::<f64>().map(|f| Some(f))
+        Ok(Self { target, constraint })
     }
 }
 
@@ -378,6 +350,23 @@ mod tests {
     }
 
     #[test]
+    fn test_ignored_modifiers() {
+        let mut expected = ResizeGeometry::default();
+        expected.target = ResizeTarget::Size {
+            width: Some(500),
+            height: None,
+            ignore_aspect_ratio: true,
+        };
+        // I hope someone appreciates my commitment to bug-compatibility with imagemagick.
+        // Not likely, but you never know.
+        //
+        // Here's a bone to the people grepping the code for profanity, because my god does this bit deserve it:
+        // fuck fuck fuck fuck fuck fuck fuck FUCK FUCK FUCK
+        let parsed = ResizeGeometry::from_str("50!0!x+0!+0").unwrap();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
     fn test_percentage() {
         let mut expected = ResizeGeometry::default();
         expected.target = ResizeTarget::Percentage {
@@ -446,6 +435,11 @@ mod tests {
         let expected = ResizeGeometry::default();
         let parsed = ResizeGeometry::from_str("^").unwrap();
         assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn test_empty_string() {
+        assert!(ResizeGeometry::from_str("").is_err());
     }
 
     #[quickcheck]
