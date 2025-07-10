@@ -95,9 +95,11 @@ impl TryFrom<&OsStr> for Geometry {
                 result.width = Some(read_positive_float(&mut ascii).ok_or(ArgParseErr::new())?);
             }
         }
+        let mut found_x = false;
         if let Some(next_char) = ascii.first() {
             if next_char == &b'x' {
                 ascii = &ascii[1..]; // skip the 'x'
+                found_x = true;
 
                 if let Some(next_char) = ascii.first() {
                     // width cannot be signed, if there's a sign it's an offset
@@ -106,19 +108,22 @@ impl TryFrom<&OsStr> for Geometry {
                             Some(read_positive_float(&mut ascii).ok_or(ArgParseErr::new())?);
                     }
                 }
+            }
+        }
 
-                // We try to read signed offsets afterwards ONLY if there was an 'x' to mimic imagemagick
-                if let Some(next_char) = ascii.first() {
-                    if [b'+', b'-'].contains(next_char) {
-                        let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
-                        result.xoffset = Some(offset);
-                    }
+        // imagemagick permits "+15+20" and "5x+15+20" but not "5+15+20"
+        if result.width.is_none() && result.height.is_none() || found_x {
+            // We try to read signed offsets afterwards ONLY if there was an 'x' to mimic imagemagick
+            if let Some(next_char) = ascii.first() {
+                if [b'+', b'-'].contains(next_char) {
+                    let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
+                    result.xoffset = Some(offset);
                 }
-                if let Some(next_char) = ascii.first() {
-                    if [b'+', b'-'].contains(next_char) {
-                        let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
-                        result.yoffset = Some(offset);
-                    }
+            }
+            if let Some(next_char) = ascii.first() {
+                if [b'+', b'-'].contains(next_char) {
+                    let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
+                    result.yoffset = Some(offset);
                 }
             }
         }
@@ -217,6 +222,19 @@ mod tests {
         let stringified = orig.to_string();
         let parsed = Geometry::from_str(&stringified).unwrap();
         assert_eq!(orig, parsed)
+    }
+
+    #[test]
+    fn test_offsets_only() {
+        // Notably used by the crop command
+        let expected = Geometry {
+            width: None,
+            height: None,
+            xoffset: Some(-15.0),
+            yoffset: Some(20.0),
+        };
+        let parsed = Geometry::from_str("-15+20").unwrap();
+        assert_eq!(parsed, expected);
     }
 
     #[quickcheck]

@@ -438,6 +438,13 @@ mod tests {
     }
 
     #[test]
+    fn test_offsets_only_no_op() {
+        let expected = ResizeGeometry::default();
+        let parsed = ResizeGeometry::from_str("-50+50").unwrap();
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
     fn test_empty_string() {
         assert!(ResizeGeometry::from_str("").is_err());
     }
