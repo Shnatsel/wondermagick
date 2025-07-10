@@ -40,11 +40,22 @@ impl Arbitrary for Geometry {
 
 impl Display for Geometry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // fully empty geometry is 'x'
+        if [self.width, self.height, self.xoffset, self.yoffset]
+            .iter()
+            .all(|v| v.is_none())
+        {
+            return write!(f, "x");
+        }
+
         if let Some(w) = self.width {
             write!(f, "{w}")?;
         }
+        if self.height.is_some() || self.xoffset.is_some() || self.yoffset.is_some() {
+            write!(f, "x")?;
+        }
         if let Some(h) = self.height {
-            write!(f, "x{h}")?;
+            write!(f, "{h}")?;
         }
         match (self.xoffset, self.yoffset) {
             (Some(x), Some(y)) => write!(f, "{x:+}{y:+}"),
@@ -75,8 +86,8 @@ impl TryFrom<&OsStr> for Geometry {
         let mut result = Geometry::default();
 
         if ascii.len() == 0 {
-            // emptry string yields empty geometry
-            return Ok(result);
+            // emptry string is an error in -resize, -crop and crop-on-load in `convert`
+            return Err(ArgParseErr::new());
         }
 
         if let Some(next_char) = ascii.first() {
@@ -87,27 +98,37 @@ impl TryFrom<&OsStr> for Geometry {
         if let Some(next_char) = ascii.first() {
             if next_char == &b'x' {
                 ascii = &ascii[1..]; // skip the 'x'
-                result.height = Some(read_positive_float(&mut ascii).ok_or(ArgParseErr::new())?);
-            }
-        }
-        if let Some(next_char) = ascii.first() {
-            if [b'+', b'-'].contains(next_char) {
-                let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
-                if offset != 0.0 && offset != -0.0 {
-                    result.xoffset = Some(offset);
+
+                if let Some(next_char) = ascii.first() {
+                    // width cannot be signed, if there's a sign it's an offset
+                    if ![b'+', b'-'].contains(next_char) {
+                        result.height =
+                            Some(read_positive_float(&mut ascii).ok_or(ArgParseErr::new())?);
+                    }
                 }
-            }
-        }
-        if let Some(next_char) = ascii.first() {
-            if [b'+', b'-'].contains(next_char) {
-                let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
-                if offset != 0.0 && offset != -0.0 {
-                    result.yoffset = Some(offset);
+
+                // We try to read signed offsets afterwards ONLY if there was an 'x' to mimic imagemagick
+                if let Some(next_char) = ascii.first() {
+                    if [b'+', b'-'].contains(next_char) {
+                        let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
+                        result.xoffset = Some(offset);
+                    }
+                }
+                if let Some(next_char) = ascii.first() {
+                    if [b'+', b'-'].contains(next_char) {
+                        let offset = read_signed_float(&mut ascii).ok_or(ArgParseErr::new())?;
+                        result.yoffset = Some(offset);
+                    }
                 }
             }
         }
 
-        Ok(result)
+        if !ascii.is_empty() {
+            // there was some unexpected content at the end we didn't parse
+            Err(ArgParseErr::new())
+        } else {
+            Ok(result)
+        }
     }
 }
 
@@ -182,7 +203,7 @@ mod tests {
     #[test]
     fn test_missing_height_invalid() {
         // resize command rejects this
-        assert!(Geometry::from_str("5x+15+20").is_err());
+        assert!(Geometry::from_str("5+15+20").is_err());
     }
 
     #[test]
@@ -201,7 +222,17 @@ mod tests {
     #[quickcheck]
     fn roundtrip_is_lossless(orig: Geometry) {
         let stringified = orig.to_string();
-        let parsed = Geometry::from_str(&stringified).unwrap();
+        let mut parsed = Geometry::from_str(&stringified).unwrap();
+
+        // In order to express some sort of y offset we need to specify a zero x offset,
+        // so roundtrip cannot be entirely lossless.
+        // We special-case that here.
+        if orig.yoffset.is_some() {
+            if orig.xoffset == Some(0.0) || orig.xoffset == None {
+                parsed.xoffset = orig.xoffset;
+            }
+        }
+
         assert_eq!(orig, parsed)
     }
 }
