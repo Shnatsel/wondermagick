@@ -177,9 +177,10 @@ impl TryFrom<&OsStr> for LoadCropGeometry {
     }
 }
 
-fn file_exists(path: &OsStr) -> bool {
-    let path = Path::new(path);
-    path.is_file()
+fn file_exists(path: &OsStr) -> Result<bool, std::io::Error> {
+    // imagemagick traverses symlinks, so using fs::metadata is appropriate
+    let data = std::fs::metadata(path)?;
+    Ok(!data.is_dir())
 }
 
 fn split_off_bracketed_suffix(input: &OsStr) -> Option<(OsString, OsString)> {
