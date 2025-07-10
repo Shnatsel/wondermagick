@@ -163,7 +163,8 @@ impl TryFrom<&OsStr> for LoadCropGeometry {
             if f.is_sign_negative() {
                 Err(ArgParseErr::new())
             } else {
-                Ok(f as u32)
+                // imagemagick rounds to nearest, while plain `as` would round down
+                Ok(f.round() as u32)
             }
         };
 
