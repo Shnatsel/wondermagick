@@ -32,7 +32,15 @@ impl InputFileArg {
         // imagemagick will pick "foo.jpg[50x50]".
         // So we have to check if the file exists and if it does,
         // completely skip parsing the read modifiers.
-        if file_exists(input) {
+        //
+        // If it is a folder or a symlink to a folder, it will be skipped,
+        // and the error will be printed for the path with a stripped suffix.
+        //
+        // If the file exists but we don't have permission to read it,
+        // it is still selected, so we can't use `File::open` here.
+        let orig_path_data = std::fs::metadata(input);
+        let orig_path_is_folder = orig_path_data.as_ref().map(|d| d.is_dir());
+        if let Ok(false) = orig_path_is_folder {
             Ok(Self {
                 path: PathBuf::from(input),
                 read_mod: None,
@@ -48,24 +56,33 @@ impl InputFileArg {
                 }
             });
             if let Some((path, modifier)) = parse_result {
-                if file_exists(&path) {
-                    Ok(Self {
+                match std::fs::metadata(&path) {
+                    // imagemagick doesn't care that it's a folder and lets decoders fail later.
+                    // If both "foo.jpg[50x50]" and "foo.jpg" exist and are both folders, "foo.jpg" is selected.
+                    Ok(_) => Ok(Self {
                         path: PathBuf::from(path),
                         read_mod: Some(modifier),
-                    })
-                } else {
-                    // here imagemagick reports the path of the file with modifier removed
-                    Err(wm_err!(
-                        "unable to open image `{}': No such file or directory",
+                    }),
+                    Err(error) => Err(wm_err!(
+                        "unable to open image `{}': {error}",
                         path.to_string_lossy()
-                    )) // TODO: more accurate error reporting
+                    )),
                 }
             } else {
-                // the file does not exist and there is no valid modifier on it
-                Err(wm_err!(
-                    "unable to open image `{}': No such file or directory",
-                    input.to_string_lossy()
-                )) // TODO: more accurate error reporting
+                // no valid modifier found
+                match orig_path_data {
+                    // If we got here, the original input is a folder and parsing modifiers failed.
+                    // imagemagick accepts this as a valid path and lets the decoders fail later on.
+                    Ok(_) => Ok(Self {
+                        path: PathBuf::from(input),
+                        read_mod: None,
+                    }),
+                    // modifier parsing failed and accessing the original path was an error, report it
+                    Err(error) => Err(wm_err!(
+                        "unable to open image `{}': {error}",
+                        input.to_string_lossy()
+                    )),
+                }
             }
         }
     }
@@ -177,10 +194,10 @@ impl TryFrom<&OsStr> for LoadCropGeometry {
     }
 }
 
-fn file_exists(path: &OsStr) -> Result<bool, std::io::Error> {
+fn is_a_folder(path: &OsStr) -> Result<bool, std::io::Error> {
     // imagemagick traverses symlinks, so using fs::metadata is appropriate
     let data = std::fs::metadata(path)?;
-    Ok(!data.is_dir())
+    Ok(data.is_dir())
 }
 
 fn split_off_bracketed_suffix(input: &OsStr) -> Option<(OsString, OsString)> {
