@@ -180,6 +180,9 @@ fn file_exists(path: &OsStr) -> bool {
 }
 
 fn split_off_bracketed_suffix(input: &OsStr) -> Option<(OsString, OsString)> {
+    // TODO: get rid of this platform-specific code once OsString.truncate() is stabilized:
+    // https://doc.rust-lang.org/stable/std/ffi/struct.OsString.html#method.truncate
+    // The bracketed suffix must be ascii, so we can split it off into a `&[u8]` and truncate the rest.
     #[cfg(any(unix, target_os = "wasi"))]
     {
         let bytes = input.as_bytes(); // Provided by std::os::unix::ffi::OsStrExt
