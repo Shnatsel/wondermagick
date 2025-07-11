@@ -10,7 +10,8 @@ pub fn encode<W: Write>(
     writer: &mut W,
     modifiers: &Modifiers,
 ) -> Result<(), MagickError> {
-    let quality = modifiers.quality.unwrap_or(50);
+    // TODO: quality conversion might not be bug-compatible with imagemagick
+    let quality = modifiers.quality.map(|q| q as u8).unwrap_or(50);
     let mut encoder = AvifEncoder::new_with_speed_quality(writer, 4, quality);
     if let Some(icc) = image.icc.clone() {
         let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError

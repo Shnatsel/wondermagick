@@ -15,9 +15,9 @@ pub fn encode<W: Write>(
 
     let encoder: Encoder = Encoder::from_image(pixels).unwrap();
     // imagemagick signals that the image should be lossless with quality=100
-    let lossless = modifiers.quality == Some(100);
+    let lossless = modifiers.quality == Some(100.0);
     // default quality is not documented, was determined experimentally
-    let quality = modifiers.quality.unwrap_or(75) as f32;
+    let quality = modifiers.quality.unwrap_or(75.0) as f32;
 
     // Encode the image with the specified quality
     let webp: WebPMemory = encoder

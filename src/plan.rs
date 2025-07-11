@@ -150,5 +150,5 @@ pub struct FilePlan {
 
 #[derive(Debug, Default)]
 pub struct Modifiers {
-    pub quality: Option<u8>,
+    pub quality: Option<f64>,
 }
