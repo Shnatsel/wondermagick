@@ -13,4 +13,3 @@ mod filename;
 pub use filename::*;
 mod numbers;
 pub use numbers::*;
-mod quality;
