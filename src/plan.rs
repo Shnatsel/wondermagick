@@ -1,7 +1,7 @@
 use std::ffi::{OsStr, OsString};
 
 use crate::arg_parse_err::ArgParseErr;
-use crate::arg_parsers::{parse_numeric_arg, CropGeometry, InputFileArg, ResizeGeometry};
+use crate::arg_parsers::{parse_numeric_arg, CropGeometry, InputFileArg, ResizeGeometry, RotateGeometry};
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
@@ -56,6 +56,9 @@ impl ExecutionPlan {
             }
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
+            Arg::Rotate => {
+                self.add_operation(Operation::Rotate(RotateGeometry::try_from(value.unwrap())?))
+            }
         };
 
         Ok(())

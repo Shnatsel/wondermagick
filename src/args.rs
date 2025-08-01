@@ -19,6 +19,7 @@ pub enum Arg {
     Sample,
     AutoOrient,
     Quality,
+    Rotate,
 }
 
 impl Arg {
@@ -31,6 +32,7 @@ impl Arg {
             Arg::Sample => true,
             Arg::AutoOrient => false,
             Arg::Quality => true,
+            Arg::Rotate => true,
         }
     }
 
@@ -43,6 +45,7 @@ impl Arg {
             Arg::Sample => "scale image with pixel sampling",
             Arg::AutoOrient => "automagically orient (rotate) image",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
+            Arg::Rotate => "apply rotation to the image",
         }
     }
 }
