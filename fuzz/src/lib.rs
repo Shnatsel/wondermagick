@@ -49,15 +49,16 @@ pub fn run_commands_and_compare(
     let wondermagick_output_path = directory.path().join("wondermagick_output.png");
     let imagemagick_output_path = directory.path().join("imagemagick_output.png");
 
-    let wm_convert_status = std::process::Command::new("target/debug/wm-convert")
+    let wm_convert_status = std::process::Command::new("target/release/wm-convert")
         .args(extra_arguments)
         .arg(&wondermagick_output_path)
         .status()
         .expect("must have succeeded");
 
-    let magick_status = std::process::Command::new("magick")
-        .arg("convert")
+    let magick_status = std::process::Command::new("convert")
         .args(extra_arguments)
+        .arg("-quality")
+        .arg("11")
         .arg(&imagemagick_output_path)
         .status()
         .expect("must have succeeded");

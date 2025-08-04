@@ -15,7 +15,8 @@ struct StructuredImage {
 
 impl StructuredImage {
     fn save_as_png(&self, path: impl AsRef<Path>) -> Result<(), std::io::Error> {
-        use image::{ImageBuffer, RgbImage};
+        use image::{codecs::png::PngEncoder, ImageBuffer, ImageEncoder, RgbImage};
+        use std::fs::File;
 
         let img: RgbImage =
             ImageBuffer::from_fn(self.width.get() as u32, self.height.get() as u32, |x, y| {
@@ -27,7 +28,19 @@ impl StructuredImage {
                 ])
             });
 
-        img.save(path)
+        let file = File::create(path)?;
+        let encoder = PngEncoder::new_with_quality(
+            file,
+            image::codecs::png::CompressionType::Fast,
+            image::codecs::png::FilterType::NoFilter,
+        );
+        encoder
+            .write_image(
+                &img,
+                self.width.get() as u32,
+                self.height.get() as u32,
+                image::ExtendedColorType::Rgb8,
+            )
             .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err.to_string()))
     }
 }

@@ -10,13 +10,11 @@ cargo-fuzz = true
 [dependencies]
 arbitrary = { version = "1", features = ["derive"] }
 dssim = "3"
-image = { version = "0.25.4", features = ["gif"] }
+image = "0.25.4"
 libfuzzer-sys = "0.4"
 rgb = "0.8.52"
 tempfile = "3"
-
-[dependencies.wondermagick]
-path = ".."
+wondermagick = { path = ".." }
 
 [[bin]]
 name = "resize"
@@ -24,3 +22,7 @@ path = "fuzz_targets/resize.rs"
 test = false
 doc = false
 bench = false
+
+[patch.crates-io]
+image = {git = "https://github.com/image-rs/image"}
+webp = {git = "https://github.com/Shnatsel/webp", branch = "encoder-soundness"}
