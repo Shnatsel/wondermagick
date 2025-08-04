@@ -1,0 +1,28 @@
+[package]
+name = "wondermagick-fuzz"
+version = "0.1.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+arbitrary = { version = "1", features = ["derive"] }
+dssim = "3"
+image = "0.25.4"
+libfuzzer-sys = "0.4"
+rgb = "0.8.52"
+tempfile = "3"
+wondermagick = { path = ".." }
+
+[[bin]]
+name = "resize"
+path = "fuzz_targets/resize.rs"
+test = false
+doc = false
+bench = false
+
+[patch.crates-io]
+image = {git = "https://github.com/image-rs/image"}
+webp = {git = "https://github.com/Shnatsel/webp", branch = "encoder-soundness"}
