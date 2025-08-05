@@ -5,6 +5,8 @@ mod crop;
 pub use crop::*;
 mod resize;
 pub use resize::*;
+mod rotate;
+pub use rotate::*;
 mod geometry;
 pub(self) use geometry::*;
 mod geometry_ext;

@@ -72,7 +72,7 @@ impl TryFrom<&OsStr> for ExtGeometry {
             // imagemagick permits extended geometry with only one symbol such as @ or ^ and nothing else, which is a no-op
         } else {
             // attempt to parse the remainder as a geometry, which will fail for an emtry string
-            let geom_str = str::from_utf8(&ascii).unwrap(); // it's ascii, should never panic
+            let geom_str = std::str::from_utf8(&ascii).unwrap(); // it's ascii, should never panic
             Geometry::from_str(geom_str)?
         };
 

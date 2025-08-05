@@ -1,9 +1,10 @@
 mod auto_orient;
 mod crop;
 mod resize;
+mod rotate;
 
 use crate::{
-    arg_parsers::{CropGeometry, LoadCropGeometry, ResizeGeometry},
+    arg_parsers::{CropGeometry, LoadCropGeometry, ResizeGeometry, RotateGeometry},
     error::MagickError,
     image::Image,
 };
@@ -17,6 +18,7 @@ pub enum Operation {
     CropOnLoad(LoadCropGeometry),
     Crop(CropGeometry),
     AutoOrient,
+    Rotate(RotateGeometry),
 }
 
 impl Operation {
@@ -29,6 +31,7 @@ impl Operation {
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
             Operation::Crop(geom) => crop::crop(image, geom),
             Operation::AutoOrient => auto_orient::auto_orient(image),
+            Operation::Rotate(geom) => rotate::rotate(image, geom),
         }
     }
 }
