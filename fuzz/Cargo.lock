@@ -103,6 +103,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6099cdc01846bc367c4e7dd630dc5966dccf36b652fae7a74e17b640411a91b2"
 
 [[package]]
+name = "bounded-integer"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "102dbef1187b1893e6dfe05a774e79fd52265f49f214f6879c8ff49f52c8188b"
+dependencies = [
+ "arbitrary",
+]
+
+[[package]]
 name = "built"
 version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1511,6 +1520,7 @@ name = "wondermagick-fuzz"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "bounded-integer",
  "dssim",
  "image",
  "libfuzzer-sys",

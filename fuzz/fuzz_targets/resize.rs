@@ -1,15 +1,19 @@
 #![no_main]
 
-use std::{num::NonZeroU8, path::Path};
+use std::path::Path;
 
 use arbitrary::Unstructured;
+use bounded_integer::BoundedU16;
 use image::GenericImageView;
 use libfuzzer_sys::fuzz_target;
 
+const MAX_WIDTH: u16 = 1024;
+const MAX_HEIGHT: u16 = 1024;
+
 #[derive(Debug)]
 struct StructuredImage {
-    width: NonZeroU8,
-    height: NonZeroU8,
+    width: BoundedU16<1, MAX_WIDTH>,
+    height: BoundedU16<1, MAX_HEIGHT>,
     rgb_data: Vec<u8>,
 }
 
@@ -47,8 +51,8 @@ impl StructuredImage {
 
 impl<'a> arbitrary::Arbitrary<'a> for StructuredImage {
     fn arbitrary(unstructured: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        let width: NonZeroU8 = unstructured.arbitrary()?;
-        let height: NonZeroU8 = unstructured.arbitrary()?;
+        let width: BoundedU16<1, MAX_WIDTH> = unstructured.arbitrary()?;
+        let height: BoundedU16<1, MAX_HEIGHT> = unstructured.arbitrary()?;
         let rgb_data_len = width.get() as usize * height.get() as usize * 3;
         let rgb_data = unstructured.bytes(rgb_data_len)?;
 
@@ -60,7 +64,11 @@ impl<'a> arbitrary::Arbitrary<'a> for StructuredImage {
     }
 }
 
-fuzz_target!(|input: (StructuredImage, NonZeroU8, NonZeroU8)| {
+fuzz_target!(|input: (
+    StructuredImage,
+    BoundedU16<1, MAX_WIDTH>,
+    BoundedU16<1, MAX_HEIGHT>
+)| {
     let (image, new_width, new_height) = input;
     let new_width = new_width.get() as u32;
     let new_height = new_height.get() as u32;
