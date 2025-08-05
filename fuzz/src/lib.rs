@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    ffi::OsString,
+    path::{Path, PathBuf},
+};
 
 use tempfile::TempDir;
 
@@ -49,23 +52,24 @@ pub fn run_commands_and_compare(
     let wondermagick_output_path = directory.path().join("wondermagick_output.png");
     let imagemagick_output_path = directory.path().join("imagemagick_output.png");
 
-    let wm_convert_status = std::process::Command::new("target/release/wm-convert")
-        .args(extra_arguments)
-        .arg(&wondermagick_output_path)
-        .status()
-        .expect("must have succeeded");
+    let mut common_arguments = extra_arguments.to_vec();
+    common_arguments.push("-quality");
+    common_arguments.push("11");
+
+    let plan = {
+        let mut wm_arguments = vec![OsString::from("target/release/wm-convert")];
+        wm_arguments.extend(common_arguments.iter().map(OsString::from));
+        wm_arguments.push(wondermagick_output_path.as_os_str().to_os_string());
+        wondermagick::args::parse_args(wm_arguments).expect("must have succeeded")
+    };
+    plan.execute().expect("must have succeeded");
 
     let magick_status = std::process::Command::new("convert")
-        .args(extra_arguments)
-        .arg("-quality")
-        .arg("11")
+        .args(common_arguments)
         .arg(&imagemagick_output_path)
         .status()
         .expect("must have succeeded");
 
-    if !wm_convert_status.success() {
-        panic!("wondermagick command failed");
-    }
     if !magick_status.success() {
         panic!("imagemagick command failed");
     }
