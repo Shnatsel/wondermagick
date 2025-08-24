@@ -49,6 +49,8 @@ pub fn run_commands_and_compare(
     directory: &TempDir,
     extra_arguments: &[&str],
 ) -> (PathBuf, PathBuf) {
+    use image::GenericImageView as _;
+
     let wondermagick_output_path = directory.path().join("wondermagick_output.png");
     let imagemagick_output_path = directory.path().join("imagemagick_output.png");
 
@@ -73,6 +75,24 @@ pub fn run_commands_and_compare(
     if !magick_status.success() {
         panic!("imagemagick command failed");
     }
+
+    let (wondermagick_output_image_width, wondermagick_output_image_height) =
+        image::open(&wondermagick_output_path)
+            .expect("could not open the WonderMagick output file")
+            .dimensions();
+    let (imagemagick_output_image_width, imagemagick_output_image_height) =
+        image::open(&imagemagick_output_path)
+            .expect("could not open the WonderMagick output file")
+            .dimensions();
+
+    assert_eq!(
+        imagemagick_output_image_width,
+        wondermagick_output_image_width
+    );
+    assert_eq!(
+        imagemagick_output_image_height,
+        wondermagick_output_image_height
+    );
 
     let dssim_score = compute_visual_diff(&wondermagick_output_path, &imagemagick_output_path);
     if dssim_score > DSSIM_TOLERANCE {
