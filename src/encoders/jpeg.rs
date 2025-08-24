@@ -1,8 +1,8 @@
 use std::io::Write;
 
 use image::codecs::jpeg::JpegEncoder;
-use image::ImageEncoder;
 
+use crate::encoders::common::write_icc_and_exif;
 use crate::{error::MagickError, image::Image, plan::Modifiers, wm_try};
 
 pub fn encode<W: Write>(
@@ -18,9 +18,7 @@ pub fn encode<W: Write>(
         None => 92, // imagemagick default
     };
     let mut encoder = JpegEncoder::new_with_quality(writer, quality);
-    if let Some(icc) = image.icc.clone() {
-        let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError
-    };
+    write_icc_and_exif(&mut encoder, image);
     Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
 }
 

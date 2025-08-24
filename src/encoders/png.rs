@@ -1,8 +1,8 @@
 use std::io::Write;
 
 use image::codecs::png::{CompressionType, FilterType, PngEncoder};
-use image::ImageEncoder;
 
+use crate::encoders::common::write_icc_and_exif;
 use crate::plan::Modifiers;
 use crate::wm_err;
 use crate::{error::MagickError, image::Image, wm_try};
@@ -14,9 +14,7 @@ pub fn encode<W: Write>(
 ) -> Result<(), MagickError> {
     let (compression, filter) = quality_to_compression_parameters(modifiers.quality)?;
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
-    if let Some(icc) = image.icc.clone() {
-        let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError
-    };
+    write_icc_and_exif(&mut encoder, image);
     Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
 }
 
