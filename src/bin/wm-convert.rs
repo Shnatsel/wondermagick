@@ -3,6 +3,7 @@ use wondermagick::{args, error::MagickError, help};
 fn main() {
     if let Err(e) = real_main() {
         eprintln!("{}", e);
+        std::process::exit(1);
     }
 }
 
