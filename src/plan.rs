@@ -111,6 +111,7 @@ impl ExecutionPlan {
         if self.input_files.is_empty() {
             return Err(wm_err!("no images defined")); // mimics imagemagick
         }
+        crate::init::init();
         for (file_plan, output_file) in self.input_files.iter().zip(self.output_filenames().iter())
         {
             let mut image = wm_try!(decode(&file_plan.filename, None));
