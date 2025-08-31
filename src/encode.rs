@@ -15,12 +15,11 @@ pub fn encode(
     // Wrap in BufWriter for performance
     let mut writer = BufWriter::new(file);
 
-    let format = if let Some(format) = format {
-        format
-    } else {
-        // TODO: instead of rejecting unknown format, reuse the input format as imagemagick does
-        wm_try!(ImageFormat::from_path(file_path))
-    };
+    // If format is unspecified, guess based on the output path;
+    // if that fails, use the input format (like ImageMagick)
+    let format = format
+        .or_else(|| ImageFormat::from_path(file_path).ok())
+        .unwrap_or(image.format);
 
     match format {
         // TODO: dedicated encoders for way more formats
