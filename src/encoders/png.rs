@@ -30,8 +30,7 @@ fn quality_to_compression_parameters(
         let quality = quality as u64;
 
         let compression = match quality / 10 {
-            0 => CompressionType::Uncompressed,
-            n @ 1..=9 => CompressionType::Level(n as u8),
+            n @ 0..=9 => CompressionType::Level(n as u8),
             10.. => CompressionType::Level(9), // in imagemagick large values are treated as 9
         };
         let filter = match quality % 10 {
