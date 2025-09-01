@@ -8,7 +8,7 @@ repository = "https://github.com/Shnatsel/wondermagick"
 
 [dependencies]
 current_platform = "0.2.0"
-image = "0.25.4"
+image = "0.25.7"
 pic-scale-safe = "0.1.1"
 strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.1"
@@ -38,5 +38,5 @@ opt-level = 3
 # we don't need unwinding because we don't ever catch panics
 panic = "abort"
 
-[patch.crates-io]
-image = {git = "https://github.com/image-rs/image"}
+#[patch.crates-io]
+#image = {git = "https://github.com/image-rs/image"}
