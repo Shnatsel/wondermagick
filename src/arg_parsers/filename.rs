@@ -14,6 +14,8 @@ use std::os::windows::ffi::OsStrExt;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStringExt;
 
+use image::ImageFormat;
+
 use crate::{arg_parse_err::ArgParseErr, error::MagickError, wm_err};
 
 use super::{Geometry, ResizeGeometry};
@@ -21,7 +23,7 @@ use super::{Geometry, ResizeGeometry};
 #[derive(Debug, Clone, PartialEq)]
 pub struct InputFileArg {
     pub path: PathBuf,
-    //format: Option<String>, // TODO: turn into an enum and enable
+    pub format: Option<ImageFormat>,
     pub read_mod: Option<ReadModifier>,
 }
 
@@ -43,6 +45,7 @@ impl InputFileArg {
         if let Ok(false) = orig_path_is_folder {
             Ok(Self {
                 path: PathBuf::from(input),
+                format: None,
                 read_mod: None,
             })
         } else {
@@ -56,11 +59,15 @@ impl InputFileArg {
                 }
             });
             if let Some((path, modifier)) = parse_result {
+                // "format:path" splitting must only be done after "[...]" suffix removal
+                // to prevent splitting "[x:y]" (aspect ratio) modifier
+                let (path, format) = parse_path_and_format(&path);
                 match std::fs::metadata(&path) {
                     // imagemagick doesn't care that it's a folder and lets decoders fail later.
                     // If both "foo.jpg[50x50]" and "foo.jpg" exist and are both folders, "foo.jpg" is selected.
                     Ok(_) => Ok(Self {
                         path: PathBuf::from(path),
+                        format,
                         read_mod: Some(modifier),
                     }),
                     Err(error) => Err(wm_err!(
@@ -75,6 +82,7 @@ impl InputFileArg {
                     // imagemagick accepts this as a valid path and lets the decoders fail later on.
                     Ok(_) => Ok(Self {
                         path: PathBuf::from(input),
+                        format: None,
                         read_mod: None,
                     }),
                     // modifier parsing failed and accessing the original path was an error, report it
@@ -297,6 +305,52 @@ fn split_off_bracketed_suffix(input: &OsStr) -> Option<(OsString, OsString)> {
     }
 }
 
+/// Parses ImageMagick `format:path`-style argument.
+pub fn parse_path_and_format(input: &OsStr) -> (OsString, Option<ImageFormat>) {
+    // Helper that returns the result in a slightly different shape
+    fn inner(input: &OsStr) -> Option<(OsString, ImageFormat)> {
+        #[cfg(any(unix, target_os = "wasi"))]
+        {
+            let bytes = input.as_bytes(); // From std::os::unix::ffi::OsStrExt
+            let mut iter = bytes.splitn(2, |&b| b == b':');
+            let prefix = iter.next().unwrap();
+            let suffix = iter.next()?;
+            Some((
+                OsStr::from_bytes(suffix).to_owned(), // From std::os::unix::ffi::OsStrExt
+                ImageFormat::from_extension(str::from_utf8(prefix).ok()?)?,
+            ))
+        }
+        #[cfg(windows)]
+        {
+            let wide_chars: Vec<u16> = input.encode_wide().collect(); // From std::os::windows::ffi::OsStrExt
+            let mut iter = wide_chars.splitn(2, |&wc| wc == b':' as u16);
+            let prefix = iter.next().unwrap();
+            // On Windows, ImageMagick treats "c:..." as a path
+            if prefix.len() == 1
+                && u8::try_from(prefix[0]).map(|c| c.is_ascii_alphabetic()) == Ok(true)
+            {
+                return None;
+            }
+            let suffix = iter.next()?;
+            Some((
+                OsString::from_wide(suffix), // From std::os::windows::ffi::OsStringExt
+                ImageFormat::from_extension(String::from_utf16(prefix).ok()?)?,
+            ))
+        }
+        #[cfg(not(any(unix, windows, target_os = "wasi")))]
+        {
+            // Outside the above platforms, we only support splitting UTF-8
+            let input = input.to_str()?;
+            let (prefix, suffix) = input.split_once(':')?;
+            Some((OsString::from(suffix), ImageFormat::from_extension(prefix)?))
+        }
+    }
+
+    inner(input)
+        .map(|(path, format)| (path, Some(format)))
+        .unwrap_or_else(|| (input.to_owned(), None))
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -397,5 +451,37 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_parse_path_and_format() {
+        assert_eq!(
+            parse_path_and_format(OsStr::new("file.png")),
+            (OsString::from("file.png"), None),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new("jpg:file.png")),
+            (OsString::from("file.png"), Some(ImageFormat::Jpeg)),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new("jpg:")),
+            (OsString::from(""), Some(ImageFormat::Jpeg)),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new("")),
+            (OsString::from(""), None),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new(":")),
+            (OsString::from(":"), None),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new(":file.png")),
+            (OsString::from(":file.png"), None),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new("unsupported_format:file.png")),
+            (OsString::from("unsupported_format:file.png"), None),
+        );
     }
 }
