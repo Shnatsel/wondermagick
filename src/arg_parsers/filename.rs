@@ -464,6 +464,14 @@ mod tests {
             (OsString::from("file.png"), Some(ImageFormat::Jpeg)),
         );
         assert_eq!(
+            parse_path_and_format(OsStr::new("jpeg:file.png")),
+            (OsString::from("file.png"), Some(ImageFormat::Jpeg)),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new("JPEG:file.png")),
+            (OsString::from("file.png"), Some(ImageFormat::Jpeg)),
+        );
+        assert_eq!(
             parse_path_and_format(OsStr::new("jpg:")),
             (OsString::from(""), Some(ImageFormat::Jpeg)),
         );
