@@ -5,7 +5,12 @@
 
 use std::ffi::{OsStr, OsString};
 
-use crate::{arg_parsers::InputFileArg, error::MagickError, plan::ExecutionPlan, wm_err};
+use crate::{
+    arg_parsers::{parse_path_and_format, InputFileArg},
+    error::MagickError,
+    plan::ExecutionPlan,
+    wm_err,
+};
 
 use strum::{EnumString, IntoStaticStr, VariantArray};
 
@@ -68,7 +73,8 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     }
 
     let mut plan = ExecutionPlan::default();
-    plan.set_output_file(output_filename);
+    let (output_filename, output_format) = parse_path_and_format(&output_filename);
+    plan.set_output_file(output_filename, output_format);
 
     let mut iter = args.into_iter().skip(1); // skip argv[0], path to our binary
     while let Some(raw_arg) = iter.next() {

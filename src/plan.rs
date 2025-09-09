@@ -1,5 +1,7 @@
 use std::ffi::{OsStr, OsString};
 
+use image::ImageFormat;
+
 use crate::arg_parse_err::ArgParseErr;
 use crate::arg_parsers::{parse_numeric_arg, CropGeometry, InputFileArg, ResizeGeometry};
 use crate::args::Arg;
@@ -15,6 +17,7 @@ pub struct ExecutionPlan {
     global_ops: Vec<Operation>,
     output_file: OsString,
     input_files: Vec<FilePlan>,
+    output_format: Option<ImageFormat>,
     modifiers: Modifiers,
 }
 
@@ -80,6 +83,7 @@ impl ExecutionPlan {
 
         let mut file_plan = FilePlan {
             filename,
+            format: file.format,
             ops: self.global_ops.clone(),
         };
 
@@ -103,8 +107,9 @@ impl ExecutionPlan {
         self.input_files.push(file_plan);
     }
 
-    pub fn set_output_file(&mut self, file: OsString) {
+    pub fn set_output_file(&mut self, file: OsString, format: Option<ImageFormat>) {
         self.output_file = file;
+        self.output_format = format;
     }
 
     pub fn execute(&self) -> Result<(), MagickError> {
@@ -113,13 +118,13 @@ impl ExecutionPlan {
         }
         for (file_plan, output_file) in self.input_files.iter().zip(self.output_filenames().iter())
         {
-            let mut image = wm_try!(decode(&file_plan.filename, None));
+            let mut image = wm_try!(decode(&file_plan.filename, file_plan.format));
 
             for operation in &file_plan.ops {
                 operation.execute(&mut image)?;
             }
 
-            encode::encode(&image, &output_file, None, &self.modifiers)?;
+            encode::encode(&image, &output_file, self.output_format, &self.modifiers)?;
         }
 
         Ok(())
@@ -145,6 +150,7 @@ impl ExecutionPlan {
 #[derive(Debug, Default)]
 pub struct FilePlan {
     pub filename: OsString,
+    pub format: Option<ImageFormat>,
     pub ops: Vec<Operation>,
 }
 
