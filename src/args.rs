@@ -5,7 +5,12 @@
 
 use std::ffi::{OsStr, OsString};
 
-use crate::{arg_parsers::InputFileArg, error::MagickError, plan::ExecutionPlan, wm_err};
+use crate::{
+    arg_parsers::{parse_path_and_format, InputFileArg},
+    error::MagickError,
+    plan::ExecutionPlan,
+    wm_err,
+};
 
 use strum::{EnumString, IntoStaticStr, VariantArray};
 
@@ -60,21 +65,22 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     // the observed behavior on my system is that they're only ever parsed as flags.
     let output_filename = args.pop().unwrap();
     // imagemagick rejects output filenames that look like arguments
-    if starts_with_sign(&output_filename) {
+    if optionlike(&output_filename) {
         return Err(wm_err!(
-            "missing an image filename `{}'",
+            "missing output filename `{}'",
             output_filename.to_string_lossy()
         ));
     }
 
     let mut plan = ExecutionPlan::default();
-    plan.set_output_file(output_filename);
+    let (output_filename, output_format) = parse_path_and_format(&output_filename);
+    plan.set_output_file(output_filename, output_format);
 
     let mut iter = args.into_iter().skip(1); // skip argv[0], path to our binary
     while let Some(raw_arg) = iter.next() {
         if raw_arg.as_encoded_bytes() == [b'-'] {
             todo!(); // this is stdin or stdout
-        } else if starts_with_sign(&raw_arg) {
+        } else if optionlike(&raw_arg) {
             // A file named "-foobar.jpg" will be parsed as an option.
             // Sadly imagemagick does not support the -- convention to separate options and filenames,
             // and there is nothing we can do about it without introducing incompatibility in argument parsing.
@@ -90,13 +96,12 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     Ok(plan)
 }
 
-/// Checks if the string starts with a `-` or a `+`
-fn starts_with_sign(arg: &OsStr) -> bool {
-    let first_byte = arg.as_encoded_bytes().first();
-    first_byte == Some(&b'-')
-        || first_byte == Some(&b'+')
-    // Anything starting with two dashes instead of one is treated as filename
-    && arg.as_encoded_bytes().get(1) != Some(&b'-')
+/// Checks if the string starts with a `-` or a `+`, followed by an ASCII letter
+fn optionlike(arg: &OsStr) -> bool {
+    matches!(
+        arg.as_encoded_bytes(),
+        [b'-' | b'+', b'a'..=b'z' | b'A'..=b'Z', ..],
+    )
 }
 
 /// Splits the string into a sign (- or +) and argument name
