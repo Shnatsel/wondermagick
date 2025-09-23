@@ -28,12 +28,10 @@ fn quality_to_compression_parameters(
             return Err(wm_err!("PNG quality cannot be negative"));
         }
         let quality = quality as u64;
-        // TODO: correct quality mapping is blocked on upstream issue:
-        // https://github.com/image-rs/image/issues/2495
+
         let compression = match quality / 10 {
-            0..=2 => CompressionType::Fast,
-            3..=7 => CompressionType::Default,
-            8.. => CompressionType::Best, // in imagemagick large values are treated as 9
+            n @ 0..=9 => CompressionType::Level(n as u8),
+            10.. => CompressionType::Level(9), // in imagemagick large values are treated as 9
         };
         let filter = match quality % 10 {
             0 => FilterType::NoFilter,
@@ -59,6 +57,7 @@ fn quality_to_compression_parameters(
             Ok((compression, filter))
         }
     } else {
-        Ok((CompressionType::Default, FilterType::Adaptive))
+        // default is 75 as per https://legacy.imagemagick.org/script/command-line-options.php#quality
+        Ok((CompressionType::Level(7), FilterType::Adaptive))
     }
 }
