@@ -30,12 +30,7 @@ impl Operation {
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
             Operation::Crop(geom) => crop::crop(image, geom),
-            Operation::Identify => {
-                let info = identify::identify(image)
-                    .unwrap_or_else(|e| format!("Failed to identify image: {}", e));
-                println!("{}", info);
-                Ok(())
-            }
+            Operation::Identify => identify::identify(image),
             Operation::AutoOrient => auto_orient::auto_orient(image),
         }
     }
