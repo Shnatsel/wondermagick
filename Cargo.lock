@@ -42,21 +42,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "android-tzdata"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e999941b234f3131b00bc13c22d06e8c5ff726d1b6318ac7eb276997bbb4fef0"
-
-[[package]]
-name = "android_system_properties"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "819e7219dbd41043ac279b19830f2efc897156490d7fd6ea916720117ee66311"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "anyhow"
 version = "1.0.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -194,30 +179,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
 
 [[package]]
-name = "chrono"
-version = "0.4.41"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c469d952047f47f91b68d1cba3f10d63c11d73e4636f24f08daf0278abf01c4d"
-dependencies = [
- "android-tzdata",
- "iana-time-zone",
- "js-sys",
- "num-traits",
- "wasm-bindgen",
- "windows-link",
-]
-
-[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
-
-[[package]]
-name = "core-foundation-sys"
-version = "0.8.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
 name = "crc32fast"
@@ -435,33 +400,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
-name = "iana-time-zone"
-version = "0.1.63"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0c919e5debc312ad217002b8048a17b7d83f80703865bbfcfebb0458b0b27d8"
-dependencies = [
- "android_system_properties",
- "core-foundation-sys",
- "iana-time-zone-haiku",
- "js-sys",
- "log",
- "wasm-bindgen",
- "windows-core",
-]
-
-[[package]]
-name = "iana-time-zone-haiku"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f31827a206f56af32e590ba56d5d2d085f558508192593743f16b2306495269f"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "image"
-version = "0.25.7"
-source = "git+https://github.com/image-rs/image.git#8b0881b6ac4394fbfbfd4d936cbbc1041548b298"
+version = "0.25.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "529feb3e6769d234375c4cf1ee2ce713682b8e76538cb13f9fc23e1400a591e7"
 dependencies = [
  "bytemuck",
  "byteorder-lite",
@@ -469,7 +411,7 @@ dependencies = [
  "exr",
  "gif",
  "image-webp",
- "moxcms 0.7.5",
+ "moxcms",
  "num-traits",
  "png",
  "qoi",
@@ -538,19 +480,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "js-sys"
-version = "0.3.77"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cfaf33c695fc6e08064efbc1f72ec937429614f25eef83af942d0e227c3a28f"
-dependencies = [
- "once_cell",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "jxl-bitstream"
-version = "1.0.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b480e752277e29eb4054f69546887a9b84656fe78c08f54ba5850ced98a378fe"
 dependencies = [
  "tracing",
 ]
@@ -558,7 +491,8 @@ dependencies = [
 [[package]]
 name = "jxl-coding"
 version = "1.0.1"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd972bcd125e776f1eb241ac50e39f956095a1c2770c64736c968f8946bd9a3c"
 dependencies = [
  "jxl-bitstream",
  "tracing",
@@ -567,7 +501,8 @@ dependencies = [
 [[package]]
 name = "jxl-color"
 version = "0.11.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f316b1358c1711755b3ee8e8cb5c4a1dad12e796233088a7a513440782de80b2"
 dependencies = [
  "jxl-bitstream",
  "jxl-coding",
@@ -581,7 +516,8 @@ dependencies = [
 [[package]]
 name = "jxl-frame"
 version = "0.13.3"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d967c6fd669c7c01060b5022d8835fa82fd46b06ffc98b549f17600a097c2b3"
 dependencies = [
  "jxl-bitstream",
  "jxl-coding",
@@ -597,7 +533,8 @@ dependencies = [
 [[package]]
 name = "jxl-grid"
 version = "0.6.1"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0e0ef92d5d60e76bf41098e57e985f523185e08fad54268da448637feca6989"
 dependencies = [
  "tracing",
 ]
@@ -605,7 +542,8 @@ dependencies = [
 [[package]]
 name = "jxl-image"
 version = "0.13.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5f752d62577c702a94dbbce4045caf08cb58639e8a4d56464b40ecf33ffe565"
 dependencies = [
  "jxl-bitstream",
  "jxl-grid",
@@ -616,7 +554,8 @@ dependencies = [
 [[package]]
 name = "jxl-jbr"
 version = "0.2.1"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e35d032bcec660647828527ff42c6f5776d2fd44b8357f9f6d9ac6dc07218e46"
 dependencies = [
  "brotli-decompressor",
  "jxl-bitstream",
@@ -633,7 +572,8 @@ dependencies = [
 [[package]]
 name = "jxl-modular"
 version = "0.11.2"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da758b2f989aafd9eeb39489fe43d7be5a3a0d2ad61cf1bad705eb6990a6053c"
 dependencies = [
  "jxl-bitstream",
  "jxl-coding",
@@ -645,8 +585,9 @@ dependencies = [
 
 [[package]]
 name = "jxl-oxide"
-version = "0.12.4"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+version = "0.12.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee8ecd2678ed70c1eda42b811ccb2e25ab836edeb18e7f1178c1f917ed36b772"
 dependencies = [
  "brotli-decompressor",
  "bytemuck",
@@ -660,14 +601,15 @@ dependencies = [
  "jxl-oxide-common",
  "jxl-render",
  "jxl-threadpool",
- "moxcms 0.6.4",
+ "moxcms",
  "tracing",
 ]
 
 [[package]]
 name = "jxl-oxide-common"
 version = "1.0.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b62394c5021b3a9e7e0dbb2d639d555d019090c9946c39f6d3b09d390db4157b"
 dependencies = [
  "jxl-bitstream",
 ]
@@ -675,7 +617,8 @@ dependencies = [
 [[package]]
 name = "jxl-render"
 version = "0.12.3"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa0c3100918bd3c41bb0f8ce1f4f1664e48f3032ff8eeab0d6a2cfc3276f462d"
 dependencies = [
  "bytemuck",
  "jxl-bitstream",
@@ -694,7 +637,8 @@ dependencies = [
 [[package]]
 name = "jxl-threadpool"
 version = "1.0.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25f15eb830aa77a7f21148d72e153562a26bfe570139bd4922eab1908dd499d3"
 dependencies = [
  "rayon",
  "rayon-core",
@@ -704,7 +648,8 @@ dependencies = [
 [[package]]
 name = "jxl-vardct"
 version = "0.11.1"
-source = "git+https://github.com/Shnatsel/jxl-oxide.git?branch=image-decoding-hook#719f1a18fba20a410b3b15ab740d303429d738f6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce72a18c6d3a47172ab6c479be2bdb56f22066b5d7092663f03b4490820b4511"
 dependencies = [
  "jxl-bitstream",
  "jxl-coding",
@@ -811,16 +756,6 @@ checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
 dependencies = [
  "adler2",
  "simd-adler32",
-]
-
-[[package]]
-name = "moxcms"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "154cecde340309c40d67acd50e4f4a0ba99960ff13e786cf211ebcc6aa490085"
-dependencies = [
- "chrono",
- "num-traits",
 ]
 
 [[package]]
@@ -1532,65 +1467,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a751b3277700db47d3e574514de2eced5e54dc8a5436a3bf7a0b248b2cee16f3"
 
 [[package]]
-name = "windows-core"
-version = "0.61.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0fdd3ddb90610c7638aa2b3a3ab2904fb9e5cdbecc643ddb3647212781c4ae3"
-dependencies = [
- "windows-implement",
- "windows-interface",
- "windows-link",
- "windows-result",
- "windows-strings",
-]
-
-[[package]]
-name = "windows-implement"
-version = "0.60.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a47fddd13af08290e67f4acabf4b459f647552718f683a7b415d290ac744a836"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "windows-interface"
-version = "0.59.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd9211b69f8dcdfa817bfd14bf1c97c9188afa36f4750130fcdf3f400eca9fa8"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "windows-link"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e6ad25900d524eaabdbbb96d20b4311e1e7ae1699af4fb28c17ae66c80d798a"
-
-[[package]]
-name = "windows-result"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56f42bd332cc6c8eac5af113fc0c1fd6a8fd2aa08a0119358686e5160d0586c6"
-dependencies = [
- "windows-link",
-]
-
-[[package]]
-name = "windows-strings"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56e6c93f3a0c3b36176cb1327a4958a0353d5d166c2a35cb268ace15e91d3b57"
-dependencies = [
- "windows-link",
-]
-
-[[package]]
 name = "winnow"
 version = "0.7.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1664,3 +1540,8 @@ checksum = "fc1f7e205ce79eb2da3cd71c5f55f3589785cb7c79f6a03d1c8d1491bda5d089"
 dependencies = [
  "zune-core",
 ]
+
+[[patch.unused]]
+name = "image"
+version = "0.25.7"
+source = "git+https://github.com/image-rs/image.git#8b0881b6ac4394fbfbfd4d936cbbc1041548b298"
