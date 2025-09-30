@@ -1,8 +1,13 @@
-use std::{ffi::OsStr, fs::File, io::BufWriter, io::Write};
+use std::{
+    ffi::OsStr,
+    fs::File,
+    io::{BufWriter, Write},
+    path::Path,
+};
 
 use image::ImageFormat;
 
-use crate::{encoders, image::Image, plan::Modifiers, wm_try};
+use crate::{encoders, image::Image, plan::Modifiers, wm_err, wm_try};
 
 pub fn encode(
     image: &mut Image,
@@ -53,8 +58,16 @@ fn encode_inner(
     // If format is unspecified, guess based on the output path;
     // if that fails, use the input format (like ImageMagick)
     let format = format
-        .or_else(|| ImageFormat::from_path(file_path).ok())
-        .unwrap_or(image.format);
+        .ok_or_else(|| ImageFormat::from_path(file_path))
+        .or_else(|_| {
+            image.format.ok_or(wm_err!(
+                "no decode delegate for this image format `{}'",
+                Path::new(file_path)
+                    .extension()
+                    .unwrap_or(OsStr::new(""))
+                    .display()
+            ))
+        })?;
 
     match format {
         // TODO: dedicated encoders for all other formats that have quality settings
