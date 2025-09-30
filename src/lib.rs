@@ -18,6 +18,7 @@ pub mod error;
 mod filename_utils;
 pub mod help;
 mod image;
+mod init;
 mod operations;
 mod plan;
 mod utils;
