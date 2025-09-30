@@ -7,14 +7,14 @@ use std::{
 
 use image::ImageFormat;
 
-use crate::{encoders, image::Image, plan::Modifiers, wm_err, wm_try};
+use crate::{encoders, error::MagickError, image::Image, plan::Modifiers, wm_err, wm_try};
 
 pub fn encode(
     image: &mut Image,
     file_path: &OsStr,
     format: Option<ImageFormat>,
     modifiers: &Modifiers,
-) -> Result<(), crate::error::MagickError> {
+) -> Result<(), MagickError> {
     // This is a wrapper function that clears metadata if options like -strip are specified.
     //
     // Correctly stripping metadata when requested is a major privacy concern:
@@ -49,25 +49,13 @@ fn encode_inner(
     file_path: &OsStr,
     format: Option<ImageFormat>,
     modifiers: &Modifiers,
-) -> Result<(), crate::error::MagickError> {
+) -> Result<(), MagickError> {
     // `File::create` automatically truncates (overwrites) the file if it exists.
     let file = wm_try!(File::create(file_path));
     // Wrap in BufWriter for performance
     let mut writer = BufWriter::new(file);
 
-    // If format is unspecified, guess based on the output path;
-    // if that fails, use the input format (like ImageMagick)
-    let format = format
-        .ok_or_else(|| ImageFormat::from_path(file_path))
-        .or_else(|_| {
-            image.format.ok_or(wm_err!(
-                "no decode delegate for this image format `{}'",
-                Path::new(file_path)
-                    .extension()
-                    .unwrap_or(OsStr::new(""))
-                    .display()
-            ))
-        })?;
+    let format = choose_encoding_format(image, file_path, format)?;
 
     match format {
         // TODO: dedicated encoders for all other formats that have quality settings
@@ -87,4 +75,24 @@ fn encode_inner(
     wm_try!(writer.flush());
 
     Ok(())
+}
+
+/// If format was not explicitly specified, guess based on the output path;
+/// if that fails, use the input format (like ImageMagick)
+fn choose_encoding_format(
+    image: &Image,
+    file_path: &OsStr,
+    explicitly_specified: Option<ImageFormat>,
+) -> Result<ImageFormat, MagickError> {
+    explicitly_specified
+        .ok_or_else(|| ImageFormat::from_path(file_path))
+        .or_else(|_| {
+            image.format.ok_or(wm_err!(
+                "no decode delegate for this image format `{}'",
+                Path::new(file_path)
+                    .extension()
+                    .unwrap_or(OsStr::new(""))
+                    .display()
+            ))
+        })
 }
