@@ -10,11 +10,11 @@ pub fn decode(file: &OsStr, format: Option<ImageFormat>) -> Result<Image, Magick
     let format = match format {
         Some(format) => {
             reader.set_format(format);
-            format
+            Some(format)
         }
         None => {
             reader = wm_try!(reader.with_guessed_format());
-            reader.format().unwrap()
+            reader.format()
         }
     };
     let mut decoder = wm_try!(reader.into_decoder());
