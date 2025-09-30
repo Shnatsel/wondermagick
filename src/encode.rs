@@ -50,12 +50,12 @@ fn encode_inner(
     format: Option<ImageFormat>,
     modifiers: &Modifiers,
 ) -> Result<(), MagickError> {
+    let format = choose_encoding_format(image, file_path, format)?;
+
     // `File::create` automatically truncates (overwrites) the file if it exists.
     let file = wm_try!(File::create(file_path));
     // Wrap in BufWriter for performance
     let mut writer = BufWriter::new(file);
-
-    let format = choose_encoding_format(image, file_path, format)?;
 
     match format {
         // TODO: dedicated encoders for all other formats that have quality settings
@@ -99,7 +99,7 @@ fn choose_encoding_format(
         // fallback to emptry string matches imagemagick
         let extension = Path::new(file_path).extension().unwrap_or(OsStr::new(""));
         Err(wm_err!(
-            "no decode delegate for this image format `{}'",
+            "no encode delegate for this image format `{}'",
             extension.display()
         ))
     }
