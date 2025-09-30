@@ -24,6 +24,7 @@ pub enum Arg {
     Sample,
     AutoOrient,
     Quality,
+    Strip,
 }
 
 impl Arg {
@@ -36,6 +37,7 @@ impl Arg {
             Arg::Sample => true,
             Arg::AutoOrient => false,
             Arg::Quality => true,
+            Arg::Strip => false,
         }
     }
 
@@ -48,6 +50,7 @@ impl Arg {
             Arg::Sample => "scale image with pixel sampling",
             Arg::AutoOrient => "automagically orient (rotate) image",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
+            Arg::Strip => "strip image of all profiles and comments",
         }
     }
 }

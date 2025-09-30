@@ -48,9 +48,14 @@ impl ExecutionPlan {
             Arg::Resize => {
                 self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))
             }
-            Arg::Thumbnail => self.add_operation(Operation::Thumbnail(ResizeGeometry::try_from(
-                value.unwrap(),
-            )?)),
+            Arg::Thumbnail => {
+                self.add_operation(Operation::Thumbnail(ResizeGeometry::try_from(
+                    value.unwrap(),
+                )?));
+                // -thumbnail also strips all metadata except the ICC profile
+                self.modifiers.strip.set_all(true);
+                self.modifiers.strip.icc = false;
+            }
             Arg::Scale => {
                 self.add_operation(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?))
             }
@@ -59,6 +64,9 @@ impl ExecutionPlan {
             }
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
+            Arg::Strip => {
+                self.modifiers.strip.set_all(true);
+            }
         };
 
         Ok(())
@@ -124,7 +132,12 @@ impl ExecutionPlan {
                 operation.execute(&mut image)?;
             }
 
-            encode::encode(&image, &output_file, self.output_format, &self.modifiers)?;
+            encode::encode(
+                &mut image,
+                &output_file,
+                self.output_format,
+                &self.modifiers,
+            )?;
         }
 
         Ok(())
@@ -157,4 +170,25 @@ pub struct FilePlan {
 #[derive(Debug, Default)]
 pub struct Modifiers {
     pub quality: Option<f64>,
+    pub strip: Strip,
+}
+
+#[derive(Debug, Default, Copy, Clone)] // bools default to false
+pub struct Strip {
+    pub exif: bool,
+    pub icc: bool,
+    // TODO: XMP, etc: https://imagemagick.org/script/command-line-options.php#profile
+}
+
+impl Strip {
+    pub fn set_all(&mut self, new_val: bool) {
+        // enumerate the fields exhaustively so that the compiler complains if we miss any
+        std::mem::swap(
+            self,
+            &mut Self {
+                exif: new_val,
+                icc: new_val,
+            },
+        );
+    }
 }
