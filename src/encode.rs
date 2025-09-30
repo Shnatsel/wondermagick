@@ -99,7 +99,7 @@ fn choose_encoding_format(
         // fallback to emptry string matches imagemagick
         let extension = Path::new(file_path).extension().unwrap_or(OsStr::new(""));
         Err(wm_err!(
-            "no decode delegate for this image format `{}'",
+            "no encode delegate for this image format `{}'",
             extension.display()
         ))
     }
