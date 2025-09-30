@@ -23,7 +23,7 @@ fn print_help_and_exit(bin_name: &str) -> ! {
 
 fn print_help(bin_name: &str) {
     println!("Version: {}", version_string());
-    println!("Copyright: (C) 2024 WonderMagick contributors");
+    println!("Copyright: (C) 2024-2025 WonderMagick contributors");
     println!("License: {}", env!("CARGO_PKG_LICENSE"));
     // TODO: "Features:"
     // TODO: "Delegates (built-in):"
