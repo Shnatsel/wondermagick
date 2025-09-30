@@ -22,7 +22,7 @@ mod tests {
     fn test_identify(width: NonZeroU8, height: NonZeroU8) {
         let image = DynamicImage::new_rgba8(width.get() as u32, height.get() as u32);
         let info = identify(&mut Image {
-            format: image::ImageFormat::Png,
+            format: Some(image::ImageFormat::Png),
             exif: None,
             icc: None,
             pixels: image,
