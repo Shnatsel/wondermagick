@@ -13,7 +13,7 @@ pic-scale-safe = "0.1.1"
 strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.1"
 mimalloc = { version = "0.1.47", optional = true }
-jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"] }
+jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"], optional = true }
 
 [features]
 default = ["hardened_malloc", "default-formats"]
@@ -25,7 +25,7 @@ hardened_malloc = ["mimalloc/secure"]
 asm = ["image/nasm"]
 
 # Image format features - passed through to the `image` crate
-default-formats = ["image/default-formats"]
+default-formats = ["image/default-formats", "jxl"]
 avif = ["image/avif"]
 bmp = ["image/bmp"]
 dds = ["image/dds"]
@@ -41,6 +41,7 @@ qoi = ["image/qoi"]
 tga = ["image/tga"]
 tiff = ["image/tiff"]
 webp = ["image/webp"]
+jxl = ["dep:jxl-oxide"]
 
 [dev-dependencies]
 quickcheck = "1"
