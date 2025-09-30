@@ -57,14 +57,14 @@ fn encode_inner(
         .unwrap_or(image.format);
 
     match format {
-        // TODO: dedicated encoders for way more formats
+        // TODO: dedicated encoders for all other formats that have quality settings
         ImageFormat::Png => encoders::png::encode(image, &mut writer, modifiers)?,
         ImageFormat::Jpeg => encoders::jpeg::encode(image, &mut writer, modifiers)?,
         ImageFormat::WebP => encoders::webp::encode(image, &mut writer, modifiers)?,
         ImageFormat::Avif => encoders::avif::encode(image, &mut writer, modifiers)?,
         ImageFormat::Gif => encoders::gif::encode(image, &mut writer, modifiers)?,
-        // TODO: handle format conversions such as RGBA -> RGB, 16-bit to 8-bit, etc.
-        // Blocked on https://github.com/image-rs/image/issues/2498
+        // TODO: set the metadata generically on all the abstract formats.
+        // Requires https://github.com/image-rs/image/pull/2554 or equivalent.
         _ => wm_try!(image.pixels.write_to(&mut writer, format)),
     }
 
