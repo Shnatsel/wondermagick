@@ -77,22 +77,24 @@ fn encode_inner(
     Ok(())
 }
 
-/// If format was not explicitly specified, guess based on the output path;
-/// if that fails, use the input format (like ImageMagick)
 fn choose_encoding_format(
     image: &Image,
     file_path: &OsStr,
     explicitly_specified: Option<ImageFormat>,
 ) -> Result<ImageFormat, MagickError> {
-    explicitly_specified
-        .ok_or_else(|| ImageFormat::from_path(file_path))
-        .or_else(|_| {
-            image.format.ok_or(wm_err!(
-                "no decode delegate for this image format `{}'",
-                Path::new(file_path)
-                    .extension()
-                    .unwrap_or(OsStr::new(""))
-                    .display()
-            ))
-        })
+    if let Some(format) = explicitly_specified {
+        Ok(format)
+    // if format was not explicitly specified, guess based on the output path
+    } else if let Ok(format) = ImageFormat::from_path(file_path) {
+        Ok(format)
+    // if that fails, use the input format (like ImageMagick)
+    } else if let Some(format) = image.format {
+        Ok(format)
+    } else {
+        let extension = Path::new(file_path).extension().unwrap_or(OsStr::new(""));
+        Err(wm_err!(
+            "no decode delegate for this image format `{}'",
+            extension.display()
+        ))
+    }
 }
