@@ -13,7 +13,7 @@ pic-scale-safe = "0.1.1"
 strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.1"
 mimalloc = { version = "0.1.47", optional = true }
-jxl-oxide = { version = "0.12.4", features = ["image", "moxcms"] }
+jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"] }
 
 [features]
 default = ["hardened_malloc"]
@@ -40,5 +40,4 @@ opt-level = 3
 panic = "abort"
 
 [patch.crates-io]
-jxl-oxide = {git = "https://github.com/Shnatsel/jxl-oxide.git", branch = "image-decoding-hook"}
 image = {git = "https://github.com/image-rs/image.git"}
