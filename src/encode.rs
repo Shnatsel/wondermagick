@@ -5,6 +5,41 @@ use image::ImageFormat;
 use crate::{encoders, image::Image, plan::Modifiers, wm_try};
 
 pub fn encode(
+    image: &mut Image,
+    file_path: &OsStr,
+    format: Option<ImageFormat>,
+    modifiers: &Modifiers,
+) -> Result<(), crate::error::MagickError> {
+    // This is a wrapper function that clears metadata if options like -strip are specified.
+    //
+    // Correctly stripping metadata when requested is a major privacy concern:
+    // unstripped images may reveal the user's geographic location when phone cameras embed GPS coordinates.
+    //
+    // Therefore we do it here once and for all, without trusting any individual format handlers.
+    let mut exif = None;
+    let mut icc = None;
+    if modifiers.strip.exif {
+        exif = std::mem::take(&mut image.exif);
+    }
+    if modifiers.strip.icc {
+        icc = std::mem::take(&mut image.icc);
+    }
+
+    // run the actual encoding function
+    let result = encode_inner(image, file_path, format, modifiers);
+
+    // restore the metadata to the image so that it could be used by subsequent operations like -auto-orient
+    if exif.is_some() {
+        image.exif = exif;
+    }
+    if icc.is_some() {
+        image.exif = icc;
+    }
+
+    result
+}
+
+fn encode_inner(
     image: &Image,
     file_path: &OsStr,
     format: Option<ImageFormat>,
