@@ -402,8 +402,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 [[package]]
 name = "image"
 version = "0.25.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "529feb3e6769d234375c4cf1ee2ce713682b8e76538cb13f9fc23e1400a591e7"
+source = "git+https://github.com/image-rs/image.git#9ad43485a20a544990567d89aeb4c092a7f99d11"
 dependencies = [
  "bytemuck",
  "byteorder-lite",
@@ -1540,8 +1539,3 @@ checksum = "fc1f7e205ce79eb2da3cd71c5f55f3589785cb7c79f6a03d1c8d1491bda5d089"
 dependencies = [
  "zune-core",
 ]
-
-[[patch.unused]]
-name = "image"
-version = "0.25.7"
-source = "git+https://github.com/image-rs/image.git#8b0881b6ac4394fbfbfd4d936cbbc1041548b298"

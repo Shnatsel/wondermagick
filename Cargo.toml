@@ -8,7 +8,7 @@ repository = "https://github.com/Shnatsel/wondermagick"
 
 [dependencies]
 current_platform = "0.2.0"
-image = "0.25.7"
+image = "0.25.8"
 pic-scale-safe = "0.1.1"
 strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.1"
