@@ -45,6 +45,9 @@ impl ExecutionPlan {
             Arg::Crop => {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
             }
+            Arg::Identify => {
+                self.add_operation(Operation::Identify);
+            }
             Arg::Resize => {
                 self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))
             }
