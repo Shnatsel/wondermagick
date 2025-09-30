@@ -53,6 +53,8 @@ impl ExecutionPlan {
                     value.unwrap(),
                 )?));
                 // -thumbnail also strips all metadata except the ICC profile
+                // Some docs state that it strips ICC profile also, but
+                // https://usage.imagemagick.org/thumbnails/ says v6.5.4-7 onwards preserves them.
                 self.modifiers.strip.set_all(true);
                 self.modifiers.strip.icc = false;
             }
