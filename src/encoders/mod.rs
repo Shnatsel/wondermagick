@@ -1,6 +1,11 @@
+#[cfg(feature = "avif")]
 pub mod avif;
 pub mod common;
+#[cfg(feature = "gif")]
 pub mod gif;
+#[cfg(feature = "jpeg")]
 pub mod jpeg;
+#[cfg(feature = "png")]
 pub mod png;
+#[cfg(feature = "webp")]
 pub mod webp;

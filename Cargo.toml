@@ -8,7 +8,7 @@ repository = "https://github.com/Shnatsel/wondermagick"
 
 [dependencies]
 current_platform = "0.2.0"
-image = "0.25.8"
+image = { version = "0.25.8", default-features = false, features = ["rayon"] }
 pic-scale-safe = "0.1.1"
 strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.1"
@@ -16,13 +16,31 @@ mimalloc = { version = "0.1.47", optional = true }
 jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"] }
 
 [features]
-default = ["hardened_malloc"]
+default = ["hardened_malloc", "default-formats"]
 # Use a hardened memory allocator for defense-in-depth against memory corruption:
 # https://github.com/microsoft/mimalloc?tab=readme-ov-file#secure-mode
 hardened_malloc = ["mimalloc/secure"]
 # Enables use of nasm by rav1e for a big performance boost in encoding AVIF.
 # Requires nasm to be installed.
 asm = ["image/nasm"]
+
+# Image format features - passed through to the `image` crate
+default-formats = ["image/default-formats"]
+avif = ["image/avif"]
+bmp = ["image/bmp"]
+dds = ["image/dds"]
+exr = ["image/exr"]
+ff = ["image/ff"]
+gif = ["image/gif"]
+hdr = ["image/hdr"]
+ico = ["image/ico"]
+jpeg = ["image/jpeg"]
+png = ["image/png"]
+pnm = ["image/pnm"]
+qoi = ["image/qoi"]
+tga = ["image/tga"]
+tiff = ["image/tiff"]
+webp = ["image/webp"]
 
 [dev-dependencies]
 quickcheck = "1"

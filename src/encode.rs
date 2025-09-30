@@ -58,10 +58,15 @@ fn encode_inner(
 
     match format {
         // TODO: dedicated encoders for all other formats that have quality settings
+        #[cfg(feature = "png")]
         ImageFormat::Png => encoders::png::encode(image, &mut writer, modifiers)?,
+        #[cfg(feature = "jpeg")]
         ImageFormat::Jpeg => encoders::jpeg::encode(image, &mut writer, modifiers)?,
+        #[cfg(feature = "webp")]
         ImageFormat::WebP => encoders::webp::encode(image, &mut writer, modifiers)?,
+        #[cfg(feature = "avif")]
         ImageFormat::Avif => encoders::avif::encode(image, &mut writer, modifiers)?,
+        #[cfg(feature = "gif")]
         ImageFormat::Gif => encoders::gif::encode(image, &mut writer, modifiers)?,
         // TODO: set the metadata generically on all the abstract formats.
         // Requires https://github.com/image-rs/image/pull/2554 or equivalent.
