@@ -42,11 +42,25 @@ impl ExecutionPlan {
     /// Split into its own function due to lack of try{} blocks on stable Rust.
     fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), ArgParseErr> {
         match arg {
+            Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
             Arg::Crop => {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
             }
+            Arg::Identify => {
+                self.add_operation(Operation::Identify);
+            }
+            Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
             Arg::Resize => {
                 self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))
+            }
+            Arg::Sample => {
+                self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?))
+            }
+            Arg::Scale => {
+                self.add_operation(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?))
+            }
+            Arg::Strip => {
+                self.modifiers.strip.set_all(true);
             }
             Arg::Thumbnail => {
                 self.add_operation(Operation::Thumbnail(ResizeGeometry::try_from(
@@ -57,17 +71,6 @@ impl ExecutionPlan {
                 // https://usage.imagemagick.org/thumbnails/ says v6.5.4-7 onwards preserves them.
                 self.modifiers.strip.set_all(true);
                 self.modifiers.strip.icc = false;
-            }
-            Arg::Scale => {
-                self.add_operation(Operation::Scale(ResizeGeometry::try_from(value.unwrap())?))
-            }
-            Arg::Sample => {
-                self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?))
-            }
-            Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
-            Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
-            Arg::Strip => {
-                self.modifiers.strip.set_all(true);
             }
         };
 

@@ -1,5 +1,6 @@
 mod auto_orient;
 mod crop;
+mod identify;
 mod resize;
 
 use crate::{
@@ -16,6 +17,7 @@ pub enum Operation {
     Sample(ResizeGeometry),
     CropOnLoad(LoadCropGeometry),
     Crop(CropGeometry),
+    Identify,
     AutoOrient,
 }
 
@@ -28,6 +30,7 @@ impl Operation {
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
             Operation::Crop(geom) => crop::crop(image, geom),
+            Operation::Identify => identify::identify(image),
             Operation::AutoOrient => auto_orient::auto_orient(image),
         }
     }
