@@ -7,18 +7,18 @@ pub fn identify(image: &mut Image) -> Result<(), MagickError> {
 }
 
 fn identify_impl(image: &Image) -> String {
-    let parts: Vec<String> = vec![
-        image.properties.filename.to_str().map(str::to_owned),
-        image.format.map(|f| f.extensions_str()[0].to_uppercase()),
-        Some(format!(
-            "{}x{}",
-            image.pixels.width(),
-            image.pixels.height()
-        )),
-    ]
-    .into_iter()
-    .flatten()
-    .collect();
+    let filename = image.properties.filename.to_str().map(str::to_owned);
+    let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
+    let dimensions = Some(format!(
+        "{}x{}",
+        image.pixels.width(),
+        image.pixels.height()
+    ));
+
+    let parts: Vec<String> = vec![filename, format, dimensions]
+        .into_iter()
+        .flatten()
+        .collect();
 
     parts.join(" ")
 }
