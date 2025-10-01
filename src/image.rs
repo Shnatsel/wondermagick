@@ -1,4 +1,11 @@
-use image::{DynamicImage, ImageFormat};
+use image::{DynamicImage, ExtendedColorType, ImageFormat};
+use std::ffi::OsString;
+
+#[derive(Debug, Clone)]
+pub struct InputProperties {
+    pub filename: OsString,
+    pub color_type: ExtendedColorType,
+}
 
 #[derive(Debug, Clone)]
 pub struct Image {
@@ -8,4 +15,5 @@ pub struct Image {
     pub exif: Option<Vec<u8>>,
     pub icc: Option<Vec<u8>>,
     pub pixels: DynamicImage,
+    pub properties: InputProperties,
 }

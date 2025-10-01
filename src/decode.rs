@@ -2,7 +2,7 @@ use std::ffi::OsStr;
 
 use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
 
-use crate::{error::MagickError, image::Image, wm_try};
+use crate::{error::MagickError, image::Image, image::InputProperties, wm_try};
 
 /// If the format has not been explicitly specified, guesses the format based on file contents.
 pub fn decode(file: &OsStr, format: Option<ImageFormat>) -> Result<Image, MagickError> {
@@ -20,12 +20,18 @@ pub fn decode(file: &OsStr, format: Option<ImageFormat>) -> Result<Image, Magick
     let mut decoder = wm_try!(reader.into_decoder());
     let exif = decoder.exif_metadata().unwrap_or(None);
     let icc = decoder.icc_profile().unwrap_or(None);
+    let color_type = decoder.original_color_type();
     let pixels = wm_try!(DynamicImage::from_decoder(decoder));
+    let properties = InputProperties {
+        filename: file.to_os_string(),
+        color_type,
+    };
     Ok(Image {
         format,
         exif,
         icc,
         pixels,
+        properties,
     })
 }
 

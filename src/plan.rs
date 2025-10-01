@@ -135,7 +135,7 @@ impl ExecutionPlan {
             let mut image = wm_try!(decode(&file_plan.filename, file_plan.format));
 
             for operation in &file_plan.ops {
-                operation.execute(&file_plan.filename, &mut image)?;
+                operation.execute(&mut image)?;
             }
 
             encode::encode(
