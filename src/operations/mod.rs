@@ -8,6 +8,7 @@ use crate::{
     error::MagickError,
     image::Image,
 };
+use std::ffi::OsStr;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Operation {
@@ -22,7 +23,7 @@ pub enum Operation {
 }
 
 impl Operation {
-    pub fn execute(&self, image: &mut Image) -> Result<(), MagickError> {
+    pub fn execute(&self, filename: &OsStr, image: &mut Image) -> Result<(), MagickError> {
         match self {
             Operation::Resize(geom) => resize::resize(image, geom),
             Operation::Thumbnail(geom) => resize::thumbnail(image, geom),
@@ -30,7 +31,7 @@ impl Operation {
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
             Operation::Crop(geom) => crop::crop(image, geom),
-            Operation::Identify => identify::identify(image),
+            Operation::Identify => identify::identify(filename, image),
             Operation::AutoOrient => auto_orient::auto_orient(image),
         }
     }
