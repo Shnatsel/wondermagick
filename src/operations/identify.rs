@@ -114,7 +114,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             String::try_from(output).unwrap(),
-            format!("/some/path/test.png PNG {width}x{height} {width}x{height}+0+0 16-bit\n")
+            format!("/some/path/test.png PNG {width}x{height} {width}x{height}+0+0 16-bit sRGB\n")
         );
     }
 
@@ -140,7 +140,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             String::try_from(output).unwrap(),
-            "image_without_format.jpg 1x1 1x1+0+0 8-bit\n"
+            "image_without_format.jpg 1x1 1x1+0+0 8-bit CMYK\n"
         );
     }
 }
