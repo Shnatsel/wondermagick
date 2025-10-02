@@ -33,6 +33,8 @@ fn identify_impl(
         Token::Var(Var::LayerCanvasPageGeometry),
         Token::Whitespace(1),
         Token::Var(Var::ImageDepth),
+        Token::Whitespace(1),
+        Token::Var(Var::Colorspace),
         // TODO: file size in bytes
         // TODO: consumed user time identifying the image
         // TODO: elapsed time identifying the image
@@ -70,15 +72,18 @@ fn identify_impl(
                     color_type.bits_per_pixel() / color_type.channel_count() as u16;
                 wm_try!(write!(writer, "{}-bit", bits_per_channel));
             }
+            Token::Var(Var::Colorspace) => {
+                let color_type = image.properties.color_type;
+                if let Some(colorspace) = get_colorspace(color_type) {
+                    wm_try!(write!(writer, "{}", colorspace));
+                }
+            }
             Token::Whitespace(count) => {
                 wm_try!(write!(writer, "{}", " ".repeat(*count)));
             }
         }
     }
     wm_try!(write!(writer, "\n"));
-
-    //let color_type = image.properties.color_type;
-    //let colorspace = get_colorspace(color_type);
     Ok(())
 }
 
@@ -211,7 +216,7 @@ mod tests {
             &mut output,
         )
         .unwrap();
-        assert_eq!(String::try_from(output).unwrap(), "123   42");
+        assert_eq!(String::try_from(output).unwrap(), "123   42\n");
     }
 
     #[test]
@@ -234,6 +239,6 @@ mod tests {
             &mut output,
         )
         .unwrap();
-        assert_eq!(String::try_from(output).unwrap(), "text");
+        assert_eq!(String::try_from(output).unwrap(), "text\n");
     }
 }

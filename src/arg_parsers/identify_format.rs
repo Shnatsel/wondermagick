@@ -5,6 +5,7 @@ use std::ffi::OsStr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Var {
+    Colorspace,
     CurrentImageHeightInPixels,
     CurrentImageWidthInPixels,
     ImageDepth,
@@ -88,6 +89,8 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                             b'W' => tokens.push(Token::Var(Var::PageCanvasWidth)),
                             b'X' => tokens.push(Token::Var(Var::PageCanvasXOffset)),
                             b'Y' => tokens.push(Token::Var(Var::PageCanvasYOffset)),
+                            // TODO: 'c' is not true, there is no shorthand var for colorspace
+                            b'c' => tokens.push(Token::Var(Var::Colorspace)),
                             b'g' => tokens.push(Token::Var(Var::LayerCanvasPageGeometry)),
                             b'h' => tokens.push(Token::Var(Var::CurrentImageHeightInPixels)),
                             b'i' => tokens.push(Token::Var(Var::ImageFilename)),
