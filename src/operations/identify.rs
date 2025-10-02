@@ -27,6 +27,10 @@ fn identify_impl(
         Token::Var(Var::CurrentImageWidthInPixels),
         Token::Literal("x".into()),
         Token::Var(Var::CurrentImageHeightInPixels),
+        Token::Whitespace(1),
+        Token::Var(Var::LayerCanvasPageGeometry),
+        Token::Whitespace(1),
+        Token::Var(Var::ImageDepth),
     ]);
 
     for token in template {
@@ -55,17 +59,20 @@ fn identify_impl(
                 // TODO: actually read and report these offsets
                 wm_try!(write!(writer, "{}+0+0", dimensions));
             }
+            Token::Var(Var::ImageDepth) => {
+                let color_type = image.properties.color_type;
+                let bits_per_channel =
+                    color_type.bits_per_pixel() / color_type.channel_count() as u16;
+                wm_try!(write!(writer, "{}-bit", bits_per_channel));
+            }
             Token::Whitespace(count) => {
                 wm_try!(write!(writer, "{}", " ".repeat(*count)));
             }
         }
     }
+    wm_try!(write!(writer, "\n"));
 
     //let color_type = image.properties.color_type;
-    //let bits = Some(format!(
-    //    "{}-bit",
-    //    color_type.bits_per_pixel() / color_type.channel_count() as u16
-    //));
     //let colorspace = get_colorspace(color_type);
     Ok(())
 }
@@ -85,8 +92,6 @@ fn write_filename(filename: &OsStr, writer: &mut impl Write) -> Result<(), Magic
         // TODO: figure out what, if anything, imagemagick does on Windows for non-UTF-16 filenames and replicate that.
         wm_try!(write!(writer, "{}", filename.to_string_lossy()));
     }
-    // write the space separator after the filename
-    wm_try!(write!(writer, " "));
     Ok(())
 }
 
@@ -172,7 +177,8 @@ mod tests {
         .unwrap();
         assert_eq!(
             String::try_from(output).unwrap(),
-            "image_without_format.jpg 1x1 1x1+0+0 8-bit CMYK\n"
+            "image_without_format.jpg  1x1 1x1+0+0 8-bit CMYK\n" // TODO: missing format turns into
+                                                                 // a space?
         );
     }
 
