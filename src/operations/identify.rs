@@ -1,13 +1,17 @@
-use crate::{error::MagickError, image::Image};
+use std::{ffi::OsStr, io::Write};
+
+use crate::{error::MagickError, image::Image, wm_try};
 
 // https://imagemagick.org/script/command-line-options.php#identify
 pub fn identify(image: &mut Image) -> Result<(), MagickError> {
-    println!("{}", identify_impl(image));
-    Ok(())
+    // acquire a buffered writer to which we can make lots of small writes cheaply
+    let mut stdout = std::io::stdout().lock();
+    identify_impl(image, &mut stdout)
 }
 
-fn identify_impl(image: &Image) -> String {
-    let filename = image.properties.filename.to_str().map(str::to_owned);
+fn identify_impl(image: &Image, writer: &mut impl Write) -> Result<(), MagickError> {
+    write_filename(&image.properties.filename, writer)?;
+
     let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
     let dimensions = Some(format!(
         "{}x{}",
@@ -15,12 +19,30 @@ fn identify_impl(image: &Image) -> String {
         image.pixels.height()
     ));
 
-    let parts: Vec<String> = vec![filename, format, dimensions]
-        .into_iter()
-        .flatten()
-        .collect();
+    let parts: Vec<String> = vec![format, dimensions].into_iter().flatten().collect();
 
-    parts.join(" ")
+    wm_try!(writeln!(writer, "{}", parts.join(" ")));
+    Ok(())
+}
+
+fn write_filename(filename: &OsStr, writer: &mut impl Write) -> Result<(), MagickError> {
+    #[cfg(unix)]
+    {
+        // On Unix, OsStr is just a &[u8], and filenames are allowed to have non-UTF-8 bytes.
+        // Imagemagick outputs those bytes verbatim, and this replicates that behavior.
+        use std::os::unix::ffi::OsStrExt;
+        wm_try!(writer.write_all(filename.as_bytes()));
+    }
+    #[cfg(not(unix))]
+    {
+        // Windows stores filenames as UTF-16 that isn't required to be valid.
+        // That isn't printable verbatim to Windows console, so we debug-print them with escaping.
+        // TODO: figure out what, if anything, imagemagick does on Windows for non-UTF-16 filenames and replicate that.
+        wm_try!(write!(writer, "{:?}", filename));
+    }
+    // write the space separator after the filename
+    wm_try!(write!(writer, " "));
+    Ok(())
 }
 
 #[cfg(test)]
