@@ -13,13 +13,25 @@ fn identify_impl(image: &Image, writer: &mut impl Write) -> Result<(), MagickErr
     write_filename(&image.properties.filename, writer)?;
 
     let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
+
     let dimensions = Some(format!(
         "{}x{}",
         image.pixels.width(),
         image.pixels.height()
     ));
+    // TODO: actually read and report these offsets
+    let dimensions_ext = Some(format!("{}+0+0", dimensions.as_ref().unwrap()));
 
-    let parts: Vec<String> = vec![format, dimensions].into_iter().flatten().collect();
+    let color_type = image.properties.color_type;
+    let bits = Some(format!(
+        "{}-bit",
+        color_type.bits_per_pixel() / color_type.channel_count() as u16
+    ));
+
+    let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits]
+        .into_iter()
+        .flatten()
+        .collect();
 
     wm_try!(writeln!(writer, "{}", parts.join(" ")));
     Ok(())
@@ -58,7 +70,9 @@ mod tests {
     // u8::MAX * u8::MAX is a large enough space for
     // quickcheck to explore and verify and still runs quickly
     fn test_identify(width: NonZeroU8, height: NonZeroU8) {
-        let image = DynamicImage::new_rgba8(width.get() as u32, height.get() as u32);
+        let width = width.get() as u32;
+        let height = height.get() as u32;
+        let image = DynamicImage::new_rgba8(width, height);
         let mut output = Vec::new();
         identify_impl(
             &mut Image {
@@ -68,7 +82,7 @@ mod tests {
                 pixels: image,
                 properties: InputProperties {
                     filename: "/some/path/test.png".into(),
-                    color_type: ExtendedColorType::A8,
+                    color_type: ExtendedColorType::Rgb16,
                 },
             },
             &mut output,
@@ -76,16 +90,14 @@ mod tests {
         .unwrap();
         assert_eq!(
             String::try_from(output).unwrap(),
-            format!(
-                "/some/path/test.png PNG {}x{}\n",
-                width.get() as u32,
-                height.get() as u32
-            )
+            format!("/some/path/test.png PNG {width}x{height} {width}x{height}+0+0 16-bit\n")
         );
     }
 
     #[test]
     fn test_identify_without_format() {
+        // may happen due to the format being a plugin, not a natively recognized one
+        // TODO: get image to expose the underlying enum with plugin formats
         let image = DynamicImage::new_rgba8(1, 1);
         let mut output = Vec::new();
         identify_impl(
@@ -96,7 +108,7 @@ mod tests {
                 pixels: image,
                 properties: InputProperties {
                     filename: "image_without_format.jpg".into(),
-                    color_type: ExtendedColorType::A8,
+                    color_type: ExtendedColorType::Cmyk8,
                 },
             },
             &mut output,
@@ -104,7 +116,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             String::try_from(output).unwrap(),
-            "image_without_format.jpg 1x1\n"
+            "image_without_format.jpg 1x1 1x1+0+0 8-bit\n"
         );
     }
 }
