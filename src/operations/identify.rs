@@ -2,42 +2,60 @@ use std::{ffi::OsStr, io::Write};
 
 use image::ExtendedColorType;
 
-use crate::{arg_parsers::IdentifyFormat, error::MagickError, image::Image, wm_try};
+use crate::{
+    arg_parsers::IdentifyFormat, arg_parsers::Token, error::MagickError, image::Image, wm_try,
+};
 
 // https://imagemagick.org/script/command-line-options.php#identify
-pub fn identify(image: &mut Image, _format: IdentifyFormat) -> Result<(), MagickError> {
+pub fn identify(image: &mut Image, format: IdentifyFormat) -> Result<(), MagickError> {
     // acquire a buffered writer to which we can make lots of small writes cheaply
     let mut stdout = std::io::stdout().lock();
-    identify_impl(image, &mut stdout)
+    identify_impl(image, format, &mut stdout)
 }
 
-fn identify_impl(image: &Image, writer: &mut impl Write) -> Result<(), MagickError> {
-    write_filename(&image.properties.filename, writer)?;
+fn identify_impl(
+    image: &Image,
+    format: IdentifyFormat,
+    writer: &mut impl Write,
+) -> Result<(), MagickError> {
+    if let Some(template) = &format.template {
+        for token in template {
+            match token {
+                Token::Literal(s) => {
+                    wm_try!(write!(writer, "{}", s));
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    } else {
+        write_filename(&image.properties.filename, writer)?;
 
-    let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
+        let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
 
-    let dimensions = Some(format!(
-        "{}x{}",
-        image.pixels.width(),
-        image.pixels.height()
-    ));
-    // TODO: actually read and report these offsets
-    let dimensions_ext = Some(format!("{}+0+0", dimensions.as_ref().unwrap()));
+        let dimensions = Some(format!(
+            "{}x{}",
+            image.pixels.width(),
+            image.pixels.height()
+        ));
+        // TODO: actually read and report these offsets
+        let dimensions_ext = Some(format!("{}+0+0", dimensions.as_ref().unwrap()));
 
-    let color_type = image.properties.color_type;
-    let bits = Some(format!(
-        "{}-bit",
-        color_type.bits_per_pixel() / color_type.channel_count() as u16
-    ));
-    let colorspace = get_colorspace(color_type);
+        let color_type = image.properties.color_type;
+        let bits = Some(format!(
+            "{}-bit",
+            color_type.bits_per_pixel() / color_type.channel_count() as u16
+        ));
+        let colorspace = get_colorspace(color_type);
 
-    let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits, colorspace]
-        .into_iter()
-        .flatten()
-        .collect();
+        let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits, colorspace]
+            .into_iter()
+            .flatten()
+            .collect();
 
-    wm_try!(writeln!(writer, "{}", parts.join(" ")));
-    Ok(())
+        wm_try!(writeln!(writer, "{}", parts.join(" ")));
+        Ok(())
+    }
 }
 
 fn write_filename(filename: &OsStr, writer: &mut impl Write) -> Result<(), MagickError> {
@@ -109,6 +127,7 @@ mod tests {
                     color_type: ExtendedColorType::Rgb16,
                 },
             },
+            IdentifyFormat { template: None },
             &mut output,
         )
         .unwrap();
@@ -119,8 +138,8 @@ mod tests {
     }
 
     #[test]
-    fn test_identify_without_format() {
-        // may happen due to the format being a plugin, not a natively recognized one
+    fn test_identify_without_image_format() {
+        // may happen due to the image format being a plugin, not a natively recognized one
         // TODO: get image to expose the underlying enum with plugin formats
         let image = DynamicImage::new_rgba8(1, 1);
         let mut output = Vec::new();
@@ -135,6 +154,7 @@ mod tests {
                     color_type: ExtendedColorType::Cmyk8,
                 },
             },
+            IdentifyFormat { template: None },
             &mut output,
         )
         .unwrap();
@@ -142,5 +162,28 @@ mod tests {
             String::try_from(output).unwrap(),
             "image_without_format.jpg 1x1 1x1+0+0 8-bit CMYK\n"
         );
+    }
+
+    #[test]
+    fn test_identify_with_format_template() {
+        let mut output = Vec::new();
+        identify_impl(
+            &mut Image {
+                format: None,
+                exif: None,
+                icc: None,
+                pixels: DynamicImage::new_rgba8(1, 1),
+                properties: InputProperties {
+                    filename: "irrelevant.jpg".into(),
+                    color_type: ExtendedColorType::Cmyk8,
+                },
+            },
+            IdentifyFormat {
+                template: Option::from(vec![Token::Literal("some random text".into())]),
+            },
+            &mut output,
+        )
+        .unwrap();
+        assert_eq!(String::try_from(output).unwrap(), "some random text");
     }
 }
