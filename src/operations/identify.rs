@@ -1,5 +1,7 @@
 use std::{ffi::OsStr, io::Write};
 
+use image::ExtendedColorType;
+
 use crate::{error::MagickError, image::Image, wm_try};
 
 // https://imagemagick.org/script/command-line-options.php#identify
@@ -27,8 +29,9 @@ fn identify_impl(image: &Image, writer: &mut impl Write) -> Result<(), MagickErr
         "{}-bit",
         color_type.bits_per_pixel() / color_type.channel_count() as u16
     ));
+    let colorspace = get_colorspace(color_type);
 
-    let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits]
+    let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits, colorspace]
         .into_iter()
         .flatten()
         .collect();
@@ -55,6 +58,27 @@ fn write_filename(filename: &OsStr, writer: &mut impl Write) -> Result<(), Magic
     // write the space separator after the filename
     wm_try!(write!(writer, " "));
     Ok(())
+}
+
+fn get_colorspace(color_type: ExtendedColorType) -> Option<String> {
+    // TODO: distingush between sRGB and RGB, Gray and LinearGray.
+    //
+    // List of recognized color spaces:
+    // https://imagemagick.org/script/command-line-options.php#colorspace
+    use ExtendedColorType::*;
+    let string = match color_type {
+        A8 => "Transparent",
+        L1 | L2 | L4 | L8 | L16 => "Gray",
+        La1 | La2 | La4 | La8 | La16 => todo!(),
+        Rgba1 | Rgba2 | Rgba4 | Rgba8 | Rgba16 => "sRGB",
+        Rgb1 | Rgb2 | Rgb4 | Rgb8 | Rgb16 => "sRGB",
+        Bgr8 | Bgra8 => "sRGB",
+        Rgb32F | Rgba32F => "sRGB",
+        Cmyk8 => "CMYK",
+        Unknown(_) => return None,
+        _ => return None,
+    };
+    Some(string.to_owned())
 }
 
 #[cfg(test)]
