@@ -30,7 +30,8 @@ pub enum Arg {
     Scale,
     Strip,
     Thumbnail,
-    Format,
+    Format, // TODO: -format can actually change meaning, as `-format type` and as `-format
+            // expression`. We currently only implement `-format expression`.
 }
 
 impl Arg {
