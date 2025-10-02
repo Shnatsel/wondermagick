@@ -19,6 +19,8 @@ fn identify_impl(
     format: IdentifyFormat,
     writer: &mut impl Write,
 ) -> Result<(), MagickError> {
+    // The default format, if none is specified, turns into something like
+    // ~/imagename.jpg JPEG 1363x2048 1363x2048+0+0 8-bit sRGB 270336B 0.010u 0:00.013
     let template = &format.template.unwrap_or(vec![
         Token::Var(Var::ImageFilename),
         Token::Whitespace(1),
@@ -31,6 +33,9 @@ fn identify_impl(
         Token::Var(Var::LayerCanvasPageGeometry),
         Token::Whitespace(1),
         Token::Var(Var::ImageDepth),
+        // TODO: file size in bytes
+        // TODO: consumed user time identifying the image
+        // TODO: elapsed time identifying the image
     ]);
 
     for token in template {
