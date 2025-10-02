@@ -38,7 +38,7 @@ fn write_filename(filename: &OsStr, writer: &mut impl Write) -> Result<(), Magic
         // Windows stores filenames as UTF-16 that isn't required to be valid.
         // That isn't printable verbatim to Windows console, so we debug-print them with escaping.
         // TODO: figure out what, if anything, imagemagick does on Windows for non-UTF-16 filenames and replicate that.
-        wm_try!(write!(writer, "{:?}", filename));
+        wm_try!(write!(writer, "{}", filename.to_string_lossy()));
     }
     // write the space separator after the filename
     wm_try!(write!(writer, " "));
