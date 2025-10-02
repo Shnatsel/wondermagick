@@ -19,55 +19,54 @@ fn identify_impl(
     format: IdentifyFormat,
     writer: &mut impl Write,
 ) -> Result<(), MagickError> {
-    if let Some(template) = &format.template {
-        for token in template {
-            match token {
-                Token::Literal(text) => {
-                    eprintln!("DEBUG: writing literal token: {}", text);
-                    wm_try!(write!(writer, "{}", text));
-                }
-                Token::Var(Var::Width) => {
-                    eprintln!("DEBUG: writing var width");
-                    wm_try!(write!(writer, "{}", image.pixels.width()));
-                }
-                Token::Var(Var::Height) => {
-                    eprintln!("DEBUG: writing var height");
-                    wm_try!(write!(writer, "{}", image.pixels.height()));
-                }
-                Token::Whitespace(count) => {
-                    eprintln!("DEBUG: writing whitespace {}-times", count);
-                    wm_try!(write!(writer, "{}", " ".repeat(*count)));
+    let template = &format.template.unwrap_or(vec![
+        Token::Var(Var::ImageFilename),
+        Token::Whitespace(1),
+        Token::Var(Var::ImageFileFormat),
+        Token::Whitespace(1),
+        Token::Var(Var::CurrentImageWidthInPixels),
+        Token::Literal("x".into()),
+        Token::Var(Var::CurrentImageHeightInPixels),
+    ]);
+
+    for token in template {
+        match token {
+            Token::Literal(text) => wm_try!(write!(writer, "{}", text)),
+            Token::Var(Var::CurrentImageWidthInPixels | Var::PageCanvasWidth) => {
+                wm_try!(write!(writer, "{}", image.pixels.width()));
+            }
+            Token::Var(Var::CurrentImageHeightInPixels | Var::PageCanvasHeight) => {
+                wm_try!(write!(writer, "{}", image.pixels.height()));
+            }
+            Token::Var(Var::PageCanvasXOffset | Var::PageCanvasYOffset) => {
+                // TODO: actually read and report these offsets
+                wm_try!(write!(writer, "{}", 0));
+            }
+            Token::Var(Var::ImageFileFormat) => {
+                if let Some(format) = image.format.map(|f| f.extensions_str()[0].to_uppercase()) {
+                    wm_try!(write!(writer, "{}", format));
                 }
             }
+            Token::Var(Var::ImageFilename | Var::MagickFilename) => {
+                write_filename(&image.properties.filename, writer)?;
+            }
+            Token::Var(Var::LayerCanvasPageGeometry) => {
+                let dimensions = format!("{}x{}", image.pixels.width(), image.pixels.height());
+                // TODO: actually read and report these offsets
+                wm_try!(write!(writer, "{}+0+0", dimensions));
+            }
+            Token::Whitespace(count) => {
+                wm_try!(write!(writer, "{}", " ".repeat(*count)));
+            }
         }
-        return Ok(());
     }
 
-    write_filename(&image.properties.filename, writer)?;
-
-    let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
-
-    let dimensions = Some(format!(
-        "{}x{}",
-        image.pixels.width(),
-        image.pixels.height()
-    ));
-    // TODO: actually read and report these offsets
-    let dimensions_ext = Some(format!("{}+0+0", dimensions.as_ref().unwrap()));
-
-    let color_type = image.properties.color_type;
-    let bits = Some(format!(
-        "{}-bit",
-        color_type.bits_per_pixel() / color_type.channel_count() as u16
-    ));
-    let colorspace = get_colorspace(color_type);
-
-    let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits, colorspace]
-        .into_iter()
-        .flatten()
-        .collect();
-
-    wm_try!(writeln!(writer, "{}", parts.join(" ")));
+    //let color_type = image.properties.color_type;
+    //let bits = Some(format!(
+    //    "{}-bit",
+    //    color_type.bits_per_pixel() / color_type.channel_count() as u16
+    //));
+    //let colorspace = get_colorspace(color_type);
     Ok(())
 }
 
@@ -193,9 +192,9 @@ mod tests {
             },
             IdentifyFormat {
                 template: Option::from(vec![
-                    Token::Var(Var::Width),
+                    Token::Var(Var::CurrentImageWidthInPixels),
                     Token::Whitespace(3),
-                    Token::Var(Var::Height),
+                    Token::Var(Var::CurrentImageHeightInPixels),
                 ]),
             },
             &mut output,
