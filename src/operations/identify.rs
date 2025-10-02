@@ -187,8 +187,8 @@ mod tests {
         .unwrap();
         assert_eq!(
             String::try_from(output).unwrap(),
-            "image_without_format.jpg  1x1 1x1+0+0 8-bit CMYK\n" // TODO: missing format turns into
-                                                                 // a space?
+            // TODO: Should the missing image format turn into a space or not?
+            "image_without_format.jpg  1x1 1x1+0+0 8-bit CMYK\n"
         );
     }
 
