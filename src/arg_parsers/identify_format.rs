@@ -24,9 +24,26 @@ pub struct IdentifyFormat {
 impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
     type Error = ArgParseErr;
 
-    fn try_from(_s: &OsStr) -> Result<Self, Self::Error> {
+    fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
         Ok(Self {
-            template: Option::from(vec![Token::Literal("Hello world".into())]),
+            template: Option::from(vec![Token::Literal(s.to_string_lossy().into_owned())]),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_identify_format_try_from() {
+        let s = OsStr::new("just a sample literal string");
+        let fmt = IdentifyFormat::try_from(s).unwrap();
+        assert_eq!(
+            fmt,
+            IdentifyFormat {
+                template: Some(vec![Token::Literal("just a sample literal string".into())])
+            }
+        );
     }
 }
