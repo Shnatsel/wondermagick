@@ -22,49 +22,53 @@ fn identify_impl(
     if let Some(template) = &format.template {
         for token in template {
             match token {
-                Token::Literal(s) => {
-                    wm_try!(write!(writer, "{}", s));
+                Token::Literal(text) => {
+                    eprintln!("DEBUG: writing literal token: {}", text);
+                    wm_try!(write!(writer, "{}", text));
                 }
                 Token::Var(Var::Width) => {
+                    eprintln!("DEBUG: writing var width");
                     wm_try!(write!(writer, "{}", image.pixels.width()));
                 }
                 Token::Var(Var::Height) => {
+                    eprintln!("DEBUG: writing var height");
                     wm_try!(write!(writer, "{}", image.pixels.height()));
                 }
-                Token::Whitespace(n) => {
-                    wm_try!(write!(writer, "{}", " ".repeat(*n)));
+                Token::Whitespace(count) => {
+                    eprintln!("DEBUG: writing whitespace {}-times", count);
+                    wm_try!(write!(writer, "{}", " ".repeat(*count)));
                 }
             }
         }
-        Ok(())
-    } else {
-        write_filename(&image.properties.filename, writer)?;
-
-        let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
-
-        let dimensions = Some(format!(
-            "{}x{}",
-            image.pixels.width(),
-            image.pixels.height()
-        ));
-        // TODO: actually read and report these offsets
-        let dimensions_ext = Some(format!("{}+0+0", dimensions.as_ref().unwrap()));
-
-        let color_type = image.properties.color_type;
-        let bits = Some(format!(
-            "{}-bit",
-            color_type.bits_per_pixel() / color_type.channel_count() as u16
-        ));
-        let colorspace = get_colorspace(color_type);
-
-        let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits, colorspace]
-            .into_iter()
-            .flatten()
-            .collect();
-
-        wm_try!(writeln!(writer, "{}", parts.join(" ")));
-        Ok(())
+        return Ok(());
     }
+
+    write_filename(&image.properties.filename, writer)?;
+
+    let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
+
+    let dimensions = Some(format!(
+        "{}x{}",
+        image.pixels.width(),
+        image.pixels.height()
+    ));
+    // TODO: actually read and report these offsets
+    let dimensions_ext = Some(format!("{}+0+0", dimensions.as_ref().unwrap()));
+
+    let color_type = image.properties.color_type;
+    let bits = Some(format!(
+        "{}-bit",
+        color_type.bits_per_pixel() / color_type.channel_count() as u16
+    ));
+    let colorspace = get_colorspace(color_type);
+
+    let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits, colorspace]
+        .into_iter()
+        .flatten()
+        .collect();
+
+    wm_try!(writeln!(writer, "{}", parts.join(" ")));
+    Ok(())
 }
 
 fn write_filename(filename: &OsStr, writer: &mut impl Write) -> Result<(), MagickError> {
@@ -215,11 +219,11 @@ mod tests {
                 },
             },
             IdentifyFormat {
-                template: Option::from(vec![Token::Literal("some random text".into())]),
+                template: Option::from(vec![Token::Literal("text".into())]),
             },
             &mut output,
         )
         .unwrap();
-        assert_eq!(String::try_from(output).unwrap(), "some random text");
+        assert_eq!(String::try_from(output).unwrap(), "text");
     }
 }
