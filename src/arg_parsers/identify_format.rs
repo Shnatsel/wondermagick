@@ -5,16 +5,17 @@ use std::ffi::OsStr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Var {
-    ImageFileFormat,
-    CurrentImageWidthInPixels,
     CurrentImageHeightInPixels,
+    CurrentImageWidthInPixels,
+    ImageDepth,
+    ImageFileFormat,
     ImageFilename,
+    LayerCanvasPageGeometry,
     MagickFilename,
-    PageCanvasWidth,
     PageCanvasHeight,
+    PageCanvasWidth,
     PageCanvasXOffset,
     PageCanvasYOffset,
-    LayerCanvasPageGeometry,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -82,16 +83,17 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                     }
                     ParseState::Var => {
                         match char {
+                            b'H' => tokens.push(Token::Var(Var::PageCanvasHeight)),
                             b'M' => tokens.push(Token::Var(Var::MagickFilename)),
+                            b'W' => tokens.push(Token::Var(Var::PageCanvasWidth)),
+                            b'X' => tokens.push(Token::Var(Var::PageCanvasXOffset)),
+                            b'Y' => tokens.push(Token::Var(Var::PageCanvasYOffset)),
+                            b'g' => tokens.push(Token::Var(Var::LayerCanvasPageGeometry)),
                             b'h' => tokens.push(Token::Var(Var::CurrentImageHeightInPixels)),
                             b'i' => tokens.push(Token::Var(Var::ImageFilename)),
                             b'm' => tokens.push(Token::Var(Var::ImageFileFormat)),
                             b'w' => tokens.push(Token::Var(Var::CurrentImageWidthInPixels)),
-                            b'W' => tokens.push(Token::Var(Var::PageCanvasWidth)),
-                            b'H' => tokens.push(Token::Var(Var::PageCanvasHeight)),
-                            b'X' => tokens.push(Token::Var(Var::PageCanvasXOffset)),
-                            b'Y' => tokens.push(Token::Var(Var::PageCanvasYOffset)),
-                            b'g' => tokens.push(Token::Var(Var::LayerCanvasPageGeometry)),
+                            b'z' => tokens.push(Token::Var(Var::ImageDepth)),
                             _ => return Err(ArgParseErr::new()),
                         }
                         state = ParseState::Initial;
