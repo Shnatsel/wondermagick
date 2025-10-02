@@ -5,8 +5,16 @@ use std::ffi::OsStr;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Var {
-    Width,
-    Height,
+    ImageFileFormat,
+    CurrentImageWidthInPixels,
+    CurrentImageHeightInPixels,
+    ImageFilename,
+    MagickFilename,
+    PageCanvasWidth,
+    PageCanvasHeight,
+    PageCanvasXOffset,
+    PageCanvasYOffset,
+    LayerCanvasPageGeometry,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -74,8 +82,16 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                     }
                     ParseState::Var => {
                         match char {
-                            b'w' => tokens.push(Token::Var(Var::Width)),
-                            b'h' => tokens.push(Token::Var(Var::Height)),
+                            b'M' => tokens.push(Token::Var(Var::MagickFilename)),
+                            b'h' => tokens.push(Token::Var(Var::CurrentImageHeightInPixels)),
+                            b'i' => tokens.push(Token::Var(Var::ImageFilename)),
+                            b'm' => tokens.push(Token::Var(Var::ImageFileFormat)),
+                            b'w' => tokens.push(Token::Var(Var::CurrentImageWidthInPixels)),
+                            b'W' => tokens.push(Token::Var(Var::PageCanvasWidth)),
+                            b'H' => tokens.push(Token::Var(Var::PageCanvasHeight)),
+                            b'X' => tokens.push(Token::Var(Var::PageCanvasXOffset)),
+                            b'Y' => tokens.push(Token::Var(Var::PageCanvasYOffset)),
+                            b'g' => tokens.push(Token::Var(Var::LayerCanvasPageGeometry)),
                             _ => return Err(ArgParseErr::new()),
                         }
                         state = ParseState::Initial;
@@ -151,13 +167,14 @@ mod tests {
     }
 
     #[test]
+    // TODO: Cover all vars
     fn test_identify_format_try_from_with_placement_var() {
         let s = OsStr::new("%w");
         let fmt = IdentifyFormat::try_from(s).unwrap();
         assert_eq!(
             fmt,
             IdentifyFormat {
-                template: Some(vec![Token::Var(Var::Width)])
+                template: Some(vec![Token::Var(Var::CurrentImageWidthInPixels)])
             }
         );
     }
