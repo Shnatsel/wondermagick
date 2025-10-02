@@ -13,6 +13,7 @@ pub enum Var {
     ImageFilename,
     LayerCanvasPageGeometry,
     MagickFilename,
+    OriginalImageSize,
     PageCanvasHeight,
     PageCanvasWidth,
     PageCanvasXOffset,
@@ -90,6 +91,7 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                     }
                     ParseState::Var => {
                         match char {
+                            b'G' => tokens.push(Token::Var(Var::OriginalImageSize)),
                             b'H' => tokens.push(Token::Var(Var::PageCanvasHeight)),
                             b'M' => tokens.push(Token::Var(Var::MagickFilename)),
                             b'W' => tokens.push(Token::Var(Var::PageCanvasWidth)),

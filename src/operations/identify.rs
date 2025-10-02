@@ -61,6 +61,14 @@ fn identify_impl(
             Token::Var(Var::ImageFilename | Var::MagickFilename) => {
                 write_filename(&image.properties.filename, writer)?;
             }
+            Token::Var(Var::OriginalImageSize) => {
+                wm_try!(write!(
+                    writer,
+                    "{}x{}",
+                    image.pixels.width(),
+                    image.pixels.height()
+                ));
+            }
             Token::Var(Var::LayerCanvasPageGeometry) => {
                 let dimensions = format!("{}x{}", image.pixels.width(), image.pixels.height());
                 // TODO: actually read and report these offsets
