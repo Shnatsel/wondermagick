@@ -68,6 +68,12 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                 }
                 b'%' => {
                     state = ParseState::Var;
+                    if !literal_accumulator.is_empty() {
+                        let literal = String::from_utf8(literal_accumulator.clone())
+                            .map_err(|_e| ArgParseErr::new())?;
+                        tokens.push(Token::Literal(literal));
+                        literal_accumulator.clear();
+                    }
                 }
                 _ => match state {
                     ParseState::Initial => {
@@ -180,6 +186,22 @@ mod tests {
             fmt,
             IdentifyFormat {
                 template: Some(vec![Token::Var(Var::CurrentImageWidthInPixels)])
+            }
+        );
+    }
+
+    #[test]
+    fn test_identify_format_try_from_with_shorthand_followed_by_letter() {
+        let s = OsStr::new("%wx%h");
+        let fmt = IdentifyFormat::try_from(s).unwrap();
+        assert_eq!(
+            fmt,
+            IdentifyFormat {
+                template: Some(vec![
+                    Token::Var(Var::CurrentImageWidthInPixels),
+                    Token::Literal("x".into()),
+                    Token::Var(Var::CurrentImageHeightInPixels)
+                ])
             }
         );
     }
