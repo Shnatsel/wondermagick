@@ -26,6 +26,7 @@ pub enum Arg {
     Scale,
     Strip,
     Thumbnail,
+    Format,
 }
 
 impl Arg {
@@ -40,6 +41,7 @@ impl Arg {
             Arg::Scale => true,
             Arg::Strip => false,
             Arg::Thumbnail => true,
+            Arg::Format => true,
         }
     }
 
@@ -54,6 +56,7 @@ impl Arg {
             Arg::Scale => "scale the image",
             Arg::Strip => "strip image of all profiles and comments",
             Arg::Thumbnail => "create a thumbnail of the image",
+            Arg::Format => "output formatted image characteristics",
         }
     }
 }
