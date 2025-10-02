@@ -4,12 +4,12 @@ mod identify;
 mod resize;
 
 use crate::{
-    arg_parsers::{CropGeometry, LoadCropGeometry, ResizeGeometry},
+    arg_parsers::{CropGeometry, IdentifyFormat, LoadCropGeometry, ResizeGeometry},
     error::MagickError,
     image::Image,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operation {
     Resize(ResizeGeometry),
     Thumbnail(ResizeGeometry),
@@ -17,7 +17,7 @@ pub enum Operation {
     Sample(ResizeGeometry),
     CropOnLoad(LoadCropGeometry),
     Crop(CropGeometry),
-    Identify,
+    Identify(IdentifyFormat),
     AutoOrient,
 }
 
@@ -30,7 +30,7 @@ impl Operation {
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
             Operation::Crop(geom) => crop::crop(image, geom),
-            Operation::Identify => identify::identify(image),
+            Operation::Identify(format) => identify::identify(image, format.clone()),
             Operation::AutoOrient => auto_orient::auto_orient(image),
         }
     }

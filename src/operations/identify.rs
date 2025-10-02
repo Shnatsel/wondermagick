@@ -2,10 +2,10 @@ use std::{ffi::OsStr, io::Write};
 
 use image::ExtendedColorType;
 
-use crate::{error::MagickError, image::Image, wm_try};
+use crate::{arg_parsers::IdentifyFormat, error::MagickError, image::Image, wm_try};
 
 // https://imagemagick.org/script/command-line-options.php#identify
-pub fn identify(image: &mut Image) -> Result<(), MagickError> {
+pub fn identify(image: &mut Image, _format: IdentifyFormat) -> Result<(), MagickError> {
     // acquire a buffered writer to which we can make lots of small writes cheaply
     let mut stdout = std::io::stdout().lock();
     identify_impl(image, &mut stdout)

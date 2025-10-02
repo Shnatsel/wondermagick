@@ -6,7 +6,9 @@ use std::{
 use image::ImageFormat;
 
 use crate::arg_parse_err::ArgParseErr;
-use crate::arg_parsers::{parse_numeric_arg, CropGeometry, InputFileArg, Location, ResizeGeometry};
+use crate::arg_parsers::{
+    parse_numeric_arg, CropGeometry, IdentifyFormat, InputFileArg, Location, ResizeGeometry,
+};
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
@@ -50,7 +52,7 @@ impl ExecutionPlan {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
             }
             Arg::Identify => {
-                self.add_operation(Operation::Identify);
+                self.add_operation(Operation::Identify(self.modifiers.identify_format.clone()));
             }
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
             Arg::Resize => {
@@ -75,6 +77,9 @@ impl ExecutionPlan {
                 self.modifiers.strip.set_all(true);
                 self.modifiers.strip.icc = false;
             }
+            Arg::Format => {
+                self.modifiers.identify_format = IdentifyFormat::try_from(value.unwrap())?;
+            }
         };
 
         Ok(())
@@ -89,7 +94,7 @@ impl ExecutionPlan {
             self.global_ops.push(op);
         } else {
             for file_plan in &mut self.input_files {
-                file_plan.ops.push(op)
+                file_plan.ops.push(op.clone())
             }
         }
     }
@@ -179,6 +184,7 @@ pub struct FilePlan {
 pub struct Modifiers {
     pub quality: Option<f64>,
     pub strip: Strip,
+    pub identify_format: IdentifyFormat,
 }
 
 #[derive(Debug, Default, Copy, Clone)] // bools default to false
