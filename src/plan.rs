@@ -52,6 +52,8 @@ impl ExecutionPlan {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
             }
             Arg::Identify => {
+                // TODO: For the format to take effect, it must be specified before -identify in
+                // imagemagick. Here, we have nothing in place to enforce that yet.
                 self.add_operation(Operation::Identify(self.modifiers.identify_format.clone()));
             }
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
