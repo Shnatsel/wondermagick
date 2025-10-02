@@ -3,7 +3,8 @@ use std::{ffi::OsStr, io::Write};
 use image::ExtendedColorType;
 
 use crate::{
-    arg_parsers::IdentifyFormat, arg_parsers::Token, error::MagickError, image::Image, wm_try,
+    arg_parsers::IdentifyFormat, arg_parsers::Token, arg_parsers::Var, error::MagickError,
+    image::Image, wm_try,
 };
 
 // https://imagemagick.org/script/command-line-options.php#identify
@@ -24,7 +25,15 @@ fn identify_impl(
                 Token::Literal(s) => {
                     wm_try!(write!(writer, "{}", s));
                 }
-                _ => {}
+                Token::Var(Var::Width) => {
+                    wm_try!(write!(writer, "{}", image.pixels.width()));
+                }
+                Token::Var(Var::Height) => {
+                    wm_try!(write!(writer, "{}", image.pixels.height()));
+                }
+                Token::Whitespace(n) => {
+                    wm_try!(write!(writer, "{}", " ".repeat(*n)));
+                }
             }
         }
         Ok(())
@@ -165,7 +174,34 @@ mod tests {
     }
 
     #[test]
-    fn test_identify_with_format_template() {
+    fn test_identify_with_format_template_vars() {
+        let mut output = Vec::new();
+        identify_impl(
+            &mut Image {
+                format: None,
+                exif: None,
+                icc: None,
+                pixels: DynamicImage::new_rgba8(123, 42),
+                properties: InputProperties {
+                    filename: "irrelevant.jpg".into(),
+                    color_type: ExtendedColorType::Cmyk8,
+                },
+            },
+            IdentifyFormat {
+                template: Option::from(vec![
+                    Token::Var(Var::Width),
+                    Token::Whitespace(3),
+                    Token::Var(Var::Height),
+                ]),
+            },
+            &mut output,
+        )
+        .unwrap();
+        assert_eq!(String::try_from(output).unwrap(), "123   42");
+    }
+
+    #[test]
+    fn test_identify_with_format_template_literal() {
         let mut output = Vec::new();
         identify_impl(
             &mut Image {

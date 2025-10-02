@@ -1,5 +1,4 @@
 use crate::arg_parse_err::ArgParseErr;
-use crate::wm_err;
 use std::ffi::OsStr;
 
 // https://imagemagick.org/script/escape.php
@@ -152,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn test_identify_format_try_from_with_replacement_var() {
+    fn test_identify_format_try_from_with_placement_var() {
         let s = OsStr::new("%w");
         let fmt = IdentifyFormat::try_from(s).unwrap();
         assert_eq!(
