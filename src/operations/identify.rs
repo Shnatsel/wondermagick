@@ -77,7 +77,7 @@ mod tests {
         assert_eq!(
             String::try_from(output).unwrap(),
             format!(
-                "/some/path/test.png PNG {}x{}",
+                "/some/path/test.png PNG {}x{}\n",
                 width.get() as u32,
                 height.get() as u32
             )
@@ -104,7 +104,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             String::try_from(output).unwrap(),
-            "image_without_format.jpg 1x1"
+            "image_without_format.jpg 1x1\n"
         );
     }
 }
