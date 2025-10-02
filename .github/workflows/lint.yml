@@ -1,4 +1,4 @@
-name: Rust
+name: Lint
 
 on:
   push:
@@ -10,18 +10,14 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        runs-on:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-    runs-on: ${{ matrix.runs-on }}
+  lint:
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v5
     - uses: Swatinem/rust-cache@v2
     - uses: dtolnay/rust-toolchain@stable
-    - name: Run tests
-      run: cargo test --verbose
+      with:
+        components: rustfmt
+    - name: Format
+      run: cargo fmt -- --check
