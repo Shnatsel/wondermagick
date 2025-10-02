@@ -100,7 +100,7 @@ fn choose_encoding_format(
         let extension = Path::new(file_path).extension().unwrap_or(OsStr::new(""));
         Err(wm_err!(
             "no encode delegate for this image format `{}'",
-            extension.display()
+            extension.to_ascii_uppercase().display()
         ))
     }
 }
