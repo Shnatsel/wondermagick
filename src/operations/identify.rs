@@ -59,18 +59,23 @@ mod tests {
     // quickcheck to explore and verify and still runs quickly
     fn test_identify(width: NonZeroU8, height: NonZeroU8) {
         let image = DynamicImage::new_rgba8(width.get() as u32, height.get() as u32);
-        let info = identify_impl(&mut Image {
-            format: Some(image::ImageFormat::Png),
-            exif: None,
-            icc: None,
-            pixels: image,
-            properties: InputProperties {
-                filename: "/some/path/test.png".into(),
-                color_type: ExtendedColorType::A8,
+        let mut output = Vec::new();
+        identify_impl(
+            &mut Image {
+                format: Some(image::ImageFormat::Png),
+                exif: None,
+                icc: None,
+                pixels: image,
+                properties: InputProperties {
+                    filename: "/some/path/test.png".into(),
+                    color_type: ExtendedColorType::A8,
+                },
             },
-        });
+            &mut output,
+        )
+        .unwrap();
         assert_eq!(
-            info,
+            String::try_from(output).unwrap(),
             format!(
                 "/some/path/test.png PNG {}x{}",
                 width.get() as u32,
@@ -82,16 +87,24 @@ mod tests {
     #[test]
     fn test_identify_without_format() {
         let image = DynamicImage::new_rgba8(1, 1);
-        let info = identify_impl(&mut Image {
-            format: None,
-            exif: None,
-            icc: None,
-            pixels: image,
-            properties: InputProperties {
-                filename: "image_without_format.jpg".into(),
-                color_type: ExtendedColorType::A8,
+        let mut output = Vec::new();
+        identify_impl(
+            &mut Image {
+                format: None,
+                exif: None,
+                icc: None,
+                pixels: image,
+                properties: InputProperties {
+                    filename: "image_without_format.jpg".into(),
+                    color_type: ExtendedColorType::A8,
+                },
             },
-        });
-        assert_eq!(info, "image_without_format.jpg 1x1");
+            &mut output,
+        )
+        .unwrap();
+        assert_eq!(
+            String::try_from(output).unwrap(),
+            "image_without_format.jpg 1x1"
+        );
     }
 }
