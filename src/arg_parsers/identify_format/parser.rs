@@ -124,10 +124,10 @@ impl Parser {
 
 pub fn parse(string: &OsStr) -> Result<Vec<Token>, ArgParseErr> {
     let mut parser = Parser::new();
-    let format_bytes = string.as_encoded_bytes();
+    let format_bytes = string.to_string_lossy().as_bytes().to_owned();
 
     for char in format_bytes {
-        parser.try_parse_char(char)?;
+        parser.try_parse_char(&char)?;
     }
 
     parser.try_finish()?;
