@@ -48,13 +48,19 @@ struct Parser {
     tokens: Vec<Token>,
 }
 
+impl Parser {
+    fn new() -> Self {
+        Self {
+            state: ParseState::Initial,
+            literal_accumulator: Vec::new(),
+            whitespace_count: 0,
+            tokens: Vec::new(),
+        }
+    }
+}
+
 pub fn parse(string: &OsStr) -> Result<Vec<Token>, ArgParseErr> {
-    let mut parser = Parser {
-        state: ParseState::Initial,
-        literal_accumulator: Vec::new(),
-        whitespace_count: 0,
-        tokens: Vec::new(),
-    };
+    let mut parser = Parser::new();
     let format_bytes = string.as_encoded_bytes();
 
     for char in format_bytes {
