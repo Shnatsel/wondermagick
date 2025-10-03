@@ -72,6 +72,10 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                         tokens.push(Token::Literal(literal));
                         literal_accumulator.clear();
                     }
+                    if whitespace_count > 0 {
+                        tokens.push(Token::Whitespace(whitespace_count));
+                        whitespace_count = 0;
+                    }
                 }
                 _ => match state {
                     ParseState::Initial => {
@@ -198,6 +202,20 @@ mod tests {
                 template: Some(vec![
                     Token::Var(Var::CurrentImageWidthInPixels),
                     Token::Literal("x".into()),
+                    Token::Var(Var::CurrentImageHeightInPixels)
+                ])
+            }
+        );
+    }
+
+    #[test]
+    fn test_identify_format_try_from_with_shorthand_followed_by_space() {
+        assert_eq!(
+            IdentifyFormat::try_from(OsStr::new("%w %h")).unwrap(),
+            IdentifyFormat {
+                template: Some(vec![
+                    Token::Var(Var::CurrentImageWidthInPixels),
+                    Token::Whitespace(1),
                     Token::Var(Var::CurrentImageHeightInPixels)
                 ])
             }
