@@ -150,10 +150,8 @@ mod tests {
 
     #[test]
     fn test_identify_format_try_from_with_whitespace() {
-        let whitespace = OsStr::new("  ");
-        let fmt = IdentifyFormat::try_from(whitespace).unwrap();
         assert_eq!(
-            fmt,
+            IdentifyFormat::try_from(OsStr::new("  ")).unwrap(),
             IdentifyFormat {
                 template: Some(vec![Token::Whitespace(2)])
             }
@@ -162,10 +160,8 @@ mod tests {
 
     #[test]
     fn test_identify_format_try_from_with_literal() {
-        let s = OsStr::new("just a sample literal string");
-        let fmt = IdentifyFormat::try_from(s).unwrap();
         assert_eq!(
-            fmt,
+            IdentifyFormat::try_from(OsStr::new("just a sample literal string")).unwrap(),
             IdentifyFormat {
                 template: Some(vec![
                     Token::Literal("just".into()),
@@ -185,10 +181,8 @@ mod tests {
     #[test]
     // TODO: Cover all vars
     fn test_identify_format_try_from_with_placement_var() {
-        let shorthand = OsStr::new("%w");
-        let fmt = IdentifyFormat::try_from(shorthand).unwrap();
         assert_eq!(
-            fmt,
+            IdentifyFormat::try_from(OsStr::new("%w")).unwrap(),
             IdentifyFormat {
                 template: Some(vec![Token::Var(Var::CurrentImageWidthInPixels)])
             }
@@ -197,10 +191,8 @@ mod tests {
 
     #[test]
     fn test_identify_format_try_from_with_shorthand_followed_by_letter() {
-        let combined = OsStr::new("%wx%h");
-        let fmt = IdentifyFormat::try_from(combined).unwrap();
         assert_eq!(
-            fmt,
+            IdentifyFormat::try_from(OsStr::new("%wx%h")).unwrap(),
             IdentifyFormat {
                 template: Some(vec![
                     Token::Var(Var::CurrentImageWidthInPixels),
@@ -213,10 +205,8 @@ mod tests {
 
     #[test]
     fn test_identify_format_try_from_with_unknown_shorthand() {
-        let shorthand = OsStr::new("%a");
-
         assert_eq!(
-            IdentifyFormat::try_from(shorthand),
+            IdentifyFormat::try_from(OsStr::new("%a")),
             Err(ArgParseErr {
                 message: Option::from(String::from("unknown shorthand variable '%a'"))
             })
@@ -225,11 +215,8 @@ mod tests {
 
     #[test]
     fn test_identify_format_try_from_with_non_ascii_literal() {
-        let literal = OsStr::new("💪");
-        let fmt = IdentifyFormat::try_from(literal).unwrap();
-
         assert_eq!(
-            fmt,
+            IdentifyFormat::try_from(OsStr::new("💪")).unwrap(),
             IdentifyFormat {
                 template: Some(vec![Token::Literal("💪".into()),])
             }
