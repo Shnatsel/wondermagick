@@ -1,4 +1,5 @@
 mod auto_orient;
+pub mod composite;
 mod crop;
 mod identify;
 mod resize;

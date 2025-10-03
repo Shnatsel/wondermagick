@@ -5,6 +5,16 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Memory-safe replacement for imagemagick"
 repository = "https://github.com/Shnatsel/wondermagick"
+default-run = "convert"
+
+[[bin]]
+name = "composite"
+path = "src/bin/wm-composite.rs"
+
+[[bin]]
+default-run = true
+name = "convert"
+path = "src/bin/wm-convert.rs"
 
 [dependencies]
 current_platform = "0.2.0"
