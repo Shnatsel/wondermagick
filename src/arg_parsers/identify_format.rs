@@ -43,10 +43,6 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
     type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
-        if !s.is_ascii() {
-            return Err(ArgParseErr::new());
-        }
-
         let mut tokens: Vec<Token> = Vec::new();
         let ascii = s.as_encoded_bytes();
 
@@ -154,8 +150,8 @@ mod tests {
 
     #[test]
     fn test_identify_format_try_from_with_whitespace() {
-        let s = OsStr::new("  ");
-        let fmt = IdentifyFormat::try_from(s).unwrap();
+        let whitespace = OsStr::new("  ");
+        let fmt = IdentifyFormat::try_from(whitespace).unwrap();
         assert_eq!(
             fmt,
             IdentifyFormat {
@@ -189,8 +185,8 @@ mod tests {
     #[test]
     // TODO: Cover all vars
     fn test_identify_format_try_from_with_placement_var() {
-        let s = OsStr::new("%w");
-        let fmt = IdentifyFormat::try_from(s).unwrap();
+        let shorthand = OsStr::new("%w");
+        let fmt = IdentifyFormat::try_from(shorthand).unwrap();
         assert_eq!(
             fmt,
             IdentifyFormat {
@@ -201,8 +197,8 @@ mod tests {
 
     #[test]
     fn test_identify_format_try_from_with_shorthand_followed_by_letter() {
-        let s = OsStr::new("%wx%h");
-        let fmt = IdentifyFormat::try_from(s).unwrap();
+        let combined = OsStr::new("%wx%h");
+        let fmt = IdentifyFormat::try_from(combined).unwrap();
         assert_eq!(
             fmt,
             IdentifyFormat {
@@ -217,13 +213,26 @@ mod tests {
 
     #[test]
     fn test_identify_format_try_from_with_unknown_shorthand() {
-        let s = OsStr::new("%a");
+        let shorthand = OsStr::new("%a");
 
         assert_eq!(
-            IdentifyFormat::try_from(s),
+            IdentifyFormat::try_from(shorthand),
             Err(ArgParseErr {
                 message: Option::from(String::from("unknown shorthand variable '%a'"))
             })
+        );
+    }
+
+    #[test]
+    fn test_identify_format_try_from_with_non_ascii_literal() {
+        let literal = OsStr::new("💪");
+        let fmt = IdentifyFormat::try_from(literal).unwrap();
+
+        assert_eq!(
+            fmt,
+            IdentifyFormat {
+                template: Some(vec![Token::Literal("💪".into()),])
+            }
         );
     }
 }
