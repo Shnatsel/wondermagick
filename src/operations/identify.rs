@@ -33,6 +33,7 @@ fn identify_impl(
         Token::Var(Var::LayerCanvasPageGeometry),
         Token::Whitespace(1),
         Token::Var(Var::ImageDepth),
+        Token::Literal("-bit".into()),
         Token::Whitespace(1),
         Token::Var(Var::Colorspace),
         // TODO: file size in bytes
@@ -78,7 +79,7 @@ fn identify_impl(
                 let color_type = image.properties.color_type;
                 let bits_per_channel =
                     color_type.bits_per_pixel() / color_type.channel_count() as u16;
-                wm_try!(write!(writer, "{}-bit", bits_per_channel));
+                wm_try!(write!(writer, "{}", bits_per_channel));
             }
             Token::Var(Var::Colorspace) => {
                 let color_type = image.properties.color_type;
