@@ -92,6 +92,30 @@ impl Parser {
         }
     }
 
+    fn try_parse_char(&mut self, char: &u8) -> Result<(), ArgParseErr> {
+        match char {
+            b' ' => {
+                self.try_finish_literal()?;
+                self.start_whitespace();
+            }
+            b'%' => {
+                self.try_finish_literal()?;
+                self.finish_whitespace();
+                self.state = ParseState::Var;
+            }
+            _ => match self.state {
+                ParseState::Initial => self.start_literal(char),
+                ParseState::Whitespace => {
+                    self.finish_whitespace();
+                    self.start_literal(char);
+                }
+                ParseState::Var => self.try_finish_var(char)?,
+                ParseState::Literal => self.literal_accumulator.push(*char),
+            },
+        }
+        Ok(())
+    }
+
     fn try_finish(&mut self) -> Result<(), ArgParseErr> {
         match self.state {
             ParseState::Literal => self.try_finish_literal()?,
@@ -108,26 +132,7 @@ pub fn parse(string: &OsStr) -> Result<Vec<Token>, ArgParseErr> {
     let format_bytes = string.as_encoded_bytes();
 
     for char in format_bytes {
-        match char {
-            b' ' => {
-                parser.try_finish_literal()?;
-                parser.start_whitespace();
-            }
-            b'%' => {
-                parser.try_finish_literal()?;
-                parser.finish_whitespace();
-                parser.state = ParseState::Var;
-            }
-            _ => match parser.state {
-                ParseState::Initial => parser.start_literal(char),
-                ParseState::Whitespace => {
-                    parser.finish_whitespace();
-                    parser.start_literal(char);
-                }
-                ParseState::Var => parser.try_finish_var(char)?,
-                ParseState::Literal => parser.literal_accumulator.push(*char),
-            },
-        }
+        parser.try_parse_char(char)?;
     }
 
     parser.try_finish()?;
