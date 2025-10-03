@@ -12,7 +12,6 @@ name = "composite"
 path = "src/bin/wm-composite.rs"
 
 [[bin]]
-default-run = true
 name = "convert"
 path = "src/bin/wm-convert.rs"
 
@@ -24,6 +23,7 @@ strum = { version = "0.26.3", features = ["derive"] }
 webp = "0.3.1"
 mimalloc = { version = "0.1.47", optional = true }
 jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"], optional = true }
+imageproc = "0.25.0"
 
 [features]
 default = ["hardened_malloc", "default-formats"]
