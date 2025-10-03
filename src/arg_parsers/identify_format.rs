@@ -117,9 +117,7 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                         }
                         state = ParseState::Initial;
                     }
-                    ParseState::Literal => {
-                        literal_accumulator.push(*char);
-                    }
+                    ParseState::Literal => literal_accumulator.push(*char),
                 },
             }
         }
@@ -137,9 +135,7 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                     tokens.push(Token::Whitespace(whitespace_count));
                 }
             }
-            ParseState::Var => {
-                return Err(ArgParseErr::new());
-            }
+            ParseState::Var => return Err(ArgParseErr::new()),
             ParseState::Initial => {}
         }
 
