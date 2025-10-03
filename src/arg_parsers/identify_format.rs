@@ -44,14 +44,14 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
         let mut tokens: Vec<Token> = Vec::new();
-        let ascii = s.as_encoded_bytes();
+        let format_bytes = s.as_encoded_bytes();
 
         // TODO: Assumes there are only one-letter variables after '%', such as %w and %h.
         let mut state = ParseState::Initial;
         let mut literal_accumulator: Vec<u8> = Vec::new();
         let mut whitespace_count = 0;
 
-        for char in ascii {
+        for char in format_bytes {
             match char {
                 b' ' => {
                     state = ParseState::Whitespace;
