@@ -94,9 +94,17 @@ impl Parser {
                 self.start_whitespace();
             }
             b'%' => {
-                self.try_finish_literal()?;
-                self.finish_whitespace();
-                self.state = ParseState::Var;
+                if self
+                    .literal_accumulator
+                    .last()
+                    .map_or(false, |&c| c.is_ascii_digit())
+                {
+                    self.literal_accumulator.push(*char);
+                } else {
+                    self.try_finish_literal()?;
+                    self.finish_whitespace();
+                    self.state = ParseState::Var;
+                }
             }
             _ => match self.state {
                 ParseState::Initial => self.start_literal(char),
@@ -184,6 +192,19 @@ mod tests {
         for (string, var) in cases {
             assert_eq!(parse(string).unwrap(), vec![Token::Var(var)]);
         }
+    }
+
+    // From https://imagemagick.org/script/escape.php:
+    // WARNING: short form percent escapes are NOT performed when the percent
+    // is after a number. For example, 10%x10 does not expand the %x as a percent escape.
+    // If you specifically want to expand the 'x', use the long form which overrides this
+    // special case. EG: 10%[x]10.
+    #[test]
+    fn test_parse_with_shorthand_after_number() {
+        assert_eq!(
+            parse(OsStr::new("10%x10")).unwrap(),
+            vec![Token::Literal("10%x10".into())]
+        );
     }
 
     #[test]
