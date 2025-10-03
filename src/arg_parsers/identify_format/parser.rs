@@ -29,14 +29,9 @@ impl TryFrom<&u8> for Var {
             b'm' => Ok(Var::ImageFileFormat),
             b'w' => Ok(Var::CurrentImageWidthInPixels),
             b'z' => Ok(Var::ImageDepth),
-            _ => {
-                return Err(ArgParseErr {
-                    message: Option::from(format!(
-                        "unknown shorthand variable '%{}'",
-                        *char as char
-                    )),
-                })
-            }
+            _ => Err(ArgParseErr {
+                message: Option::from(format!("unknown shorthand variable '%{}'", *char as char)),
+            }),
         }
     }
 }
