@@ -163,12 +163,27 @@ mod tests {
     }
 
     #[test]
-    // TODO: Cover all vars
     fn test_parse_with_shorthand_var() {
-        assert_eq!(
-            parse(OsStr::new("%w")).unwrap(),
-            vec![Token::Var(Var::CurrentImageWidthInPixels)]
-        );
+        let cases = [
+            (OsStr::new("%w"), Var::CurrentImageWidthInPixels),
+            (OsStr::new("%G"), Var::OriginalImageSize),
+            (OsStr::new("%H"), Var::PageCanvasHeight),
+            (OsStr::new("%M"), Var::MagickFilename),
+            (OsStr::new("%W"), Var::PageCanvasWidth),
+            (OsStr::new("%X"), Var::PageCanvasXOffset),
+            (OsStr::new("%Y"), Var::PageCanvasYOffset),
+            (OsStr::new("%c"), Var::Colorspace),
+            (OsStr::new("%g"), Var::LayerCanvasPageGeometry),
+            (OsStr::new("%h"), Var::CurrentImageHeightInPixels),
+            (OsStr::new("%i"), Var::ImageFilename),
+            (OsStr::new("%m"), Var::ImageFileFormat),
+            (OsStr::new("%w"), Var::CurrentImageWidthInPixels),
+            (OsStr::new("%z"), Var::ImageDepth),
+        ];
+
+        for (string, var) in cases {
+            assert_eq!(parse(string).unwrap(), vec![Token::Var(var)]);
+        }
     }
 
     #[test]
