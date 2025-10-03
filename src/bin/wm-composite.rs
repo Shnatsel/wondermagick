@@ -1,6 +1,7 @@
 use std::ffi::OsString;
 use wondermagick::{
-    decode::decode, encode::encode, error::MagickError, operations::composite, wm_err, wm_try,
+    decode::decode, encode::encode, error::MagickError, operations::composite,
+    operations::composite::Gravity, wm_err, wm_try,
 };
 
 fn main() {
@@ -24,7 +25,7 @@ fn real_main(args: Vec<OsString>) -> Result<(), MagickError> {
     let mut img1 = wm_try!(decode(input1, None));
     let img2 = wm_try!(decode(input2, None));
 
-    wm_try!(composite::composite(&mut img1, &img2));
+    wm_try!(composite::composite(&mut img1, &img2, Gravity::Northeast));
     wm_try!(encode(&mut img1, output, img2.format, &Default::default()));
 
     Ok(())
