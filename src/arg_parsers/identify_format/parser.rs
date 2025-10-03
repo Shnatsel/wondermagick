@@ -10,6 +10,37 @@ enum ParseState {
     Var,
 }
 
+impl TryFrom<&u8> for Var {
+    type Error = ArgParseErr;
+
+    fn try_from(char: &u8) -> Result<Self, Self::Error> {
+        match char {
+            b'G' => Ok(Var::OriginalImageSize),
+            b'H' => Ok(Var::PageCanvasHeight),
+            b'M' => Ok(Var::MagickFilename),
+            b'W' => Ok(Var::PageCanvasWidth),
+            b'X' => Ok(Var::PageCanvasXOffset),
+            b'Y' => Ok(Var::PageCanvasYOffset),
+            // TODO: 'c' is not true, there is no shorthand var for colorspace
+            b'c' => Ok(Var::Colorspace),
+            b'g' => Ok(Var::LayerCanvasPageGeometry),
+            b'h' => Ok(Var::CurrentImageHeightInPixels),
+            b'i' => Ok(Var::ImageFilename),
+            b'm' => Ok(Var::ImageFileFormat),
+            b'w' => Ok(Var::CurrentImageWidthInPixels),
+            b'z' => Ok(Var::ImageDepth),
+            _ => {
+                return Err(ArgParseErr {
+                    message: Option::from(format!(
+                        "unknown shorthand variable '%{}'",
+                        *char as char
+                    )),
+                })
+            }
+        }
+    }
+}
+
 pub fn parse(string: &OsStr) -> Result<Vec<Token>, ArgParseErr> {
     let mut tokens: Vec<Token> = Vec::new();
     let format_bytes = string.as_encoded_bytes();
@@ -59,30 +90,7 @@ pub fn parse(string: &OsStr) -> Result<Vec<Token>, ArgParseErr> {
                     literal_accumulator.push(*char);
                 }
                 ParseState::Var => {
-                    match char {
-                        b'G' => tokens.push(Token::Var(Var::OriginalImageSize)),
-                        b'H' => tokens.push(Token::Var(Var::PageCanvasHeight)),
-                        b'M' => tokens.push(Token::Var(Var::MagickFilename)),
-                        b'W' => tokens.push(Token::Var(Var::PageCanvasWidth)),
-                        b'X' => tokens.push(Token::Var(Var::PageCanvasXOffset)),
-                        b'Y' => tokens.push(Token::Var(Var::PageCanvasYOffset)),
-                        // TODO: 'c' is not true, there is no shorthand var for colorspace
-                        b'c' => tokens.push(Token::Var(Var::Colorspace)),
-                        b'g' => tokens.push(Token::Var(Var::LayerCanvasPageGeometry)),
-                        b'h' => tokens.push(Token::Var(Var::CurrentImageHeightInPixels)),
-                        b'i' => tokens.push(Token::Var(Var::ImageFilename)),
-                        b'm' => tokens.push(Token::Var(Var::ImageFileFormat)),
-                        b'w' => tokens.push(Token::Var(Var::CurrentImageWidthInPixels)),
-                        b'z' => tokens.push(Token::Var(Var::ImageDepth)),
-                        _ => {
-                            return Err(ArgParseErr {
-                                message: Option::from(format!(
-                                    "unknown shorthand variable '%{}'",
-                                    *char as char
-                                )),
-                            })
-                        }
-                    }
+                    tokens.push(Token::Var(Var::try_from(char)?));
                     state = ParseState::Initial;
                 }
                 ParseState::Literal => literal_accumulator.push(*char),
