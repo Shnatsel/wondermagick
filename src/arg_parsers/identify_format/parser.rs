@@ -3,7 +3,7 @@ use crate::arg_parsers::Token;
 use crate::arg_parsers::Var;
 use std::ffi::OsStr;
 
-pub enum ParseState {
+enum ParseState {
     Initial,
     Literal,
     Whitespace,
@@ -108,4 +108,83 @@ pub fn parse(string: &OsStr) -> Result<Vec<Token>, ArgParseErr> {
     }
 
     Ok(tokens)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_with_whitespace() {
+        assert_eq!(parse(OsStr::new("  ")).unwrap(), vec![Token::Whitespace(2)]);
+    }
+
+    #[test]
+    fn test_parse_with_literal() {
+        assert_eq!(
+            parse(OsStr::new("just a sample literal string")).unwrap(),
+            vec![
+                Token::Literal("just".into()),
+                Token::Whitespace(1),
+                Token::Literal("a".into()),
+                Token::Whitespace(1),
+                Token::Literal("sample".into()),
+                Token::Whitespace(1),
+                Token::Literal("literal".into()),
+                Token::Whitespace(1),
+                Token::Literal("string".into())
+            ]
+        );
+    }
+
+    #[test]
+    // TODO: Cover all vars
+    fn test_parse_with_shorthand_var() {
+        assert_eq!(
+            parse(OsStr::new("%w")).unwrap(),
+            vec![Token::Var(Var::CurrentImageWidthInPixels)]
+        );
+    }
+
+    #[test]
+    fn test_parse_with_shorthand_followed_by_letter() {
+        assert_eq!(
+            parse(OsStr::new("%wx%h")).unwrap(),
+            vec![
+                Token::Var(Var::CurrentImageWidthInPixels),
+                Token::Literal("x".into()),
+                Token::Var(Var::CurrentImageHeightInPixels)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_parse_with_shorthand_followed_by_space() {
+        assert_eq!(
+            parse(OsStr::new("%w %h")).unwrap(),
+            vec![
+                Token::Var(Var::CurrentImageWidthInPixels),
+                Token::Whitespace(1),
+                Token::Var(Var::CurrentImageHeightInPixels),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_parse_with_unknown_shorthand() {
+        assert_eq!(
+            parse(OsStr::new("%a")),
+            Err(ArgParseErr {
+                message: Option::from(String::from("unknown shorthand variable '%a'"))
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_with_non_ascii_literal() {
+        assert_eq!(
+            parse(OsStr::new("💪")).unwrap(),
+            vec![Token::Literal("💪".into())]
+        );
+    }
 }
