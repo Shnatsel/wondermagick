@@ -105,7 +105,14 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                             b'm' => tokens.push(Token::Var(Var::ImageFileFormat)),
                             b'w' => tokens.push(Token::Var(Var::CurrentImageWidthInPixels)),
                             b'z' => tokens.push(Token::Var(Var::ImageDepth)),
-                            _ => return Err(ArgParseErr::new()),
+                            _ => {
+                                return Err(ArgParseErr {
+                                    message: Option::from(format!(
+                                        "unknown shorthand variable '%{}'",
+                                        *char as char
+                                    )),
+                                })
+                            }
                         }
                         state = ParseState::Initial;
                     }
@@ -205,6 +212,18 @@ mod tests {
                     Token::Var(Var::CurrentImageHeightInPixels)
                 ])
             }
+        );
+    }
+
+    #[test]
+    fn test_identify_format_try_from_with_unknown_shorthand() {
+        let s = OsStr::new("%a");
+
+        assert_eq!(
+            IdentifyFormat::try_from(s),
+            Err(ArgParseErr {
+                message: Option::from(String::from("unknown shorthand variable '%a'"))
+            })
         );
     }
 }
