@@ -66,6 +66,7 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
                 b'%' => {
                     state = ParseState::Var;
                     if !literal_accumulator.is_empty() {
+                        // TODO: Can't assume valid UTF-8 here, the bytes come from `OsStr`
                         let literal = String::from_utf8(literal_accumulator.clone())
                             .map_err(|_e| ArgParseErr::new())?;
                         tokens.push(Token::Literal(literal));
@@ -180,7 +181,7 @@ mod tests {
 
     #[test]
     // TODO: Cover all vars
-    fn test_identify_format_try_from_with_placement_var() {
+    fn test_identify_format_try_from_with_shorthand_var() {
         assert_eq!(
             IdentifyFormat::try_from(OsStr::new("%w")).unwrap(),
             IdentifyFormat {
