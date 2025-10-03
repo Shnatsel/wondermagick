@@ -41,81 +41,95 @@ impl TryFrom<&u8> for Var {
     }
 }
 
-pub fn parse(string: &OsStr) -> Result<Vec<Token>, ArgParseErr> {
-    let mut tokens: Vec<Token> = Vec::new();
-    let format_bytes = string.as_encoded_bytes();
+struct Parser {
+    state: ParseState,
+    literal_accumulator: Vec<u8>,
+    whitespace_count: usize,
+    tokens: Vec<Token>,
+}
 
-    // TODO: Assumes there are only one-letter variables after '%', such as %w and %h.
-    let mut state = ParseState::Initial;
-    let mut literal_accumulator: Vec<u8> = Vec::new();
-    let mut whitespace_count = 0;
+pub fn parse(string: &OsStr) -> Result<Vec<Token>, ArgParseErr> {
+    let mut parser = Parser {
+        state: ParseState::Initial,
+        literal_accumulator: Vec::new(),
+        whitespace_count: 0,
+        tokens: Vec::new(),
+    };
+    let format_bytes = string.as_encoded_bytes();
 
     for char in format_bytes {
         match char {
             b' ' => {
-                state = ParseState::Whitespace;
-                whitespace_count += 1;
-                if !literal_accumulator.is_empty() {
-                    let literal = String::from_utf8(literal_accumulator.clone())
+                parser.state = ParseState::Whitespace;
+                parser.whitespace_count += 1;
+                if !parser.literal_accumulator.is_empty() {
+                    let literal = String::from_utf8(parser.literal_accumulator.clone())
                         .map_err(|_e| ArgParseErr::new())?;
-                    tokens.push(Token::Literal(literal));
-                    literal_accumulator.clear();
+                    parser.tokens.push(Token::Literal(literal));
+                    parser.literal_accumulator.clear();
                 }
             }
             b'%' => {
-                state = ParseState::Var;
-                if !literal_accumulator.is_empty() {
+                parser.state = ParseState::Var;
+                if !parser.literal_accumulator.is_empty() {
                     // TODO: Can't assume valid UTF-8 here, the bytes come from `OsStr`
-                    let literal = String::from_utf8(literal_accumulator.clone())
+                    let literal = String::from_utf8(parser.literal_accumulator.clone())
                         .map_err(|_e| ArgParseErr::new())?;
-                    tokens.push(Token::Literal(literal));
-                    literal_accumulator.clear();
+                    parser.tokens.push(Token::Literal(literal));
+                    parser.literal_accumulator.clear();
                 }
-                if whitespace_count > 0 {
-                    tokens.push(Token::Whitespace(whitespace_count));
-                    whitespace_count = 0;
+                if parser.whitespace_count > 0 {
+                    parser
+                        .tokens
+                        .push(Token::Whitespace(parser.whitespace_count));
+                    parser.whitespace_count = 0;
                 }
             }
-            _ => match state {
+            _ => match parser.state {
                 ParseState::Initial => {
-                    state = ParseState::Literal;
-                    literal_accumulator.push(*char);
+                    parser.state = ParseState::Literal;
+                    parser.literal_accumulator.push(*char);
                 }
                 ParseState::Whitespace => {
-                    if whitespace_count > 0 {
-                        tokens.push(Token::Whitespace(whitespace_count));
-                        whitespace_count = 0;
+                    if parser.whitespace_count > 0 {
+                        parser
+                            .tokens
+                            .push(Token::Whitespace(parser.whitespace_count));
+                        parser.whitespace_count = 0;
                     }
-                    state = ParseState::Literal;
-                    literal_accumulator.push(*char);
+                    parser.state = ParseState::Literal;
+                    parser.literal_accumulator.push(*char);
                 }
                 ParseState::Var => {
-                    tokens.push(Token::Var(Var::try_from(char)?));
-                    state = ParseState::Initial;
+                    parser.tokens.push(Token::Var(Var::try_from(char)?));
+                    // TODO: Assumes there are only one-letter variables after '%', such as %w and %h.
+                    parser.state = ParseState::Initial;
                 }
-                ParseState::Literal => literal_accumulator.push(*char),
+                ParseState::Literal => parser.literal_accumulator.push(*char),
             },
         }
     }
 
-    match state {
+    match parser.state {
         ParseState::Literal => {
-            if !literal_accumulator.is_empty() {
-                let literal = String::from_utf8(literal_accumulator.clone())
+            if !parser.literal_accumulator.is_empty() {
+                let literal = String::from_utf8(parser.literal_accumulator.clone())
                     .map_err(|_e| ArgParseErr::new())?;
-                tokens.push(Token::Literal(literal));
+                parser.tokens.push(Token::Literal(literal));
             }
         }
         ParseState::Whitespace => {
-            if whitespace_count > 0 {
-                tokens.push(Token::Whitespace(whitespace_count));
+            if parser.whitespace_count > 0 {
+                parser
+                    .tokens
+                    .push(Token::Whitespace(parser.whitespace_count));
             }
         }
         ParseState::Var => return Err(ArgParseErr::new()),
         ParseState::Initial => {}
     }
 
-    Ok(tokens)
+    Ok(parser.tokens)
 }
 
 #[cfg(test)]
