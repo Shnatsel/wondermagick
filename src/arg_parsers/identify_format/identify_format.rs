@@ -23,7 +23,6 @@ pub enum Var {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Literal(String),
-    Whitespace(usize),
     Var(Var),
 }
 

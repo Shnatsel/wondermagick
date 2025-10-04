@@ -23,18 +23,17 @@ fn identify_impl(
     // ~/imagename.jpg JPEG 1363x2048 1363x2048+0+0 8-bit sRGB 270336B 0.010u 0:00.013
     let template = &format.template.unwrap_or(vec![
         Token::Var(Var::ImageFilename),
-        Token::Whitespace(1),
+        Token::Literal(" ".into()),
         Token::Var(Var::ImageFileFormat),
-        Token::Whitespace(1),
+        Token::Literal(" ".into()),
         Token::Var(Var::CurrentImageWidthInPixels),
         Token::Literal("x".into()),
         Token::Var(Var::CurrentImageHeightInPixels),
-        Token::Whitespace(1),
+        Token::Literal(" ".into()),
         Token::Var(Var::LayerCanvasPageGeometry),
-        Token::Whitespace(1),
+        Token::Literal(" ".into()),
         Token::Var(Var::ImageDepth),
-        Token::Literal("-bit".into()),
-        Token::Whitespace(1),
+        Token::Literal("-bit ".into()),
         Token::Var(Var::Colorspace),
         // TODO: file size in bytes
         // TODO: consumed user time identifying the image
@@ -86,9 +85,6 @@ fn identify_impl(
                 if let Some(colorspace) = get_colorspace(color_type) {
                     wm_try!(write!(writer, "{}", colorspace));
                 }
-            }
-            Token::Whitespace(count) => {
-                wm_try!(write!(writer, "{}", " ".repeat(*count)));
             }
         }
     }
@@ -218,7 +214,7 @@ mod tests {
             IdentifyFormat {
                 template: Option::from(vec![
                     Token::Var(Var::CurrentImageWidthInPixels),
-                    Token::Whitespace(3),
+                    Token::Literal("   ".into()),
                     Token::Var(Var::CurrentImageHeightInPixels),
                 ]),
             },
