@@ -52,7 +52,7 @@ fn identify_impl(
             }
             Token::Var(Var::PageCanvasXOffset | Var::PageCanvasYOffset) => {
                 // TODO: actually read and report these offsets
-                wm_try!(write!(writer, "{}", 0));
+                wm_try!(write!(writer, "+{}", 0));
             }
             Token::Var(Var::ImageFileFormat) => {
                 if let Some(format) = image.format.map(|f| f.extensions_str()[0].to_uppercase()) {
