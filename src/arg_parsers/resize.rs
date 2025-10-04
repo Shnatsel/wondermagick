@@ -147,20 +147,16 @@ impl TryFrom<&OsStr> for ResizeGeometry {
         let percentage_mode = flags.percent;
         let area_mode = flags.at;
         let cover_mode = flags.caret;
-        let only_enlarge = flags.less_than;
-        let only_shrink = flags.greater_than;
-
-        if only_enlarge && only_shrink {
-            return Err(ArgParseErr::with_msg(
-                "< and > cannot be specified together",
-            ));
-        }
-        let mut constraint = ResizeConstraint::default();
-        if only_enlarge {
-            constraint = ResizeConstraint::OnlyEnlarge;
-        } else if only_shrink {
-            constraint = ResizeConstraint::OnlyShrink;
-        }
+        let constraint = match (flags.less_than, flags.greater_than) {
+            (true, false) => ResizeConstraint::OnlyEnlarge,
+            (false, true) => ResizeConstraint::OnlyShrink,
+            (false, false) => ResizeConstraint::default(),
+            (true, true) => {
+                return Err(ArgParseErr::with_msg(
+                    "< and > cannot be specified together",
+                ))
+            }
+        };
 
         let mut target = ResizeTarget::default();
         // If both percentage and area are specified, area takes precedence.
