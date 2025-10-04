@@ -144,3 +144,30 @@ fn sign_and_arg_name(raw_arg: OsString) -> Result<(u8, String), MagickError> {
     assert!(sign == '-' || sign == '+');
     Ok((sign as u8, string))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::*;
+
+    #[test]
+    fn test_parse_output_file() {
+        assert_eq!(
+            parse_output_file(OsStr::new("-"), |_| false),
+            (Location::Stdio, None),
+        );
+        assert_eq!(
+            parse_output_file(OsStr::new("-"), |_| true),
+            (Location::Stdio, None),
+        );
+        assert_eq!(
+            parse_output_file(OsStr::new("png:-"), |_| false),
+            (Location::Stdio, Some(ImageFormat::Png)),
+        );
+        assert_eq!(
+            parse_output_file(OsStr::new("png:-"), |_| true),
+            (Location::Path(PathBuf::from("png:-")), None),
+        );
+    }
+}

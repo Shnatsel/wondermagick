@@ -394,6 +394,101 @@ mod tests {
 
     use super::*;
 
+    /// Creates a mock is_dir closure for the parse tests.
+    /// The resulting closure pretends that the specified files and dirs exist.
+    fn mock_is_dir(
+        files: impl Into<Vec<&'static str>>,
+        dirs: impl Into<Vec<&'static str>>,
+    ) -> impl Fn(&Path) -> Result<bool, std::io::Error> {
+        let files = files.into();
+        let dirs = dirs.into();
+        move |path| {
+            if files.iter().any(|f| Path::new(f) == path) {
+                Ok(false)
+            } else if dirs.iter().any(|d| Path::new(d) == path) {
+                Ok(true)
+            } else {
+                Err(std::io::ErrorKind::NotFound.into())
+            }
+        }
+    }
+
+    #[test]
+    fn parse_path() {
+        // Simple parsing test; see the modifier & format tests for more
+        assert_eq!(
+            InputFileArg::parse_inner(
+                OsStr::new("jpg:file.png[1x2+3+4]"),
+                mock_is_dir(["file.png"], [])
+            )
+            .unwrap(),
+            InputFileArg {
+                location: Location::Path("file.png".into()),
+                format: Some(ImageFormat::Jpeg),
+                read_mod: Some(ReadModifier::Crop(
+                    LoadCropGeometry::from_str("1x2+3+4").unwrap()
+                ))
+            }
+        );
+
+        // Tricky interactions with existing files/directories
+        let result = InputFileArg::parse_inner(
+            OsStr::new("file.png[1x2+3+4]"),
+            mock_is_dir(["file.png[1x2+3+4]"], []),
+        );
+        assert_eq!(
+            result.unwrap().location,
+            Location::Path("file.png[1x2+3+4]".into()),
+        );
+        let result = InputFileArg::parse_inner(
+            OsStr::new("file.png[1x2+3+4]"),
+            mock_is_dir(["file.png"], ["file.png[1x2+3+4]"]),
+        );
+        assert_eq!(result.unwrap().location, Location::Path("file.png".into()));
+        let result = InputFileArg::parse_inner(
+            OsStr::new("file.png[1x2+3+4]"),
+            mock_is_dir([], ["file.png[1x2+3+4]"]),
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_stdin() {
+        // Simple cases (no weirdly-named files in the current dir)
+        for path in [
+            "",
+            "-",
+            "png:",
+            "png:-",
+            "[1x1]",
+            "-[1x1]",
+            "png:[1x1]",
+            "png:-[1x1]",
+        ] {
+            let result = InputFileArg::parse_inner(OsStr::new(path), mock_is_dir([], []));
+            assert_eq!(result.unwrap().location, Location::Stdio, "{path:?}");
+        }
+
+        // What if there is a file named "-"?
+        let result = InputFileArg::parse_inner(OsStr::new("-"), mock_is_dir(["-"], []));
+        assert_eq!(result.unwrap().location, Location::Stdio);
+        let result = InputFileArg::parse_inner(OsStr::new("png:-[1x1]"), mock_is_dir(["-"], []));
+        assert_eq!(result.unwrap().location, Location::Stdio);
+
+        // Unlike plain "-", the presence of these files prevent the path from being parsed as stdin
+        let result = InputFileArg::parse_inner(OsStr::new("png:-"), mock_is_dir(["png:-"], []));
+        assert_eq!(result.unwrap().location, Location::Path("png:-".into()));
+        let result =
+            InputFileArg::parse_inner(OsStr::new("png:-[1x1]"), mock_is_dir(["png:-[1x1]"], []));
+        assert_eq!(
+            result.unwrap().location,
+            Location::Path("png:-[1x1]".into()),
+        );
+        let result =
+            InputFileArg::parse_inner(OsStr::new("png:-[1x1]"), mock_is_dir(["png:-"], []));
+        assert_eq!(result.unwrap().location, Location::Path("png:-".into()));
+    }
+
     #[test]
     fn load_crop_geometry() {
         // only a basic smoke test because the underlying geometry parser is well tested already

@@ -200,3 +200,50 @@ impl Strip {
         );
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_output_locations() {
+        let plan = ExecutionPlan {
+            output_file: Location::Path(PathBuf::from("out.gif")),
+            input_files: vec![Default::default(), Default::default()],
+            output_format: Some(ImageFormat::Jpeg), // Intentionally doesn't match the extension
+            ..Default::default()
+        };
+        assert_eq!(
+            plan.output_locations(),
+            vec![
+                Location::Path(PathBuf::from("out-1.gif")),
+                Location::Path(PathBuf::from("out-2.gif")),
+            ],
+        );
+
+        let plan = ExecutionPlan {
+            output_file: Location::Path(PathBuf::from("no-extension")),
+            input_files: vec![Default::default(), Default::default()],
+            output_format: Some(ImageFormat::Jpeg),
+            ..Default::default()
+        };
+        assert_eq!(
+            plan.output_locations(),
+            vec![
+                Location::Path(PathBuf::from("no-extension-1")),
+                Location::Path(PathBuf::from("no-extension-2")),
+            ],
+        );
+
+        let plan = ExecutionPlan {
+            output_file: Location::Stdio,
+            input_files: vec![Default::default(), Default::default()],
+            output_format: Some(ImageFormat::Jpeg),
+            ..Default::default()
+        };
+        assert_eq!(
+            plan.output_locations(),
+            vec![Location::Stdio, Location::Stdio],
+        );
+    }
+}
