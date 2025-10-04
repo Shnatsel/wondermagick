@@ -476,6 +476,20 @@ mod tests {
     }
 
     #[test]
+    fn preserve_aspect_ratio_enlarge_only() {
+        let image = DynamicImage::new_rgb8(100, 100);
+        let geometry = ResizeGeometry::from_str("50x50<").unwrap();
+        assert_eq!((100, 100), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn preserve_aspect_ratio_shrink_only() {
+        let image = DynamicImage::new_rgb8(50, 50);
+        let geometry = ResizeGeometry::from_str("100x100>").unwrap();
+        assert_eq!((50, 50), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
     fn percentage() {
         let image = DynamicImage::new_rgb8(800, 600);
         let geometry = ResizeGeometry::from_str("50%").unwrap();
