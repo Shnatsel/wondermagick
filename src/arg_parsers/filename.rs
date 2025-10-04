@@ -1,6 +1,6 @@
 use std::{
     ffi::{OsStr, OsString},
-    path::PathBuf,
+    path::{Path, PathBuf},
     str::FromStr,
 };
 
@@ -20,78 +20,123 @@ use crate::{arg_parse_err::ArgParseErr, error::MagickError, wm_err};
 
 use super::{Geometry, ResizeGeometry};
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub enum Location {
+    Path(PathBuf),
+    #[default]
+    Stdio,
+}
+
+impl Location {
+    pub fn from_arg(arg: &OsStr) -> Self {
+        if matches!(arg.as_encoded_bytes(), b"" | b"-") {
+            Self::Stdio
+        } else {
+            Self::Path(PathBuf::from(arg))
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct InputFileArg {
-    pub path: PathBuf,
+    pub location: Location,
     pub format: Option<ImageFormat>,
     pub read_mod: Option<ReadModifier>,
 }
 
 impl InputFileArg {
     pub fn parse(input: &OsStr) -> Result<Self, MagickError> {
-        // if given "foo.jpg[50x50]" as input
-        // and files "foo.jpg" and "foo.jpg[50x50]",
-        // imagemagick will pick "foo.jpg[50x50]".
-        // So we have to check if the file exists and if it does,
-        // completely skip parsing the read modifiers.
-        //
-        // If it is a folder or a symlink to a folder, it will be skipped,
-        // and the error will be printed for the path with a stripped suffix.
-        //
-        // If the file exists but we don't have permission to read it,
-        // it is still selected, so we can't use `File::open` here.
-        let orig_path_data = std::fs::metadata(input);
-        let orig_path_is_folder = orig_path_data.as_ref().map(|d| d.is_dir());
-        if let Ok(false) = orig_path_is_folder {
-            Ok(Self {
-                path: PathBuf::from(input),
+        Self::parse_inner(input, |path| {
+            let metadata = std::fs::metadata(path);
+            metadata.map(|d| d.is_dir())
+        })
+    }
+
+    // `is_dir` checks whether a path is (a symlink to) a directory.
+    // It's split out so that the parser can be tested without relying on external state.
+    fn parse_inner(
+        input: &OsStr,
+        is_dir: impl Fn(&Path) -> Result<bool, std::io::Error>,
+    ) -> Result<Self, MagickError> {
+        // A ready-to-return location is either stdin or an existing non-directory path.
+        // It doesn't matter if it's a file that cannot be read, it should still be returned.
+        let ready_to_return = |location: &Location| match location {
+            Location::Path(path) => matches!(is_dir(path), Ok(false)),
+            Location::Stdio => true,
+        };
+
+        // Try the input verbatim
+        let location = Location::from_arg(input);
+        if ready_to_return(&location) {
+            return Ok(Self {
+                location,
                 format: None,
                 read_mod: None,
-            })
-        } else {
-            // imagemagick only interprets the modifier as a modifier if the entire thing is valid;
-            // there is no "error: invalid modifier" error state, the whole thing is ignored if it is invalid
-            let parse_result = split_off_bracketed_suffix(input).and_then(|(path, modifier)| {
-                if let Ok(valid_modifier) = ReadModifier::try_from(modifier.as_ref()) {
-                    Some((path, valid_modifier))
-                } else {
-                    None
-                }
             });
-            if let Some((path, modifier)) = parse_result {
-                // "format:path" splitting must only be done after "[...]" suffix removal
-                // to prevent splitting "[x:y]" (aspect ratio) modifier
-                let (path, format) = parse_path_and_format(&path);
-                match std::fs::metadata(&path) {
-                    // imagemagick doesn't care that it's a folder and lets decoders fail later.
-                    // If both "foo.jpg[50x50]" and "foo.jpg" exist and are both folders, "foo.jpg" is selected.
-                    Ok(_) => Ok(Self {
-                        path: PathBuf::from(path),
-                        format,
-                        read_mod: Some(modifier),
-                    }),
-                    Err(error) => Err(wm_err!(
-                        "unable to open image `{}': {error}",
-                        path.to_string_lossy()
-                    )),
-                }
+        }
+
+        // Parse any read modifier, e.g. "foo.jpg[50x50]"
+        let parse_result = split_off_bracketed_suffix(input).and_then(|(path, modifier)| {
+            if let Ok(valid_modifier) = ReadModifier::try_from(modifier.as_ref()) {
+                Some((path, valid_modifier))
             } else {
-                // no valid modifier found
-                match orig_path_data {
-                    // If we got here, the original input is a folder and parsing modifiers failed.
-                    // imagemagick accepts this as a valid path and lets the decoders fail later on.
-                    Ok(_) => Ok(Self {
-                        path: PathBuf::from(input),
-                        format: None,
-                        read_mod: None,
-                    }),
-                    // modifier parsing failed and accessing the original path was an error, report it
-                    Err(error) => Err(wm_err!(
-                        "unable to open image `{}': {error}",
-                        input.to_string_lossy()
-                    )),
-                }
+                // If something looks like a modifier but is not a valid modifier,
+                // it is considered part of the path.
+                // There is no "error: invalid modifier" error state.
+                None
             }
+        });
+        let (path, read_mod) = match parse_result {
+            Some((path, modifier)) => {
+                let location = Location::from_arg(&path);
+                if ready_to_return(&location) {
+                    return Ok(Self {
+                        location,
+                        format: None,
+                        read_mod: Some(modifier),
+                    });
+                }
+                (path, Some(modifier))
+            }
+            // If a valid modifier is not found then the original string is used as is
+            None => (input.to_owned(), None),
+        };
+
+        // Parse any explicitly-specified image format, e.g. "jpg:foo.jpg".
+        // This must only be done after the read modifier ("[...]") is removed
+        // to prevent splitting "[x:y]" (aspect ratio) modifier.
+        let (path, format) = match parse_path_and_format(&path) {
+            Some((path, format)) => {
+                let location = Location::from_arg(&path);
+                if ready_to_return(&location) {
+                    return Ok(Self {
+                        location,
+                        format: Some(format),
+                        read_mod,
+                    });
+                }
+                (path, Some(format))
+            }
+            None => (path, None),
+        };
+
+        // At this point, everything we tried failed
+        match is_dir(Path::new(&path)) {
+            // This means the remaining path after modifier & format removal is a directory.
+            // ImageMagick simply returns this path (as mentioned, without modifier & format).
+            // Any error will come later from the decoder.
+            Ok(true) => Ok(Self {
+                location: Location::Path(PathBuf::from(path)),
+                format,
+                read_mod,
+            }),
+            // A normal file would have been returned earlier
+            Ok(false) => unreachable!(),
+            // `metadata` failed, maybe the file doesn't exist
+            Err(error) => Err(wm_err!(
+                "unable to open image '{}': {error}",
+                input.to_string_lossy()
+            )),
         }
     }
 }
@@ -306,49 +351,41 @@ fn split_off_bracketed_suffix(input: &OsStr) -> Option<(OsString, OsString)> {
 }
 
 /// Parses ImageMagick `format:path`-style argument.
-pub fn parse_path_and_format(input: &OsStr) -> (OsString, Option<ImageFormat>) {
-    // Helper that returns the result in a slightly different shape
-    fn inner(input: &OsStr) -> Option<(OsString, ImageFormat)> {
-        #[cfg(any(unix, target_os = "wasi"))]
-        {
-            let bytes = input.as_bytes(); // From std::os::unix::ffi::OsStrExt
-            let mut iter = bytes.splitn(2, |&b| b == b':');
-            let prefix = iter.next().unwrap();
-            let suffix = iter.next()?;
-            Some((
-                OsStr::from_bytes(suffix).to_owned(), // From std::os::unix::ffi::OsStrExt
-                ImageFormat::from_extension(str::from_utf8(prefix).ok()?)?,
-            ))
-        }
-        #[cfg(windows)]
-        {
-            let wide_chars: Vec<u16> = input.encode_wide().collect(); // From std::os::windows::ffi::OsStrExt
-            let mut iter = wide_chars.splitn(2, |&wc| wc == b':' as u16);
-            let prefix = iter.next().unwrap();
-            // On Windows, ImageMagick treats "c:..." as a path
-            if prefix.len() == 1
-                && u8::try_from(prefix[0]).map(|c| c.is_ascii_alphabetic()) == Ok(true)
-            {
-                return None;
-            }
-            let suffix = iter.next()?;
-            Some((
-                OsString::from_wide(suffix), // From std::os::windows::ffi::OsStringExt
-                ImageFormat::from_extension(String::from_utf16(prefix).ok()?)?,
-            ))
-        }
-        #[cfg(not(any(unix, windows, target_os = "wasi")))]
-        {
-            // Outside the above platforms, we only support splitting UTF-8
-            let input = input.to_str()?;
-            let (prefix, suffix) = input.split_once(':')?;
-            Some((OsString::from(suffix), ImageFormat::from_extension(prefix)?))
-        }
+pub fn parse_path_and_format(input: &OsStr) -> Option<(OsString, ImageFormat)> {
+    #[cfg(any(unix, target_os = "wasi"))]
+    {
+        let bytes = input.as_bytes(); // From std::os::unix::ffi::OsStrExt
+        let mut iter = bytes.splitn(2, |&b| b == b':');
+        let prefix = iter.next().unwrap();
+        let suffix = iter.next()?;
+        Some((
+            OsStr::from_bytes(suffix).to_owned(), // From std::os::unix::ffi::OsStrExt
+            ImageFormat::from_extension(str::from_utf8(prefix).ok()?)?,
+        ))
     }
-
-    inner(input)
-        .map(|(path, format)| (path, Some(format)))
-        .unwrap_or_else(|| (input.to_owned(), None))
+    #[cfg(windows)]
+    {
+        let wide_chars: Vec<u16> = input.encode_wide().collect(); // From std::os::windows::ffi::OsStrExt
+        let mut iter = wide_chars.splitn(2, |&wc| wc == b':' as u16);
+        let prefix = iter.next().unwrap();
+        // On Windows, ImageMagick treats "c:..." as a path
+        if prefix.len() == 1 && u8::try_from(prefix[0]).map(|c| c.is_ascii_alphabetic()) == Ok(true)
+        {
+            return None;
+        }
+        let suffix = iter.next()?;
+        Some((
+            OsString::from_wide(suffix), // From std::os::windows::ffi::OsStringExt
+            ImageFormat::from_extension(String::from_utf16(prefix).ok()?)?,
+        ))
+    }
+    #[cfg(not(any(unix, windows, target_os = "wasi")))]
+    {
+        // Outside the above platforms, we only support splitting UTF-8
+        let input = input.to_str()?;
+        let (prefix, suffix) = input.split_once(':')?;
+        Some((OsString::from(suffix), ImageFormat::from_extension(prefix)?))
+    }
 }
 
 #[cfg(test)]
@@ -455,41 +492,29 @@ mod tests {
 
     #[test]
     fn test_parse_path_and_format() {
-        assert_eq!(
-            parse_path_and_format(OsStr::new("file.png")),
-            (OsString::from("file.png"), None),
-        );
+        assert_eq!(parse_path_and_format(OsStr::new("file.png")), None);
         assert_eq!(
             parse_path_and_format(OsStr::new("jpg:file.png")),
-            (OsString::from("file.png"), Some(ImageFormat::Jpeg)),
+            Some((OsString::from("file.png"), ImageFormat::Jpeg)),
         );
         assert_eq!(
             parse_path_and_format(OsStr::new("jpeg:file.png")),
-            (OsString::from("file.png"), Some(ImageFormat::Jpeg)),
+            Some((OsString::from("file.png"), ImageFormat::Jpeg)),
         );
         assert_eq!(
             parse_path_and_format(OsStr::new("JPEG:file.png")),
-            (OsString::from("file.png"), Some(ImageFormat::Jpeg)),
+            Some((OsString::from("file.png"), ImageFormat::Jpeg)),
         );
         assert_eq!(
             parse_path_and_format(OsStr::new("jpg:")),
-            (OsString::from(""), Some(ImageFormat::Jpeg)),
+            Some((OsString::from(""), ImageFormat::Jpeg)),
         );
-        assert_eq!(
-            parse_path_and_format(OsStr::new("")),
-            (OsString::from(""), None),
-        );
-        assert_eq!(
-            parse_path_and_format(OsStr::new(":")),
-            (OsString::from(":"), None),
-        );
-        assert_eq!(
-            parse_path_and_format(OsStr::new(":file.png")),
-            (OsString::from(":file.png"), None),
-        );
+        assert_eq!(parse_path_and_format(OsStr::new("")), None);
+        assert_eq!(parse_path_and_format(OsStr::new(":")), None);
+        assert_eq!(parse_path_and_format(OsStr::new(":file.png")), None);
         assert_eq!(
             parse_path_and_format(OsStr::new("unsupported_format:file.png")),
-            (OsString::from("unsupported_format:file.png"), None),
+            None,
         );
     }
 }

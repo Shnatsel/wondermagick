@@ -3,15 +3,19 @@
 //! We cannot use an argument parsing library because imagemagick arguments are unconventional:
 //! they are prefixed by -, not --. So we need to hand-roll our own parser.
 
-use std::ffi::{OsStr, OsString};
+use std::{
+    ffi::{OsStr, OsString},
+    path::Path,
+};
 
 use crate::{
-    arg_parsers::{parse_path_and_format, InputFileArg},
+    arg_parsers::{parse_path_and_format, InputFileArg, Location},
     error::MagickError,
     plan::ExecutionPlan,
     wm_err,
 };
 
+use image::ImageFormat;
 use strum::{EnumString, IntoStaticStr, VariantArray};
 
 #[derive(EnumString, IntoStaticStr, VariantArray, Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,14 +83,14 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
     }
 
     let mut plan = ExecutionPlan::default();
-    let (output_filename, output_format) = parse_path_and_format(&output_filename);
-    plan.set_output_file(output_filename, output_format);
+    let (output_file, output_format) = parse_output_file(&output_filename, |path| {
+        matches!(std::fs::exists(path), Ok(true))
+    });
+    plan.set_output_file(output_file, output_format);
 
     let mut iter = args.into_iter().skip(1); // skip argv[0], path to our binary
     while let Some(raw_arg) = iter.next() {
-        if raw_arg.as_encoded_bytes() == [b'-'] {
-            todo!(); // this is stdin or stdout
-        } else if optionlike(&raw_arg) {
+        if optionlike(&raw_arg) {
             // A file named "-foobar.jpg" will be parsed as an option.
             // Sadly imagemagick does not support the -- convention to separate options and filenames,
             // and there is nothing we can do about it without introducing incompatibility in argument parsing.
@@ -100,6 +104,27 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
         }
     }
     Ok(plan)
+}
+
+fn parse_output_file(
+    input: &OsStr,
+    exists: impl FnOnce(&Path) -> bool,
+) -> (Location, Option<ImageFormat>) {
+    let mut output_file = Location::from_arg(input);
+    let mut output_format = None;
+    // "-" is parsed as (Stdio, None) no matter what.
+    // "png:-" is parsed as:
+    //   - (Path("png:-"), None) if a file or dir named "png:-" exists.
+    //   - (Stdio, Some("png")) otherwise.
+    if let Location::Path(path) = &output_file {
+        if !exists(path) {
+            if let Some((path, format)) = parse_path_and_format(input) {
+                output_file = Location::from_arg(&path);
+                output_format = Some(format);
+            }
+        }
+    }
+    (output_file, output_format)
 }
 
 /// Checks if the string starts with a `-` or a `+`, followed by an ASCII letter

@@ -1,9 +1,12 @@
-use std::ffi::{OsStr, OsString};
+use std::{
+    ffi::{OsStr, OsString},
+    path::PathBuf,
+};
 
 use image::ImageFormat;
 
 use crate::arg_parse_err::ArgParseErr;
-use crate::arg_parsers::{parse_numeric_arg, CropGeometry, InputFileArg, ResizeGeometry};
+use crate::arg_parsers::{parse_numeric_arg, CropGeometry, InputFileArg, Location, ResizeGeometry};
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
@@ -15,7 +18,7 @@ use crate::{error::MagickError, operations::Operation, wm_try};
 pub struct ExecutionPlan {
     /// Operations to be applied to ALL input files
     global_ops: Vec<Operation>,
-    output_file: OsString,
+    output_file: Location,
     input_files: Vec<FilePlan>,
     output_format: Option<ImageFormat>,
     modifiers: Modifiers,
@@ -92,10 +95,8 @@ impl ExecutionPlan {
     }
 
     pub fn add_input_file(&mut self, file: InputFileArg) {
-        let filename = file.path.into_os_string();
-
         let mut file_plan = FilePlan {
-            filename,
+            location: file.location,
             format: file.format,
             ops: self.global_ops.clone(),
         };
@@ -120,7 +121,7 @@ impl ExecutionPlan {
         self.input_files.push(file_plan);
     }
 
-    pub fn set_output_file(&mut self, file: OsString, format: Option<ImageFormat>) {
+    pub fn set_output_file(&mut self, file: Location, format: Option<ImageFormat>) {
         self.output_file = file;
         self.output_format = format;
     }
@@ -130,9 +131,9 @@ impl ExecutionPlan {
             return Err(wm_err!("no images defined")); // mimics imagemagick
         }
         crate::init::init();
-        for (file_plan, output_file) in self.input_files.iter().zip(self.output_filenames().iter())
+        for (file_plan, output_file) in self.input_files.iter().zip(self.output_locations().iter())
         {
-            let mut image = wm_try!(decode(&file_plan.filename, file_plan.format));
+            let mut image = wm_try!(decode(&file_plan.location, file_plan.format));
 
             for operation in &file_plan.ops {
                 operation.execute(&mut image)?;
@@ -149,26 +150,27 @@ impl ExecutionPlan {
         Ok(())
     }
 
-    fn output_filenames(&self) -> Vec<OsString> {
-        if self.input_files.len() == 1 {
-            vec![self.output_file.clone()]
-        } else {
-            let mut names = Vec::new();
-            for i in 1..=self.input_files.len() {
-                let name = self.output_file.clone();
-                let suffix = OsString::from(format!("-{}", i)); // indexing for output images starts at 1
-                let name = insert_suffix_before_extension_in_path(&name, &suffix);
-                names.push(name);
+    fn output_locations(&self) -> Vec<Location> {
+        if self.input_files.len() > 1 {
+            if let Location::Path(output_file) = &self.output_file {
+                let mut locations = Vec::new();
+                for i in 1..=self.input_files.len() {
+                    let suffix = OsString::from(format!("-{i}")); // indexing for output images starts at 1
+                    let name =
+                        insert_suffix_before_extension_in_path(output_file.as_os_str(), &suffix);
+                    locations.push(Location::Path(PathBuf::from(name)))
+                }
+                return locations;
             }
-            names
         }
+        vec![self.output_file.clone(); self.input_files.len()]
     }
 }
 
 /// Plan of operations for a single input file
 #[derive(Debug, Default)]
 pub struct FilePlan {
-    pub filename: OsString,
+    pub location: Location,
     pub format: Option<ImageFormat>,
     pub ops: Vec<Operation>,
 }
