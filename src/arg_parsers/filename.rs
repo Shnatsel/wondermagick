@@ -58,6 +58,22 @@ impl InputFileArg {
         input: &OsStr,
         is_dir: impl Fn(&Path) -> Result<bool, std::io::Error>,
     ) -> Result<Self, MagickError> {
+        // The basic syntax here is "format:path[modifier]", e.g. "jpg:foo.jpg[50x50]",
+        // with the format and modifier being optional.
+        // ImageMagick will try to look for the full input string first, so if a file named
+        // "jpg:foo.jpg[50x50]" exists, it will be returned with empty format and modifier
+        // (regardless of whether we have permission to read the file).
+        // If "jpg:foo.jpg[50x50]" doesn't exist or is (a symlink to) a directory,
+        // the next path tried is "jpg:foo.jpg" (with modifier=50x50),
+        // and then the next one is "foo.jpg" (with format=jpg, modifier=50x50).
+        // If none of those files exist:
+        // - If "foo.jpg" exists as a directory, just return it anyway.
+        //   The decoder will deal with the problem later.
+        // - If "foo.jpg" doesn't exist, return error showing "foo.jpg" as the path,
+        //   not the full original string.
+        // If at any point in this process the remaining path becomes "" or "-",
+        // we return the special Stdio location indicating that the input is from stdin.
+
         // A ready-to-return location is either stdin or an existing non-directory path.
         // It doesn't matter if it's a file that cannot be read, it should still be returned.
         let ready_to_return = |location: &Location| match location {
