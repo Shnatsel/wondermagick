@@ -6,7 +6,6 @@ use std::ffi::OsStr;
 enum ParseState {
     Initial,
     Literal,
-    Whitespace,
     Var,
 }
 
@@ -39,7 +38,6 @@ impl TryFrom<&u8> for Var {
 struct Parser {
     state: ParseState,
     literal_accumulator: Vec<u8>,
-    whitespace_count: usize,
     tokens: Vec<Token>,
 }
 
@@ -48,14 +46,8 @@ impl Parser {
         Self {
             state: ParseState::Initial,
             literal_accumulator: Vec::new(),
-            whitespace_count: 0,
             tokens: Vec::new(),
         }
-    }
-
-    fn start_whitespace(&mut self) {
-        self.state = ParseState::Whitespace;
-        self.whitespace_count += 1;
     }
 
     fn start_literal(&mut self, char: &u8) {
@@ -80,19 +72,8 @@ impl Parser {
         Ok(())
     }
 
-    fn finish_whitespace(&mut self) {
-        if self.whitespace_count > 0 {
-            self.tokens.push(Token::Whitespace(self.whitespace_count));
-            self.whitespace_count = 0;
-        }
-    }
-
     fn try_parse_char(&mut self, char: &u8) -> Result<(), ArgParseErr> {
         match char {
-            b' ' => {
-                self.try_finish_literal()?;
-                self.start_whitespace();
-            }
             b'%' => {
                 if self
                     .literal_accumulator
@@ -102,16 +83,11 @@ impl Parser {
                     self.literal_accumulator.push(*char);
                 } else {
                     self.try_finish_literal()?;
-                    self.finish_whitespace();
                     self.state = ParseState::Var;
                 }
             }
             _ => match self.state {
                 ParseState::Initial => self.start_literal(char),
-                ParseState::Whitespace => {
-                    self.finish_whitespace();
-                    self.start_literal(char);
-                }
                 ParseState::Var => self.try_finish_var(char)?,
                 ParseState::Literal => self.literal_accumulator.push(*char),
             },
@@ -122,7 +98,6 @@ impl Parser {
     fn try_finish(&mut self) -> Result<(), ArgParseErr> {
         match self.state {
             ParseState::Literal => self.try_finish_literal()?,
-            ParseState::Whitespace => self.finish_whitespace(),
             ParseState::Var => return Err(ArgParseErr::new()),
             ParseState::Initial => {}
         }
@@ -149,24 +124,17 @@ mod tests {
 
     #[test]
     fn test_parse_with_whitespace() {
-        assert_eq!(parse(OsStr::new("  ")).unwrap(), vec![Token::Whitespace(2)]);
+        assert_eq!(
+            parse(OsStr::new("  ")).unwrap(),
+            vec![Token::Literal("  ".into()),]
+        );
     }
 
     #[test]
     fn test_parse_with_literal() {
         assert_eq!(
             parse(OsStr::new("just a sample literal string")).unwrap(),
-            vec![
-                Token::Literal("just".into()),
-                Token::Whitespace(1),
-                Token::Literal("a".into()),
-                Token::Whitespace(1),
-                Token::Literal("sample".into()),
-                Token::Whitespace(1),
-                Token::Literal("literal".into()),
-                Token::Whitespace(1),
-                Token::Literal("string".into())
-            ]
+            vec![Token::Literal("just a sample literal string".into()),]
         );
     }
 
@@ -225,7 +193,7 @@ mod tests {
             parse(OsStr::new("%w %h")).unwrap(),
             vec![
                 Token::Var(Var::CurrentImageWidthInPixels),
-                Token::Whitespace(1),
+                Token::Literal(" ".into()),
                 Token::Var(Var::CurrentImageHeightInPixels),
             ]
         );
