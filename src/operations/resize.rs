@@ -512,15 +512,43 @@ mod tests {
     #[test]
     fn preserve_aspect_ratio_enlarge_only() {
         let image = DynamicImage::new_rgb8(100, 100);
+        let geometry = ResizeGeometry::from_str("120x120<").unwrap();
+        assert_eq!((120, 120), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn preserve_aspect_ratio_enlarge_only_no_op() {
+        let image = DynamicImage::new_rgb8(100, 100);
         let geometry = ResizeGeometry::from_str("50x50<").unwrap();
         assert_eq!((100, 100), compute_dimensions(&image, &geometry));
     }
 
     #[test]
     fn preserve_aspect_ratio_shrink_only() {
+        let image = DynamicImage::new_rgb8(120, 120);
+        let geometry = ResizeGeometry::from_str("100x100>").unwrap();
+        assert_eq!((100, 100), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn preserve_aspect_ratio_shrink_only_no_op() {
         let image = DynamicImage::new_rgb8(50, 50);
         let geometry = ResizeGeometry::from_str("100x100>").unwrap();
         assert_eq!((50, 50), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn preserve_aspect_ratio_shrink_only_by_width() {
+        let image = DynamicImage::new_rgb8(100, 50);
+        let geometry = ResizeGeometry::from_str("50x50>").unwrap();
+        assert_eq!((50, 25), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn preserve_aspect_ratio_shrink_only_by_height() {
+        let image = DynamicImage::new_rgb8(50, 100);
+        let geometry = ResizeGeometry::from_str("50x50>").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
     }
 
     #[test]
