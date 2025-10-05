@@ -1,12 +1,32 @@
-use std::ffi::OsStr;
+use std::{
+    ffi::OsString,
+    io::{BufReader, Seek},
+};
 
 use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
 
-use crate::{error::MagickError, image::Image, image::InputProperties, wm_try};
+use crate::{
+    arg_parsers::Location,
+    error::MagickError,
+    image::{Image, InputProperties},
+    wm_err, wm_try,
+};
 
 /// If the format has not been explicitly specified, guesses the format based on file contents.
-pub fn decode(file: &OsStr, format: Option<ImageFormat>) -> Result<Image, MagickError> {
-    let mut reader = wm_try!(ImageReader::open(file));
+pub fn decode(location: &Location, format: Option<ImageFormat>) -> Result<Image, MagickError> {
+    let mut reader = match location {
+        Location::Path(path) => ImageReader::open(path)
+            .map_err(|error| wm_err!("unable to open image '{}': {error}", path.display()))?,
+        Location::Stdio => {
+            // The decoder requires Seek, which Stdout doesn't implement.
+            // We copy stdin to a temporary file and open the file instead.
+            let mut file = wm_try!(tempfile::tempfile());
+            wm_try!(std::io::copy(&mut std::io::stdin(), &mut file));
+            wm_try!(file.seek(std::io::SeekFrom::Start(0)));
+            ImageReader::new(BufReader::new(file))
+        }
+    };
+
     let format = match format {
         Some(format) => {
             reader.set_format(format);
@@ -23,7 +43,10 @@ pub fn decode(file: &OsStr, format: Option<ImageFormat>) -> Result<Image, Magick
     let color_type = decoder.original_color_type();
     let pixels = wm_try!(DynamicImage::from_decoder(decoder));
     let properties = InputProperties {
-        filename: file.to_os_string(),
+        filename: match location {
+            Location::Path(path) => path.clone().into_os_string(),
+            Location::Stdio => OsString::from("-"),
+        },
         color_type,
     };
     Ok(Image {

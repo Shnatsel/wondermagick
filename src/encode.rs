@@ -1,17 +1,20 @@
 use std::{
     ffi::OsStr,
     fs::File,
-    io::{BufWriter, Write},
+    io::{BufWriter, Seek, Write},
     path::Path,
 };
 
 use image::ImageFormat;
 
-use crate::{encoders, error::MagickError, image::Image, plan::Modifiers, wm_err, wm_try};
+use crate::{
+    arg_parsers::Location, encoders, error::MagickError, image::Image, plan::Modifiers, wm_err,
+    wm_try,
+};
 
 pub fn encode(
     image: &mut Image,
-    file_path: &OsStr,
+    location: &Location,
     format: Option<ImageFormat>,
     modifiers: &Modifiers,
 ) -> Result<(), MagickError> {
@@ -31,7 +34,7 @@ pub fn encode(
     }
 
     // run the actual encoding function
-    let result = encode_inner(image, file_path, format, modifiers);
+    let result = encode_inner(image, location, format, modifiers);
 
     // restore the metadata to the image so that it could be used by subsequent operations like -auto-orient
     if exif.is_some() {
@@ -46,14 +49,20 @@ pub fn encode(
 
 fn encode_inner(
     image: &Image,
-    file_path: &OsStr,
+    location: &Location,
     format: Option<ImageFormat>,
     modifiers: &Modifiers,
 ) -> Result<(), MagickError> {
-    let format = choose_encoding_format(image, file_path, format)?;
+    let format = choose_encoding_format(image, location, format)?;
 
-    // `File::create` automatically truncates (overwrites) the file if it exists.
-    let file = wm_try!(File::create(file_path));
+    let file = match location {
+        // `File::create` automatically truncates (overwrites) the file if it exists.
+        Location::Path(path) => File::create(path)
+            .map_err(|error| wm_err!("unable to open image '{}': {error}", path.display()))?,
+        // Some of the encoders require Seek, which Stdout doesn't implement.
+        // We write to a temporary file and then print out the content at the end.
+        Location::Stdio => wm_try!(tempfile::tempfile()),
+    };
     // Wrap in BufWriter for performance
     let mut writer = BufWriter::new(file);
 
@@ -74,33 +83,52 @@ fn encode_inner(
         _ => wm_try!(image.pixels.write_to(&mut writer, format)),
     }
 
-    // Flush the buffers to write everything to disk.
-    // The buffers will be flushed automatically when the writer goes out of scope,
-    // but that will not report any errors. This handles errors.
-    wm_try!(writer.flush());
+    match location {
+        Location::Path(_) => {
+            // Flush the buffers to write everything to disk.
+            // The buffers will be flushed automatically when the writer goes out of scope,
+            // but that will not report any errors. This handles errors.
+            wm_try!(writer.flush());
+        }
+        Location::Stdio => {
+            // Copy from the temporary file to stdout while handling errors
+            let mut file = wm_try!(writer.into_inner());
+            wm_try!(file.seek(std::io::SeekFrom::Start(0)));
+            let mut stdout = std::io::stdout().lock();
+            wm_try!(std::io::copy(&mut file, &mut stdout));
+            wm_try!(stdout.flush());
+        }
+    }
 
     Ok(())
 }
 
 fn choose_encoding_format(
     image: &Image,
-    file_path: &OsStr,
+    location: &Location,
     explicitly_specified: Option<ImageFormat>,
 ) -> Result<ImageFormat, MagickError> {
     if let Some(format) = explicitly_specified {
-        Ok(format)
-    // if format was not explicitly specified, guess based on the output path
-    } else if let Ok(format) = ImageFormat::from_path(file_path) {
-        Ok(format)
-    // if that fails, use the input format (like ImageMagick)
-    } else if let Some(format) = image.format {
-        Ok(format)
-    } else {
-        // fallback to emptry string matches imagemagick
-        let extension = Path::new(file_path).extension().unwrap_or(OsStr::new(""));
-        Err(wm_err!(
-            "no encode delegate for this image format `{}'",
-            extension.to_ascii_uppercase().display()
-        ))
+        return Ok(format);
     }
+    // if format was not explicitly specified, guess based on the output path
+    if let Location::Path(path) = location {
+        if let Ok(format) = ImageFormat::from_path(path) {
+            return Ok(format);
+        }
+    }
+    // if that fails, use the input format (like ImageMagick)
+    if let Some(format) = image.format {
+        return Ok(format);
+    }
+    // otherwise error
+    let extension = match location {
+        // fallback to empty string matches imagemagick
+        Location::Path(path) => Path::new(path).extension().unwrap_or(OsStr::new("")),
+        Location::Stdio => OsStr::new(""),
+    };
+    Err(wm_err!(
+        "no encode delegate for this image format `{}'",
+        extension.to_ascii_uppercase().display()
+    ))
 }
