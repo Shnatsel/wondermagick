@@ -3,9 +3,8 @@ use std::{
     path::PathBuf,
 };
 
-use image::ImageFormat;
-
 use crate::arg_parse_err::ArgParseErr;
+use crate::arg_parsers::FileFormat;
 use crate::arg_parsers::{
     parse_numeric_arg, CropGeometry, IdentifyFormat, InputFileArg, Location, ResizeGeometry,
 };
@@ -22,7 +21,7 @@ pub struct ExecutionPlan {
     global_ops: Vec<Operation>,
     output_file: Location,
     input_files: Vec<FilePlan>,
-    output_format: Option<ImageFormat>,
+    output_format: Option<FileFormat>,
     modifiers: Modifiers,
 }
 
@@ -126,7 +125,7 @@ impl ExecutionPlan {
         self.input_files.push(file_plan);
     }
 
-    pub fn set_output_file(&mut self, file: Location, format: Option<ImageFormat>) {
+    pub fn set_output_file(&mut self, file: Location, format: Option<FileFormat>) {
         self.output_file = file;
         self.output_format = format;
     }
@@ -176,7 +175,7 @@ impl ExecutionPlan {
 #[derive(Debug, Default)]
 pub struct FilePlan {
     pub location: Location,
-    pub format: Option<ImageFormat>,
+    pub format: Option<FileFormat>,
     pub ops: Vec<Operation>,
 }
 
@@ -210,13 +209,14 @@ impl Strip {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use image::ImageFormat;
 
     #[test]
     fn test_output_locations() {
         let plan = ExecutionPlan {
             output_file: Location::Path(PathBuf::from("out.gif")),
             input_files: vec![Default::default(), Default::default()],
-            output_format: Some(ImageFormat::Jpeg), // Intentionally doesn't match the extension
+            output_format: Some(FileFormat::Format(ImageFormat::Jpeg)), // Intentionally doesn't match the extension
             ..Default::default()
         };
         assert_eq!(
@@ -230,7 +230,7 @@ mod tests {
         let plan = ExecutionPlan {
             output_file: Location::Path(PathBuf::from("no-extension")),
             input_files: vec![Default::default(), Default::default()],
-            output_format: Some(ImageFormat::Jpeg),
+            output_format: Some(FileFormat::Format(ImageFormat::Jpeg)),
             ..Default::default()
         };
         assert_eq!(
@@ -244,7 +244,7 @@ mod tests {
         let plan = ExecutionPlan {
             output_file: Location::Stdio,
             input_files: vec![Default::default(), Default::default()],
-            output_format: Some(ImageFormat::Jpeg),
+            output_format: Some(FileFormat::Format(ImageFormat::Jpeg)),
             ..Default::default()
         };
         assert_eq!(

@@ -9,13 +9,12 @@ use std::{
 };
 
 use crate::{
-    arg_parsers::{parse_path_and_format, InputFileArg, Location},
+    arg_parsers::{parse_path_and_format, FileFormat, InputFileArg, Location},
     error::MagickError,
     plan::ExecutionPlan,
     wm_err,
 };
 
-use image::ImageFormat;
 use strum::{EnumString, IntoStaticStr, VariantArray};
 
 #[derive(EnumString, IntoStaticStr, VariantArray, Debug, Clone, Copy, PartialEq, Eq)]
@@ -114,7 +113,7 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
 fn parse_output_file(
     input: &OsStr,
     exists: impl FnOnce(&Path) -> bool,
-) -> (Location, Option<ImageFormat>) {
+) -> (Location, Option<FileFormat>) {
     let mut output_file = Location::from_arg(input);
     let mut output_format = None;
     // "-" is parsed as (Stdio, None) no matter what.
@@ -152,6 +151,7 @@ fn sign_and_arg_name(raw_arg: OsString) -> Result<(u8, String), MagickError> {
 
 #[cfg(test)]
 mod tests {
+    use image::ImageFormat;
     use std::path::PathBuf;
 
     use super::*;
@@ -168,7 +168,7 @@ mod tests {
         );
         assert_eq!(
             parse_output_file(OsStr::new("png:-"), |_| false),
-            (Location::Stdio, Some(ImageFormat::Png)),
+            (Location::Stdio, Some(FileFormat::Format(ImageFormat::Png))),
         );
         assert_eq!(
             parse_output_file(OsStr::new("png:-"), |_| true),

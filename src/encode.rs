@@ -8,16 +8,27 @@ use std::{
 use image::ImageFormat;
 
 use crate::{
-    arg_parsers::Location, encoders, error::MagickError, image::Image, plan::Modifiers, wm_err,
-    wm_try,
+    arg_parsers::{FileFormat, Location},
+    encoders,
+    error::MagickError,
+    image::Image,
+    plan::Modifiers,
+    wm_err, wm_try,
 };
 
 pub fn encode(
     image: &mut Image,
     location: &Location,
-    format: Option<ImageFormat>,
+    format: Option<FileFormat>,
     modifiers: &Modifiers,
 ) -> Result<(), MagickError> {
+    let format = match format {
+        // no-op, return immediately
+        Some(FileFormat::IgnoreFile) => return Ok(()),
+        Some(FileFormat::Format(fmt)) => Some(fmt),
+        None => None,
+    };
+
     // This is a wrapper function that clears metadata if options like -strip are specified.
     //
     // Correctly stripping metadata when requested is a major privacy concern:

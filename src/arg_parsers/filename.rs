@@ -35,12 +35,40 @@ impl Location {
             Self::Path(PathBuf::from(arg))
         }
     }
+
+    pub fn to_filename(&self) -> OsString {
+        match self {
+            Location::Path(path) => path.clone().into_os_string(),
+            Location::Stdio => OsString::from("-"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileFormat {
+    Format(ImageFormat),
+    /// Encoding operation is present but is a no-op. On the CLI this is "null:" passed as filename.
+    IgnoreFile,
+}
+
+impl FileFormat {
+    /// Creates a format from the explicit specifier that precedes the filename,
+    /// e.g. `png:my-file` or `null:`
+    pub fn from_prefix(prefix: &str) -> Option<Self> {
+        let lowercase_prefix = prefix.to_ascii_lowercase();
+        let format = if lowercase_prefix == "null" {
+            Self::IgnoreFile
+        } else {
+            Self::Format(ImageFormat::from_extension(lowercase_prefix)?)
+        };
+        Some(format)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InputFileArg {
     pub location: Location,
-    pub format: Option<ImageFormat>,
+    pub format: Option<FileFormat>,
     pub read_mod: Option<ReadModifier>,
 }
 
@@ -367,32 +395,32 @@ fn split_off_bracketed_suffix(input: &OsStr) -> Option<(OsString, OsString)> {
 }
 
 /// Parses ImageMagick `format:path`-style argument.
-pub fn parse_path_and_format(input: &OsStr) -> Option<(OsString, ImageFormat)> {
+pub fn parse_path_and_format(input: &OsStr) -> Option<(OsString, FileFormat)> {
     #[cfg(any(unix, target_os = "wasi"))]
     {
         let bytes = input.as_bytes(); // From std::os::unix::ffi::OsStrExt
         let mut iter = bytes.splitn(2, |&b| b == b':');
-        let prefix = iter.next().unwrap();
+        let prefix = str::from_utf8(iter.next().unwrap()).ok()?;
         let suffix = iter.next()?;
         Some((
             OsStr::from_bytes(suffix).to_owned(), // From std::os::unix::ffi::OsStrExt
-            ImageFormat::from_extension(str::from_utf8(prefix).ok()?)?,
+            FileFormat::from_prefix(prefix)?,
         ))
     }
     #[cfg(windows)]
     {
         let wide_chars: Vec<u16> = input.encode_wide().collect(); // From std::os::windows::ffi::OsStrExt
         let mut iter = wide_chars.splitn(2, |&wc| wc == b':' as u16);
-        let prefix = iter.next().unwrap();
+        let prefix = String::from_utf16(iter.next().unwrap()).ok()?;
         // On Windows, ImageMagick treats "c:..." as a path
-        if prefix.len() == 1 && u8::try_from(prefix[0]).map(|c| c.is_ascii_alphabetic()) == Ok(true)
+        if prefix.len() == 1 && prefix.chars().nth(0).map(|c| c.is_ascii_alphabetic()) == Some(true)
         {
             return None;
         }
         let suffix = iter.next()?;
         Some((
             OsString::from_wide(suffix), // From std::os::windows::ffi::OsStringExt
-            ImageFormat::from_extension(String::from_utf16(prefix).ok()?)?,
+            FileFormat::from_prefix(&prefix)?,
         ))
     }
     #[cfg(not(any(unix, windows, target_os = "wasi")))]
@@ -400,13 +428,15 @@ pub fn parse_path_and_format(input: &OsStr) -> Option<(OsString, ImageFormat)> {
         // Outside the above platforms, we only support splitting UTF-8
         let input = input.to_str()?;
         let (prefix, suffix) = input.split_once(':')?;
-        Some((OsString::from(suffix), ImageFormat::from_extension(prefix)?))
+        Some((OsString::from(suffix), FileFormat::from_prefix(prefix)?))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use image::ImageFormat;
 
     use super::*;
 
@@ -440,7 +470,7 @@ mod tests {
             .unwrap(),
             InputFileArg {
                 location: Location::Path("file.png".into()),
-                format: Some(ImageFormat::Jpeg),
+                format: Some(FileFormat::Format(ImageFormat::Jpeg)),
                 read_mod: Some(ReadModifier::Crop(
                     LoadCropGeometry::from_str("1x2+3+4").unwrap()
                 ))
@@ -606,19 +636,28 @@ mod tests {
         assert_eq!(parse_path_and_format(OsStr::new("file.png")), None);
         assert_eq!(
             parse_path_and_format(OsStr::new("jpg:file.png")),
-            Some((OsString::from("file.png"), ImageFormat::Jpeg)),
+            Some((
+                OsString::from("file.png"),
+                FileFormat::Format(ImageFormat::Jpeg)
+            )),
         );
         assert_eq!(
             parse_path_and_format(OsStr::new("jpeg:file.png")),
-            Some((OsString::from("file.png"), ImageFormat::Jpeg)),
+            Some((
+                OsString::from("file.png"),
+                FileFormat::Format(ImageFormat::Jpeg)
+            )),
         );
         assert_eq!(
             parse_path_and_format(OsStr::new("JPEG:file.png")),
-            Some((OsString::from("file.png"), ImageFormat::Jpeg)),
+            Some((
+                OsString::from("file.png"),
+                FileFormat::Format(ImageFormat::Jpeg)
+            )),
         );
         assert_eq!(
             parse_path_and_format(OsStr::new("jpg:")),
-            Some((OsString::from(""), ImageFormat::Jpeg)),
+            Some((OsString::from(""), FileFormat::Format(ImageFormat::Jpeg))),
         );
         assert_eq!(parse_path_and_format(OsStr::new("")), None);
         assert_eq!(parse_path_and_format(OsStr::new(":")), None);
@@ -626,6 +665,18 @@ mod tests {
         assert_eq!(
             parse_path_and_format(OsStr::new("unsupported_format:file.png")),
             None,
+        );
+    }
+
+    #[test]
+    fn test_parse_null_format() {
+        assert_eq!(
+            parse_path_and_format(OsStr::new("null:file.png")),
+            Some((OsString::from("file.png"), FileFormat::IgnoreFile)),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new("null:")),
+            Some((OsString::from(""), FileFormat::IgnoreFile)),
         );
     }
 }
