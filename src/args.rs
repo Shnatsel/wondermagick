@@ -23,6 +23,9 @@ use strum::{EnumString, IntoStaticStr, VariantArray};
 pub enum Arg {
     AutoOrient,
     Crop,
+    // TODO: -format can actually change meaning, as `-format type`
+    // and as `-format expression`. We currently only implement `-format expression`.
+    Format,
     Identify,
     Quality,
     Resize,
@@ -37,6 +40,7 @@ impl Arg {
         match self {
             Arg::AutoOrient => false,
             Arg::Crop => true,
+            Arg::Format => true,
             Arg::Identify => false,
             Arg::Quality => true,
             Arg::Resize => true,
@@ -51,6 +55,7 @@ impl Arg {
         match self {
             Arg::AutoOrient => "automagically orient (rotate) image",
             Arg::Crop => "cut out a rectangular region of the image",
+            Arg::Format => "output formatted image characteristics",
             Arg::Identify => "identify the format and characteristics of the image",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
             Arg::Resize => "resize the image",

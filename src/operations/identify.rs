@@ -2,41 +2,98 @@ use std::{ffi::OsStr, io::Write};
 
 use image::ExtendedColorType;
 
-use crate::{error::MagickError, image::Image, wm_try};
+use crate::{
+    arg_parsers::IdentifyFormat, arg_parsers::Token, arg_parsers::Var, error::MagickError,
+    image::Image, wm_try,
+};
 
 // https://imagemagick.org/script/command-line-options.php#identify
-pub fn identify(image: &mut Image) -> Result<(), MagickError> {
+pub fn identify(image: &mut Image, format: Option<IdentifyFormat>) -> Result<(), MagickError> {
     // acquire a buffered writer to which we can make lots of small writes cheaply
     let mut stdout = std::io::stdout().lock();
-    identify_impl(image, &mut stdout)
+    identify_impl(image, format, &mut stdout)
 }
 
-fn identify_impl(image: &Image, writer: &mut impl Write) -> Result<(), MagickError> {
-    write_filename(&image.properties.filename, writer)?;
+fn identify_impl(
+    image: &Image,
+    format: Option<IdentifyFormat>,
+    writer: &mut impl Write,
+) -> Result<(), MagickError> {
+    // The default format, if none is specified, turns into something like
+    // ~/imagename.jpg JPEG 1363x2048 1363x2048+0+0 8-bit sRGB 270336B 0.010u 0:00.013
+    let template = match &format {
+        Some(fmt) => &fmt.template,
+        None => &vec![
+            Token::Var(Var::ImageFilename),
+            Token::Literal(" ".into()),
+            Token::Var(Var::ImageFileFormat),
+            Token::Literal(" ".into()),
+            Token::Var(Var::CurrentImageWidthInPixels),
+            Token::Literal("x".into()),
+            Token::Var(Var::CurrentImageHeightInPixels),
+            Token::Literal(" ".into()),
+            Token::Var(Var::LayerCanvasPageGeometry),
+            Token::Literal(" ".into()),
+            Token::Var(Var::ImageDepth),
+            Token::Literal("-bit ".into()),
+            Token::Var(Var::Colorspace),
+            Token::Newline,
+            // TODO: file size in bytes
+            // TODO: consumed user time identifying the image
+            // TODO: elapsed time identifying the image
+        ],
+    };
 
-    let format = image.format.map(|f| f.extensions_str()[0].to_uppercase());
+    for token in template {
+        match token {
+            Token::Newline => wm_try!(write!(writer, "\n")),
+            Token::Literal(text) => wm_try!(write!(writer, "{}", text)),
+            Token::Var(Var::CurrentImageWidthInPixels | Var::PageCanvasWidth) => {
+                wm_try!(write!(writer, "{}", image.pixels.width()));
+            }
+            Token::Var(Var::CurrentImageHeightInPixels | Var::PageCanvasHeight) => {
+                wm_try!(write!(writer, "{}", image.pixels.height()));
+            }
+            Token::Var(Var::PageCanvasXOffset | Var::PageCanvasYOffset) => {
+                // TODO: actually read and report these offsets
+                wm_try!(write!(writer, "+{}", 0));
+            }
+            Token::Var(Var::ImageFileFormat) => {
+                if let Some(format) = image.format.map(|f| f.extensions_str()[0].to_uppercase()) {
+                    wm_try!(write!(writer, "{}", format));
+                }
+            }
+            Token::Var(Var::ImageFilename | Var::MagickFilename) => {
+                write_filename(&image.properties.filename, writer)?;
+            }
+            Token::Var(Var::OriginalImageSize) => {
+                wm_try!(write!(
+                    writer,
+                    "{}x{}",
+                    image.pixels.width(),
+                    image.pixels.height()
+                ));
+            }
+            Token::Var(Var::LayerCanvasPageGeometry) => {
+                let dimensions = format!("{}x{}", image.pixels.width(), image.pixels.height());
+                // TODO: actually read and report these offsets
+                wm_try!(write!(writer, "{}+0+0", dimensions));
+            }
+            Token::Var(Var::ImageDepth) => {
+                let color_type = image.properties.color_type;
+                let bits_per_channel =
+                    color_type.bits_per_pixel() / color_type.channel_count() as u16;
+                wm_try!(write!(writer, "{}", bits_per_channel));
+            }
+            Token::Var(Var::Colorspace) => {
+                let color_type = image.properties.color_type;
+                if let Some(colorspace) = get_colorspace(color_type) {
+                    wm_try!(write!(writer, "{}", colorspace));
+                }
+            }
+        }
+    }
 
-    let dimensions = Some(format!(
-        "{}x{}",
-        image.pixels.width(),
-        image.pixels.height()
-    ));
-    // TODO: actually read and report these offsets
-    let dimensions_ext = Some(format!("{}+0+0", dimensions.as_ref().unwrap()));
-
-    let color_type = image.properties.color_type;
-    let bits = Some(format!(
-        "{}-bit",
-        color_type.bits_per_pixel() / color_type.channel_count() as u16
-    ));
-    let colorspace = get_colorspace(color_type);
-
-    let parts: Vec<String> = vec![format, dimensions, dimensions_ext, bits, colorspace]
-        .into_iter()
-        .flatten()
-        .collect();
-
-    wm_try!(writeln!(writer, "{}", parts.join(" ")));
     Ok(())
 }
 
@@ -55,8 +112,6 @@ fn write_filename(filename: &OsStr, writer: &mut impl Write) -> Result<(), Magic
         // TODO: figure out what, if anything, imagemagick does on Windows for non-UTF-16 filenames and replicate that.
         wm_try!(write!(writer, "{}", filename.to_string_lossy()));
     }
-    // write the space separator after the filename
-    wm_try!(write!(writer, " "));
     Ok(())
 }
 
@@ -109,6 +164,7 @@ mod tests {
                     color_type: ExtendedColorType::Rgb16,
                 },
             },
+            None,
             &mut output,
         )
         .unwrap();
@@ -119,28 +175,53 @@ mod tests {
     }
 
     #[test]
-    fn test_identify_without_format() {
-        // may happen due to the format being a plugin, not a natively recognized one
-        // TODO: get image to expose the underlying enum with plugin formats
-        let image = DynamicImage::new_rgba8(1, 1);
+    fn test_identify_with_format_template_vars() {
         let mut output = Vec::new();
         identify_impl(
             &mut Image {
                 format: None,
                 exif: None,
                 icc: None,
-                pixels: image,
+                pixels: DynamicImage::new_rgba8(123, 42),
                 properties: InputProperties {
-                    filename: "image_without_format.jpg".into(),
+                    filename: "irrelevant.jpg".into(),
                     color_type: ExtendedColorType::Cmyk8,
                 },
             },
+            Some(IdentifyFormat {
+                template: vec![
+                    Token::Var(Var::CurrentImageWidthInPixels),
+                    Token::Literal("   ".into()),
+                    Token::Var(Var::CurrentImageHeightInPixels),
+                    Token::Newline,
+                ],
+            }),
             &mut output,
         )
         .unwrap();
-        assert_eq!(
-            String::try_from(output).unwrap(),
-            "image_without_format.jpg 1x1 1x1+0+0 8-bit CMYK\n"
-        );
+        assert_eq!(String::try_from(output).unwrap(), "123   42\n");
+    }
+
+    #[test]
+    fn test_identify_with_format_template_literal() {
+        let mut output = Vec::new();
+        identify_impl(
+            &mut Image {
+                format: None,
+                exif: None,
+                icc: None,
+                pixels: DynamicImage::new_rgba8(1, 1),
+                properties: InputProperties {
+                    filename: "irrelevant.jpg".into(),
+                    color_type: ExtendedColorType::Cmyk8,
+                },
+            },
+            Some(IdentifyFormat {
+                template: vec![Token::Literal("text".into())],
+            }),
+            &mut output,
+        )
+        .unwrap();
+        assert_eq!(String::try_from(output).unwrap(), "text");
     }
 }

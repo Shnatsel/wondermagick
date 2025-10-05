@@ -2,7 +2,7 @@ use std::{ffi::OsStr, num::ParseFloatError};
 
 /// Error reporting for argument parsing that mimics imagemagick.
 /// Use `.display_with_arg()` to properly present this error.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct ArgParseErr {
     pub message: Option<String>,
 }
