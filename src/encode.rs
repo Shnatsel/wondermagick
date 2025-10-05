@@ -24,7 +24,7 @@ pub fn encode(
 ) -> Result<(), MagickError> {
     let format = match format {
         // no-op, return immediately
-        Some(FileFormat::DoNotEncode) => return Ok(()),
+        Some(FileFormat::IgnoreFile) => return Ok(()),
         Some(FileFormat::Format(fmt)) => Some(fmt),
         None => None,
     };

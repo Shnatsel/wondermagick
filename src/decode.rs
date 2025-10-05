@@ -12,7 +12,7 @@ use crate::{
 /// If the format has not been explicitly specified, guesses the format based on file contents.
 pub fn decode(location: &Location, format: Option<FileFormat>) -> Result<Image, MagickError> {
     let format = match format {
-        Some(FileFormat::DoNotEncode) => return Ok(blank_image(location)),
+        Some(FileFormat::IgnoreFile) => return Ok(blank_image(location)),
         Some(FileFormat::Format(fmt)) => Some(fmt),
         None => None,
     };

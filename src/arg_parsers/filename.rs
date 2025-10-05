@@ -48,7 +48,7 @@ impl Location {
 pub enum FileFormat {
     Format(ImageFormat),
     /// Encoding operation is present but is a no-op. On the CLI this is "null:" passed as filename.
-    DoNotEncode,
+    IgnoreFile,
 }
 
 impl FileFormat {
@@ -57,7 +57,7 @@ impl FileFormat {
     pub fn from_prefix(prefix: &str) -> Option<Self> {
         let lowercase_prefix = prefix.to_ascii_lowercase();
         let format = if lowercase_prefix == "null" {
-            Self::DoNotEncode
+            Self::IgnoreFile
         } else {
             Self::Format(ImageFormat::from_extension(lowercase_prefix)?)
         };
@@ -672,11 +672,11 @@ mod tests {
     fn test_parse_null_format() {
         assert_eq!(
             parse_path_and_format(OsStr::new("null:file.png")),
-            Some((OsString::from("file.png"), FileFormat::DoNotEncode)),
+            Some((OsString::from("file.png"), FileFormat::IgnoreFile)),
         );
         assert_eq!(
             parse_path_and_format(OsStr::new("null:")),
-            Some((OsString::from(""), FileFormat::DoNotEncode)),
+            Some((OsString::from(""), FileFormat::IgnoreFile)),
         );
     }
 }
