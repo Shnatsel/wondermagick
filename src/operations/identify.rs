@@ -124,7 +124,7 @@ fn get_colorspace(color_type: ExtendedColorType) -> Option<String> {
     let string = match color_type {
         A8 => "Transparent",
         L1 | L2 | L4 | L8 | L16 => "Gray",
-        La1 | La2 | La4 | La8 | La16 => todo!(),
+        La1 | La2 | La4 | La8 | La16 => "Gray",
         Rgba1 | Rgba2 | Rgba4 | Rgba8 | Rgba16 => "sRGB",
         Rgb1 | Rgb2 | Rgb4 | Rgb8 | Rgb16 => "sRGB",
         Bgr8 | Bgra8 => "sRGB",
