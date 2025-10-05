@@ -8,7 +8,7 @@ use crate::{
 };
 
 // https://imagemagick.org/script/command-line-options.php#identify
-pub fn identify(image: &mut Image, format: IdentifyFormat) -> Result<(), MagickError> {
+pub fn identify(image: &mut Image, format: Option<IdentifyFormat>) -> Result<(), MagickError> {
     // acquire a buffered writer to which we can make lots of small writes cheaply
     let mut stdout = std::io::stdout().lock();
     identify_impl(image, format, &mut stdout)
@@ -16,29 +16,32 @@ pub fn identify(image: &mut Image, format: IdentifyFormat) -> Result<(), MagickE
 
 fn identify_impl(
     image: &Image,
-    format: IdentifyFormat,
+    format: Option<IdentifyFormat>,
     writer: &mut impl Write,
 ) -> Result<(), MagickError> {
     // The default format, if none is specified, turns into something like
     // ~/imagename.jpg JPEG 1363x2048 1363x2048+0+0 8-bit sRGB 270336B 0.010u 0:00.013
-    let template = &format.template.unwrap_or(vec![
-        Token::Var(Var::ImageFilename),
-        Token::Literal(" ".into()),
-        Token::Var(Var::ImageFileFormat),
-        Token::Literal(" ".into()),
-        Token::Var(Var::CurrentImageWidthInPixels),
-        Token::Literal("x".into()),
-        Token::Var(Var::CurrentImageHeightInPixels),
-        Token::Literal(" ".into()),
-        Token::Var(Var::LayerCanvasPageGeometry),
-        Token::Literal(" ".into()),
-        Token::Var(Var::ImageDepth),
-        Token::Literal("-bit ".into()),
-        Token::Var(Var::Colorspace),
-        // TODO: file size in bytes
-        // TODO: consumed user time identifying the image
-        // TODO: elapsed time identifying the image
-    ]);
+    let template = match &format {
+        Some(fmt) => &fmt.template,
+        None => &vec![
+            Token::Var(Var::ImageFilename),
+            Token::Literal(" ".into()),
+            Token::Var(Var::ImageFileFormat),
+            Token::Literal(" ".into()),
+            Token::Var(Var::CurrentImageWidthInPixels),
+            Token::Literal("x".into()),
+            Token::Var(Var::CurrentImageHeightInPixels),
+            Token::Literal(" ".into()),
+            Token::Var(Var::LayerCanvasPageGeometry),
+            Token::Literal(" ".into()),
+            Token::Var(Var::ImageDepth),
+            Token::Literal("-bit ".into()),
+            Token::Var(Var::Colorspace),
+            // TODO: file size in bytes
+            // TODO: consumed user time identifying the image
+            // TODO: elapsed time identifying the image
+        ],
+    };
 
     for token in template {
         match token {
@@ -159,7 +162,7 @@ mod tests {
                     color_type: ExtendedColorType::Rgb16,
                 },
             },
-            IdentifyFormat { template: None },
+            None,
             &mut output,
         )
         .unwrap();
@@ -183,13 +186,13 @@ mod tests {
                     color_type: ExtendedColorType::Cmyk8,
                 },
             },
-            IdentifyFormat {
-                template: Option::from(vec![
+            Some(IdentifyFormat {
+                template: vec![
                     Token::Var(Var::CurrentImageWidthInPixels),
                     Token::Literal("   ".into()),
                     Token::Var(Var::CurrentImageHeightInPixels),
-                ]),
-            },
+                ],
+            }),
             &mut output,
         )
         .unwrap();
@@ -210,9 +213,9 @@ mod tests {
                     color_type: ExtendedColorType::Cmyk8,
                 },
             },
-            IdentifyFormat {
-                template: Option::from(vec![Token::Literal("text".into())]),
-            },
+            Some(IdentifyFormat {
+                template: vec![Token::Literal("text".into())],
+            }),
             &mut output,
         )
         .unwrap();

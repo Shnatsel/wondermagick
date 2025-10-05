@@ -78,7 +78,7 @@ impl ExecutionPlan {
                 self.modifiers.strip.icc = false;
             }
             Arg::Format => {
-                self.modifiers.identify_format = IdentifyFormat::try_from(value.unwrap())?;
+                self.modifiers.identify_format = Some(IdentifyFormat::try_from(value.unwrap())?)
             }
         };
 
@@ -184,7 +184,7 @@ pub struct FilePlan {
 pub struct Modifiers {
     pub quality: Option<f64>,
     pub strip: Strip,
-    pub identify_format: IdentifyFormat,
+    pub identify_format: Option<IdentifyFormat>,
 }
 
 #[derive(Debug, Default, Copy, Clone)] // bools default to false

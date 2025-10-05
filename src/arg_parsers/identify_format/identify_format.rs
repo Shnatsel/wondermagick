@@ -28,7 +28,7 @@ pub enum Token {
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct IdentifyFormat {
-    pub template: Option<Vec<Token>>,
+    pub template: Vec<Token>,
 }
 
 impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
@@ -36,7 +36,7 @@ impl TryFrom<&std::ffi::OsStr> for IdentifyFormat {
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
         Ok(Self {
-            template: Option::from(parse(s)?),
+            template: parse(s)?,
         })
     }
 }

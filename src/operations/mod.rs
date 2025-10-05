@@ -17,7 +17,7 @@ pub enum Operation {
     Sample(ResizeGeometry),
     CropOnLoad(LoadCropGeometry),
     Crop(CropGeometry),
-    Identify(IdentifyFormat),
+    Identify(Option<IdentifyFormat>),
     AutoOrient,
 }
 
