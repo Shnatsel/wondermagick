@@ -667,4 +667,16 @@ mod tests {
             None,
         );
     }
+
+    #[test]
+    fn test_parse_null_format() {
+        assert_eq!(
+            parse_path_and_format(OsStr::new("null:file.png")),
+            Some((OsString::from("file.png"), FileFormat::DoNotEncode)),
+        );
+        assert_eq!(
+            parse_path_and_format(OsStr::new("null:")),
+            Some((OsString::from(""), FileFormat::DoNotEncode)),
+        );
+    }
 }
