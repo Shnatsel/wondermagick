@@ -15,9 +15,16 @@ use crate::{
 pub fn encode(
     image: &mut Image,
     location: &Location,
-    format: Option<ImageFormat>,
+    format: Option<FileFormat>,
     modifiers: &Modifiers,
 ) -> Result<(), MagickError> {
+    let format = match format {
+        // no-op, return immediately
+        Some(FileFormat::DoNotEncode) => return Ok(()),
+        Some(FileFormat::Format(fmt)) => Some(fmt),
+        None => None,
+    };
+
     // This is a wrapper function that clears metadata if options like -strip are specified.
     //
     // Correctly stripping metadata when requested is a major privacy concern:
@@ -131,4 +138,25 @@ fn choose_encoding_format(
         "no encode delegate for this image format `{}'",
         extension.to_ascii_uppercase().display()
     ))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileFormat {
+    Format(ImageFormat),
+    /// Encoding operation is present but is a no-op. On the CLI this is "null:" passed as filename.
+    DoNotEncode,
+}
+
+impl FileFormat {
+    /// Creates a format from the explicit specifier that precedes the filename,
+    /// e.g. `png:my-file` or `null:`
+    pub fn from_prefix(prefix: &str) -> Option<Self> {
+        let lowercase_prefix = prefix.to_ascii_lowercase();
+        let format = if lowercase_prefix == "null" {
+            Self::DoNotEncode
+        } else {
+            Self::Format(ImageFormat::from_extension(lowercase_prefix)?)
+        };
+        Some(format)
+    }
 }

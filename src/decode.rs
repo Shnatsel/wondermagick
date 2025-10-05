@@ -1,19 +1,23 @@
-use std::{
-    ffi::OsString,
-    io::{BufReader, Seek},
-};
+use std::io::{BufReader, Seek};
 
-use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader};
+use image::{DynamicImage, ImageDecoder, ImageReader};
 
 use crate::{
     arg_parsers::Location,
+    encode::FileFormat,
     error::MagickError,
     image::{Image, InputProperties},
     wm_err, wm_try,
 };
 
 /// If the format has not been explicitly specified, guesses the format based on file contents.
-pub fn decode(location: &Location, format: Option<ImageFormat>) -> Result<Image, MagickError> {
+pub fn decode(location: &Location, format: Option<FileFormat>) -> Result<Image, MagickError> {
+    let format = match format {
+        Some(FileFormat::DoNotEncode) => return Ok(blank_image(location)),
+        Some(FileFormat::Format(fmt)) => Some(fmt),
+        None => None,
+    };
+
     let mut reader = match location {
         Location::Path(path) => ImageReader::open(path)
             .map_err(|error| wm_err!("unable to open image '{}': {error}", path.display()))?,
@@ -43,10 +47,7 @@ pub fn decode(location: &Location, format: Option<ImageFormat>) -> Result<Image,
     let color_type = decoder.original_color_type();
     let pixels = wm_try!(DynamicImage::from_decoder(decoder));
     let properties = InputProperties {
-        filename: match location {
-            Location::Path(path) => path.clone().into_os_string(),
-            Location::Stdio => OsString::from("-"),
-        },
+        filename: location.to_filename(),
         color_type,
     };
     Ok(Image {
@@ -56,6 +57,19 @@ pub fn decode(location: &Location, format: Option<ImageFormat>) -> Result<Image,
         pixels,
         properties,
     })
+}
+
+pub fn blank_image(location: &Location) -> Image {
+    Image {
+        format: None,
+        exif: None,
+        icc: None,
+        pixels: DynamicImage::new_rgb8(1, 1),
+        properties: InputProperties {
+            filename: location.to_filename(),
+            color_type: image::ExtendedColorType::Rgb8,
+        },
+    }
 }
 
 // You know what would be a cool optimization for decoding process?
