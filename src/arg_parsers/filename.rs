@@ -390,14 +390,13 @@ pub fn parse_path_and_format(input: &OsStr) -> Option<(OsString, FileFormat)> {
         let mut iter = wide_chars.splitn(2, |&wc| wc == b':' as u16);
         let prefix = String::from_utf16(iter.next().unwrap()).ok()?;
         // On Windows, ImageMagick treats "c:..." as a path
-        if prefix.len() == 1 && prefix.chars().first().map(|c| c.is_ascii_alphabetic()) == Ok(true)
-        {
+        if prefix.len() == 1 && prefix.chars().nth(0).map(|c| c.is_ascii_alphabetic()) == Ok(true) {
             return None;
         }
         let suffix = iter.next()?;
         Some((
             OsString::from_wide(suffix), // From std::os::windows::ffi::OsStringExt
-            FileFormat::from_prefix(prefix)?,
+            FileFormat::from_prefix(&prefix)?,
         ))
     }
     #[cfg(not(any(unix, windows, target_os = "wasi")))]
