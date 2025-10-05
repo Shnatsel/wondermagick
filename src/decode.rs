@@ -3,8 +3,7 @@ use std::io::{BufReader, Seek};
 use image::{DynamicImage, ImageDecoder, ImageReader};
 
 use crate::{
-    arg_parsers::Location,
-    encode::FileFormat,
+    arg_parsers::{FileFormat, Location},
     error::MagickError,
     image::{Image, InputProperties},
     wm_err, wm_try,

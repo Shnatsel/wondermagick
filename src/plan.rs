@@ -3,13 +3,14 @@ use std::{
     path::PathBuf,
 };
 
+use crate::arg_parse_err::ArgParseErr;
+use crate::arg_parsers::FileFormat;
 use crate::arg_parsers::{
     parse_numeric_arg, CropGeometry, IdentifyFormat, InputFileArg, Location, ResizeGeometry,
 };
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::filename_utils::insert_suffix_before_extension_in_path;
-use crate::{arg_parse_err::ArgParseErr, encode::FileFormat};
 use crate::{encode, wm_err};
 use crate::{error::MagickError, operations::Operation, wm_try};
 

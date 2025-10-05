@@ -8,8 +8,12 @@ use std::{
 use image::ImageFormat;
 
 use crate::{
-    arg_parsers::Location, encoders, error::MagickError, image::Image, plan::Modifiers, wm_err,
-    wm_try,
+    arg_parsers::{FileFormat, Location},
+    encoders,
+    error::MagickError,
+    image::Image,
+    plan::Modifiers,
+    wm_err, wm_try,
 };
 
 pub fn encode(
@@ -138,25 +142,4 @@ fn choose_encoding_format(
         "no encode delegate for this image format `{}'",
         extension.to_ascii_uppercase().display()
     ))
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FileFormat {
-    Format(ImageFormat),
-    /// Encoding operation is present but is a no-op. On the CLI this is "null:" passed as filename.
-    DoNotEncode,
-}
-
-impl FileFormat {
-    /// Creates a format from the explicit specifier that precedes the filename,
-    /// e.g. `png:my-file` or `null:`
-    pub fn from_prefix(prefix: &str) -> Option<Self> {
-        let lowercase_prefix = prefix.to_ascii_lowercase();
-        let format = if lowercase_prefix == "null" {
-            Self::DoNotEncode
-        } else {
-            Self::Format(ImageFormat::from_extension(lowercase_prefix)?)
-        };
-        Some(format)
-    }
 }

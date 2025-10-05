@@ -9,8 +9,7 @@ use std::{
 };
 
 use crate::{
-    arg_parsers::{parse_path_and_format, InputFileArg, Location},
-    encode::FileFormat,
+    arg_parsers::{parse_path_and_format, FileFormat, InputFileArg, Location},
     error::MagickError,
     plan::ExecutionPlan,
     wm_err,

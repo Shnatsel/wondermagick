@@ -14,7 +14,9 @@ use std::os::windows::ffi::OsStrExt;
 #[cfg(windows)]
 use std::os::windows::ffi::OsStringExt;
 
-use crate::{arg_parse_err::ArgParseErr, encode::FileFormat, error::MagickError, wm_err};
+use image::ImageFormat;
+
+use crate::{arg_parse_err::ArgParseErr, error::MagickError, wm_err};
 
 use super::{Geometry, ResizeGeometry};
 
@@ -39,6 +41,27 @@ impl Location {
             Location::Path(path) => path.clone().into_os_string(),
             Location::Stdio => OsString::from("-"),
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FileFormat {
+    Format(ImageFormat),
+    /// Encoding operation is present but is a no-op. On the CLI this is "null:" passed as filename.
+    DoNotEncode,
+}
+
+impl FileFormat {
+    /// Creates a format from the explicit specifier that precedes the filename,
+    /// e.g. `png:my-file` or `null:`
+    pub fn from_prefix(prefix: &str) -> Option<Self> {
+        let lowercase_prefix = prefix.to_ascii_lowercase();
+        let format = if lowercase_prefix == "null" {
+            Self::DoNotEncode
+        } else {
+            Self::Format(ImageFormat::from_extension(lowercase_prefix)?)
+        };
+        Some(format)
     }
 }
 
