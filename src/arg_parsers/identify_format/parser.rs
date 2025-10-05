@@ -20,8 +20,6 @@ impl TryFrom<&u8> for Var {
             b'W' => Ok(Var::PageCanvasWidth),
             b'X' => Ok(Var::PageCanvasXOffset),
             b'Y' => Ok(Var::PageCanvasYOffset),
-            // TODO: 'c' is not true, there is no shorthand var for colorspace
-            b'c' => Ok(Var::Colorspace),
             b'g' => Ok(Var::LayerCanvasPageGeometry),
             b'h' => Ok(Var::CurrentImageHeightInPixels),
             b'i' => Ok(Var::ImageFilename),
@@ -148,7 +146,6 @@ mod tests {
             (OsStr::new("%W"), Var::PageCanvasWidth),
             (OsStr::new("%X"), Var::PageCanvasXOffset),
             (OsStr::new("%Y"), Var::PageCanvasYOffset),
-            (OsStr::new("%c"), Var::Colorspace),
             (OsStr::new("%g"), Var::LayerCanvasPageGeometry),
             (OsStr::new("%h"), Var::CurrentImageHeightInPixels),
             (OsStr::new("%i"), Var::ImageFilename),
