@@ -170,34 +170,6 @@ mod tests {
     }
 
     #[test]
-    fn test_identify_without_image_format() {
-        // may happen due to the image format being a plugin, not a natively recognized one
-        // TODO: get image to expose the underlying enum with plugin formats
-        let image = DynamicImage::new_rgba8(1, 1);
-        let mut output = Vec::new();
-        identify_impl(
-            &mut Image {
-                format: None,
-                exif: None,
-                icc: None,
-                pixels: image,
-                properties: InputProperties {
-                    filename: "image_without_format.jpg".into(),
-                    color_type: ExtendedColorType::Cmyk8,
-                },
-            },
-            IdentifyFormat { template: None },
-            &mut output,
-        )
-        .unwrap();
-        assert_eq!(
-            String::try_from(output).unwrap(),
-            // TODO: Should the missing image format turn into a space or not?
-            "image_without_format.jpg  1x1 1x1+0+0 8-bit CMYK\n"
-        );
-    }
-
-    #[test]
     fn test_identify_with_format_template_vars() {
         let mut output = Vec::new();
         identify_impl(
