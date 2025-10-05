@@ -37,6 +37,7 @@ fn identify_impl(
             Token::Var(Var::ImageDepth),
             Token::Literal("-bit ".into()),
             Token::Var(Var::Colorspace),
+            Token::Newline,
             // TODO: file size in bytes
             // TODO: consumed user time identifying the image
             // TODO: elapsed time identifying the image
@@ -45,6 +46,7 @@ fn identify_impl(
 
     for token in template {
         match token {
+            Token::Newline => wm_try!(write!(writer, "\n")),
             Token::Literal(text) => wm_try!(write!(writer, "{}", text)),
             Token::Var(Var::CurrentImageWidthInPixels | Var::PageCanvasWidth) => {
                 wm_try!(write!(writer, "{}", image.pixels.width()));
@@ -91,7 +93,7 @@ fn identify_impl(
             }
         }
     }
-    wm_try!(write!(writer, "\n"));
+
     Ok(())
 }
 
@@ -191,6 +193,7 @@ mod tests {
                     Token::Var(Var::CurrentImageWidthInPixels),
                     Token::Literal("   ".into()),
                     Token::Var(Var::CurrentImageHeightInPixels),
+                    Token::Newline,
                 ],
             }),
             &mut output,
@@ -219,6 +222,6 @@ mod tests {
             &mut output,
         )
         .unwrap();
-        assert_eq!(String::try_from(output).unwrap(), "text\n");
+        assert_eq!(String::try_from(output).unwrap(), "text");
     }
 }

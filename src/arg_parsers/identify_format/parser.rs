@@ -6,7 +6,8 @@ use std::ffi::OsStr;
 enum ParseState {
     Initial,
     Literal,
-    Var,
+    Escape,
+    PercentEscape,
 }
 
 impl TryFrom<&u8> for Var {
@@ -71,23 +72,44 @@ impl Parser {
     }
 
     fn try_parse_char(&mut self, char: &u8) -> Result<(), ArgParseErr> {
-        match char {
-            b'%' => {
-                if self
-                    .literal_accumulator
-                    .last()
-                    .is_some_and(|&c| c.is_ascii_digit())
-                {
-                    self.literal_accumulator.push(*char);
+        match self.state {
+            ParseState::Escape => match char {
+                b'n' => {
+                    self.tokens.push(Token::Newline);
+                    self.state = ParseState::Initial;
+                }
+                b'%' => self.start_literal(&b'%'),
+                _ => self.literal_accumulator.push(*char),
+            },
+            ParseState::PercentEscape => {
+                if *char == b'%' {
+                    self.start_literal(&b'%');
                 } else {
-                    self.try_finish_literal()?;
-                    self.state = ParseState::Var;
+                    self.try_finish_var(char)?;
                 }
             }
-            _ => match self.state {
-                ParseState::Initial => self.start_literal(char),
-                ParseState::Var => self.try_finish_var(char)?,
-                ParseState::Literal => self.literal_accumulator.push(*char),
+            _ => match char {
+                b'\\' => {
+                    self.try_finish_literal()?;
+                    self.state = ParseState::Escape;
+                }
+                b'%' => {
+                    if self
+                        .literal_accumulator
+                        .last()
+                        .is_some_and(|&c| c.is_ascii_digit())
+                    {
+                        self.literal_accumulator.push(*char);
+                    } else {
+                        self.try_finish_literal()?;
+                        self.state = ParseState::PercentEscape;
+                    }
+                }
+                _ => match self.state {
+                    ParseState::Initial => self.start_literal(char),
+                    ParseState::Literal => self.literal_accumulator.push(*char),
+                    _ => unreachable!(),
+                },
             },
         }
         Ok(())
@@ -96,7 +118,7 @@ impl Parser {
     fn try_finish(&mut self) -> Result<(), ArgParseErr> {
         match self.state {
             ParseState::Literal => self.try_finish_literal()?,
-            ParseState::Var => return Err(ArgParseErr::new()),
+            ParseState::PercentEscape | ParseState::Escape => return Err(ArgParseErr::new()),
             ParseState::Initial => {}
         }
         Ok(())
@@ -126,6 +148,27 @@ mod tests {
             parse(OsStr::new("  ")).unwrap(),
             vec![Token::Literal("  ".into()),]
         );
+    }
+
+    #[test]
+    fn test_parse_with_percent_escape() {
+        assert_eq!(
+            parse(OsStr::new("%%")).unwrap(),
+            vec![Token::Literal("%".into()),]
+        );
+    }
+
+    #[test]
+    fn test_parse_with_backslash_escape() {
+        assert_eq!(
+            parse(OsStr::new("\\%")).unwrap(),
+            vec![Token::Literal("%".into()),]
+        );
+    }
+
+    #[test]
+    fn test_parse_with_newline() {
+        assert_eq!(parse(OsStr::new("\\n")).unwrap(), vec![Token::Newline]);
     }
 
     #[test]
