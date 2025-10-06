@@ -55,6 +55,16 @@ impl ExecutionPlan {
     ) -> Result<(), ArgParseErr> {
         match signed_arg.arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
+            Arg::Composite => {
+                let image_to_comp = self
+                    .input_files
+                    .pop()
+                    .ok_or(ArgParseErr::with_msg("image sequence is required"))?;
+                self.add_operation(Operation::Composite(
+                    image_to_comp.location,
+                    image_to_comp.format,
+                ))
+            }
             Arg::Crop => {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
             }
