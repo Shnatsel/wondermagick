@@ -21,6 +21,7 @@ use strum::{EnumString, IntoStaticStr, VariantArray};
 #[strum(serialize_all = "kebab-case")]
 pub enum Arg {
     AutoOrient,
+    Composite,
     Crop,
     // TODO: -format can actually change meaning, as `-format type`
     // and as `-format expression`. We currently only implement `-format expression`.
@@ -38,6 +39,7 @@ impl Arg {
     pub fn needs_value(&self) -> bool {
         match self {
             Arg::AutoOrient => false,
+            Arg::Composite => false,
             Arg::Crop => true,
             Arg::Format => true,
             Arg::Identify => false,
@@ -53,6 +55,7 @@ impl Arg {
     pub fn help_text(&self) -> &'static str {
         match self {
             Arg::AutoOrient => "automagically orient (rotate) image",
+            Arg::Composite => "perform alpha composition on two images and an optional mask",
             Arg::Crop => "cut out a rectangular region of the image",
             Arg::Format => "output formatted image characteristics",
             Arg::Identify => "identify the format and characteristics of the image",
