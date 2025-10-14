@@ -15,6 +15,7 @@ tempfile = "3.23.0"
 webp = "0.3.1"
 mimalloc = { version = "0.1.47", optional = true }
 jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"], optional = true }
+flate2 = {version = "1.1.4", features = ["zlib-rs"]}
 
 [features]
 default = ["hardened_malloc", "default-formats"]
