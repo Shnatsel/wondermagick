@@ -16,7 +16,6 @@ pub fn encode<W: Write>(
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     write_icc_and_exif(&mut encoder, image);
     let pixels_to_write = optimize_pixel_format_and_precision(&image.pixels);
-    // TODO: palettize images with <256 colors
     Ok(wm_try!(pixels_to_write.write_with_encoder(encoder)))
 }
 
