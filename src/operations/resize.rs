@@ -252,7 +252,7 @@ fn has_constant_alpha_f32(img: &ImageBuffer<image::Rgba<f32>, Vec<f32>>) -> bool
     // Optimizing correctly in presence of NaNs and infinities is tricky, so just do the naive thing for now
     let first_pixel_alpha = match img.pixels().next() {
         Some(pixel) => pixel.alpha(),
-        None => return true,                             // empty input image
+        None => return true, // empty input image
     };
     img.pixels()
         .map(|pixel| pixel.channels().last().unwrap())
