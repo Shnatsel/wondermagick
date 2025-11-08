@@ -3,6 +3,12 @@
 use crate::image::Image;
 use image::ImageEncoder;
 
+mod pixel_format_optimization;
+
+pub(crate) use pixel_format_optimization::{
+    optimize_pixel_format, optimize_pixel_format_and_precision, to_8bit_rgb_maybe_a,
+};
+
 pub fn write_icc_and_exif(encoder: &mut impl ImageEncoder, image: &Image) {
     if let Some(icc) = image.icc.clone() {
         let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError

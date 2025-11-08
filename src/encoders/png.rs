@@ -2,7 +2,7 @@ use std::io::Write;
 
 use image::codecs::png::{CompressionType, FilterType, PngEncoder};
 
-use crate::encoders::common::write_icc_and_exif;
+use crate::encoders::common::{optimize_pixel_format_and_precision, write_icc_and_exif};
 use crate::plan::Modifiers;
 use crate::wm_err;
 use crate::{error::MagickError, image::Image, wm_try};
@@ -15,7 +15,9 @@ pub fn encode<W: Write>(
     let (compression, filter) = quality_to_compression_parameters(modifiers.quality)?;
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     write_icc_and_exif(&mut encoder, image);
-    Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
+    let pixels_to_write = optimize_pixel_format_and_precision(&image.pixels);
+    // TODO: palettize images with <256 colors
+    Ok(wm_try!(pixels_to_write.write_with_encoder(encoder)))
 }
 
 // for documentation on conversion of quality to encoding parameters see
