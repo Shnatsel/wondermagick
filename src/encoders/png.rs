@@ -68,6 +68,12 @@ fn quality_to_compression_parameters(
 
 // TODO: upstream all the pixel format optimization below into `image`
 
+/// Losslessly optimizes the pixel format for the image.
+///
+/// If the entire image is opaque, the alpha channel will be removed.
+/// If the entire image is grayscale, it will be converted to grayscale pixel format.
+/// If the image is in 16-bit precision but fits into 8 bits, it will be converted to 8-bit format,
+/// but only when `reduce_precision` is set to `true`.
 fn optimize_pixel_format(image: &DynamicImage, reduce_precision: bool) -> Cow<'_, DynamicImage> {
     // TODO: palettize if the image has <256 colors
     use DynamicImage::*;
