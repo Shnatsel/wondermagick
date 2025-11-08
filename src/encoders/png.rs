@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt::Debug;
 use std::io::Write;
 
 use image::codecs::png::{CompressionType, FilterType, PngEncoder};
@@ -191,7 +192,7 @@ fn is_opaque<P: Pixel>(pixel: P) -> bool {
 }
 
 #[inline]
-fn contains_8_bit_data<S: Primitive, P: Pixel<Subpixel = S>>(pixel: P) -> bool {
+fn contains_8_bit_data<S: Primitive + Debug, P: Pixel<Subpixel = S>>(pixel: P) -> bool {
     if obviously_8bit::<S, P>() {
         true
     } else if Some(S::DEFAULT_MAX_VALUE) == S::from(65535) {
@@ -199,7 +200,7 @@ fn contains_8_bit_data<S: Primitive, P: Pixel<Subpixel = S>>(pixel: P) -> bool {
             .channels()
             .iter()
             .copied()
-            .all(|channel_value| channel_value % S::from(256).unwrap() == S::from(0).unwrap())
+            .all(|channel_value| channel_value % S::from(257).unwrap() == S::from(0).unwrap())
     } else {
         false
     }
@@ -237,7 +238,7 @@ impl PixelFormatTransforms {
     }
 }
 
-fn find_pixel_optimizations<S: Primitive, P: Pixel<Subpixel = S>, Container>(
+fn find_pixel_optimizations<S: Primitive + Debug, P: Pixel<Subpixel = S>, Container>(
     input: &ImageBuffer<P, Container>,
 ) -> PixelFormatTransforms
 where
