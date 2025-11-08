@@ -137,7 +137,7 @@ fn to_opaque(color: ColorType) -> ColorType {
     }
 }
 
-fn dynimage_to_color(image: &DynamicImage, color: ColorType) -> Cow<DynamicImage> {
+fn dynimage_to_color(image: &DynamicImage, color: ColorType) -> Cow<'_, DynamicImage> {
     if image.color() == color {
         Cow::Borrowed(image)
     } else {
