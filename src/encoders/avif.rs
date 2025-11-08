@@ -3,6 +3,7 @@ use std::io::Write;
 use image::codecs::avif::AvifEncoder;
 use image::ImageEncoder;
 
+use crate::encoders::common::to_8bit_rgb_maybe_a;
 use crate::{error::MagickError, image::Image, plan::Modifiers, wm_try};
 
 pub fn encode<W: Write>(
@@ -16,5 +17,6 @@ pub fn encode<W: Write>(
     if let Some(icc) = image.icc.clone() {
         let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError
     };
-    Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
+    let pixels_to_write = to_8bit_rgb_maybe_a(&image.pixels);
+    Ok(wm_try!(pixels_to_write.write_with_encoder(encoder)))
 }
