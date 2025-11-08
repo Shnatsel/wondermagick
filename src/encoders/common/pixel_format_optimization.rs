@@ -21,7 +21,28 @@ pub(crate) fn optimize_pixel_format(image: &DynamicImage) -> Cow<'_, DynamicImag
     optimize_pixel_format_inner(image, false)
 }
 
-pub(crate) fn is_opaque(image: &DynamicImage) -> bool {
+/// Converts the input image to Rgba8 or Rgb8, depending on whether the image is fully opaque.
+///
+/// This not only checks the pixel format but also scans the image to determine if there are any transparent pixels in it.
+pub(crate) fn to_8bit_rgb_maybe_a(pixels: &DynamicImage) -> Cow<'_, DynamicImage> {
+    use image::DynamicImage::*;
+    match pixels {
+        ImageRgb8(_) | ImageRgba8(_) => Cow::Borrowed(pixels),
+        _ => {
+            if pixels.color().has_alpha() {
+                if is_opaque(pixels) {
+                    Cow::Owned(ImageRgb8(pixels.to_rgb8()))
+                } else {
+                    Cow::Owned(ImageRgba8(pixels.to_rgba8()))
+                }
+            } else {
+                Cow::Owned(ImageRgb8(pixels.to_rgb8()))
+            }
+        }
+    }
+}
+
+fn is_opaque(image: &DynamicImage) -> bool {
     match image {
         DynamicImage::ImageLuma8(pixels) => is_opaque_inner(pixels),
         DynamicImage::ImageLumaA8(pixels) => is_opaque_inner(pixels),
