@@ -296,3 +296,45 @@ where
 
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use image::{GrayImage, Luma, Rgba};
+
+    use super::*;
+
+    #[test]
+    fn rbga16_optimizes_to_luma8() {
+        let mut img = GrayImage::new(100, 100);
+        let start = Luma::from_slice(&[0]);
+        let end = Luma::from_slice(&[255]);
+
+        image::imageops::vertical_gradient(&mut img, start, end);
+
+        let luma8 = DynamicImage::ImageLuma8(img);
+        let rgba16 = DynamicImage::ImageRgba16(luma8.to_rgba16());
+        assert!(rgba16.color() == ColorType::Rgba16);
+
+        let optimized = optimize_pixel_format(&rgba16);
+        assert!(optimized.color() == ColorType::L16);
+
+        let optimized_with_precision = optimize_pixel_format_and_precision(&rgba16);
+        assert!(optimized_with_precision.color() == ColorType::L8);
+    }
+
+    #[test]
+    fn optimizer_not_overly_aggressive() {
+        let mut img: ImageBuffer<Rgba<u16>, Vec<u16>> = ImageBuffer::new(100, 100);
+        let start = Rgba::from_slice(&[0, 5, 15, 20]);
+        let end = Rgba::from_slice(&[255, 245, 235, 225]);
+        image::imageops::vertical_gradient(&mut img, start, end);
+
+        let dynimage = DynamicImage::ImageRgba16(img);
+
+        let optimized = optimize_pixel_format(&dynimage);
+        assert!(optimized.color() == ColorType::Rgba16);
+
+        let optimized_with_precision = optimize_pixel_format_and_precision(&dynimage);
+        assert!(optimized_with_precision.color() == ColorType::Rgba16);
+    }
+}
