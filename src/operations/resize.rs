@@ -237,7 +237,7 @@ where
     let mut sum_of_diffs: u64 = 0;
     for row in img.rows() {
         row.for_each(|pixel| {
-            let alpha = pixel.channels().last().unwrap(); // there doesn't seem to be a better way to retrieve the alpha channel :(
+            let alpha = pixel.alpha();
             sum_of_diffs += alpha.bitxor(first_pixel_alpha).into();
         });
         if sum_of_diffs != 0 {
@@ -251,12 +251,12 @@ where
 fn has_constant_alpha_f32(img: &ImageBuffer<image::Rgba<f32>, Vec<f32>>) -> bool {
     // Optimizing correctly in presence of NaNs and infinities is tricky, so just do the naive thing for now
     let first_pixel_alpha = match img.pixels().next() {
-        Some(pixel) => pixel.channels().last().unwrap(), // there doesn't seem to be a better way to retrieve the alpha channel
+        Some(pixel) => pixel.alpha(),
         None => return true,                             // empty input image
     };
     img.pixels()
         .map(|pixel| pixel.channels().last().unwrap())
-        .all(|alpha| alpha == first_pixel_alpha)
+        .all(|alpha| *alpha == first_pixel_alpha)
 }
 
 #[must_use]
