@@ -18,7 +18,8 @@ pub fn encode<W: Write>(
     let (compression, filter) = quality_to_compression_parameters(modifiers.quality)?;
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     write_icc_and_exif(&mut encoder, image);
-    let pixels_to_write = optimize_pixel_format(&image.pixels, true);
+    let pixels_to_write = optimize_pixel_format_and_precision(&image.pixels);
+    // TODO: palettize images with <256 colors
     Ok(wm_try!(pixels_to_write.write_with_encoder(encoder)))
 }
 
@@ -72,19 +73,42 @@ fn quality_to_compression_parameters(
 ///
 /// If the entire image is opaque, the alpha channel will be removed.
 /// If the entire image is grayscale, it will be converted to grayscale pixel format.
+/// If the image is in 16-bit precision but fits into 8 bits, it will be converted to 8-bit format.
+fn optimize_pixel_format_and_precision(image: &DynamicImage) -> Cow<'_, DynamicImage> {
+    optimize_pixel_format_inner(image, true)
+}
+
+/// Losslessly optimizes the pixel format for the image.
+///
+/// If the entire image is opaque, the alpha channel will be removed.
+/// If the entire image is grayscale, it will be converted to grayscale pixel format.
+/// Does **not** reduce 16-bit images to 8-bit, even if it's lossless;
+/// use [optimize_pixel_format_and_precision] for that.
+fn optimize_pixel_format(image: &DynamicImage) -> Cow<'_, DynamicImage> {
+    optimize_pixel_format_inner(image, false)
+}
+
+/// Losslessly optimizes the pixel format for the image.
+///
+/// If the entire image is opaque, the alpha channel will be removed.
+/// If the entire image is grayscale, it will be converted to grayscale pixel format.
 /// If the image is in 16-bit precision but fits into 8 bits, it will be converted to 8-bit format,
 /// but only when `reduce_precision` is set to `true`.
-fn optimize_pixel_format(image: &DynamicImage, reduce_precision: bool) -> Cow<'_, DynamicImage> {
-    // TODO: palettize if the image has <256 colors
+#[inline(always)] // for constant propagation of `reduce_precision`
+fn optimize_pixel_format_inner(
+    image: &DynamicImage,
+    reduce_precision: bool,
+) -> Cow<'_, DynamicImage> {
+    let rp = reduce_precision;
     use DynamicImage::*;
     let mut transforms = match image {
-        ImageLumaA8(pixels) => find_pixel_optimizations(pixels),
-        ImageRgb8(pixels) => find_pixel_optimizations(pixels),
-        ImageRgba8(pixels) => find_pixel_optimizations(pixels),
-        ImageLuma16(pixels) => find_pixel_optimizations(pixels),
-        ImageLumaA16(pixels) => find_pixel_optimizations(pixels),
-        ImageRgb16(pixels) => find_pixel_optimizations(pixels),
-        ImageRgba16(pixels) => find_pixel_optimizations(pixels),
+        ImageLumaA8(pixels) => find_pixel_optimizations(pixels, rp),
+        ImageRgb8(pixels) => find_pixel_optimizations(pixels, rp),
+        ImageRgba8(pixels) => find_pixel_optimizations(pixels, rp),
+        ImageLuma16(pixels) => find_pixel_optimizations(pixels, rp),
+        ImageLumaA16(pixels) => find_pixel_optimizations(pixels, rp),
+        ImageRgb16(pixels) => find_pixel_optimizations(pixels, rp),
+        ImageRgba16(pixels) => find_pixel_optimizations(pixels, rp),
         _ => return Cow::Borrowed(image), // no-op
     };
 
@@ -250,6 +274,7 @@ impl PixelFormatTransforms {
 
 fn find_pixel_optimizations<S: Primitive + Debug, P: Pixel<Subpixel = S>, Container>(
     input: &ImageBuffer<P, Container>,
+    reduce_precision: bool,
 ) -> PixelFormatTransforms
 where
     P: Pixel + 'static,
@@ -258,6 +283,10 @@ where
 {
     // all transforms are assumed to be valid until proven invalid
     let mut result = PixelFormatTransforms::all_true();
+
+    if !reduce_precision {
+        result.eight_bit = false;
+    }
 
     // Check for all properties in a single scan through memory.
     for row in input.rows() {
@@ -269,7 +298,10 @@ where
             // because this function is generic on the pixel format.
             result.grayscale &= is_grayscale(*pixel);
             result.opaque &= is_opaque(*pixel);
-            result.eight_bit &= contains_8_bit_data(*pixel);
+            // this branch should be removed by constant propagation
+            if reduce_precision {
+                result.eight_bit &= contains_8_bit_data(*pixel);
+            }
         }
         // If we've proven all properties to be false, short-cirquit.
         // We do this once per row to enable autovectorization above.
