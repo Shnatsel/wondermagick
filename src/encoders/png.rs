@@ -17,7 +17,8 @@ pub fn encode<W: Write>(
     let (compression, filter) = quality_to_compression_parameters(modifiers.quality)?;
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     write_icc_and_exif(&mut encoder, image);
-    Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
+    let pixels_to_write = optimize_pixel_format(&image.pixels);
+    Ok(wm_try!(pixels_to_write.write_with_encoder(encoder)))
 }
 
 // for documentation on conversion of quality to encoding parameters see
