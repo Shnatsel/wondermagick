@@ -193,14 +193,9 @@ fn dynimage_to_color(image: &DynamicImage, color: ColorType) -> Cow<'_, DynamicI
 }
 
 #[inline]
-fn obviously_grayscale<P: Pixel>() -> bool {
-    P::CHANNEL_COUNT < 3
-}
-
-#[inline]
-fn is_grayscale<P: Pixel>(pixel: P) -> bool {
-    if obviously_grayscale::<P>() {
-        true
+fn can_convert_to_grayscale<P: Pixel>(pixel: P) -> bool {
+    if P::CHANNEL_COUNT < 3 {
+        false // input already in grayscale pixel format
     } else {
         let c = pixel.channels();
         (c[0] == c[1]) & (c[0] == c[2])
@@ -208,14 +203,9 @@ fn is_grayscale<P: Pixel>(pixel: P) -> bool {
 }
 
 #[inline]
-fn obviously_opaque<P: Pixel>() -> bool {
-    !P::HAS_ALPHA
-}
-
-#[inline]
-fn is_opaque<P: Pixel>(pixel: P) -> bool {
-    if obviously_opaque::<P>() {
-        true
+fn can_remove_alpha<P: Pixel>(pixel: P) -> bool {
+    if !P::HAS_ALPHA {
+        false // input doesn't have alpha
     } else {
         // This assumes that the alpha channel is always the last.
         // This holds for all DynamicImage variants but isn't safe to expose to fully generic code.
@@ -226,9 +216,9 @@ fn is_opaque<P: Pixel>(pixel: P) -> bool {
 }
 
 #[inline]
-fn contains_8_bit_data<S: Primitive + Debug, P: Pixel<Subpixel = S>>(pixel: P) -> bool {
-    if obviously_8bit::<S, P>() {
-        true
+fn can_convert_to_8bit<S: Primitive + Debug, P: Pixel<Subpixel = S>>(pixel: P) -> bool {
+    if Some(S::DEFAULT_MAX_VALUE) == S::from(255) {
+        false // already 8-bit
     } else if Some(S::DEFAULT_MAX_VALUE) == S::from(65535) {
         pixel
             .channels()
@@ -238,11 +228,6 @@ fn contains_8_bit_data<S: Primitive + Debug, P: Pixel<Subpixel = S>>(pixel: P) -
     } else {
         false
     }
-}
-
-#[inline]
-fn obviously_8bit<S: Primitive, P: Pixel<Subpixel = S>>() -> bool {
-    Some(S::DEFAULT_MAX_VALUE) == S::from(255)
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -288,18 +273,6 @@ where
         result.eight_bit = false;
     }
 
-    // Resolve whether some transforms are beneficial statically if possible
-    // so we could exit early from the loop below
-    if obviously_grayscale::<P>() {
-        result.grayscale = false
-    }
-    if obviously_opaque::<P>() {
-        result.opaque = false
-    }
-    if obviously_8bit::<S, P>() {
-        result.eight_bit = false
-    }
-
     // Check for all properties in a single scan through memory.
     for row in input.rows() {
         for pixel in row {
@@ -308,11 +281,11 @@ where
             // Checks for properties that are statically known not to hold
             // (e.g. 8-bit images containing 8-bit data) are optimized out at compile time
             // because this function is generic on the pixel format.
-            result.grayscale &= is_grayscale(*pixel);
-            result.opaque &= is_opaque(*pixel);
+            result.grayscale &= can_convert_to_grayscale(*pixel);
+            result.opaque &= can_remove_alpha(*pixel);
             // this branch should be removed by constant propagation
             if reduce_precision {
-                result.eight_bit &= contains_8_bit_data(*pixel);
+                result.eight_bit &= can_convert_to_8bit(*pixel);
             }
         }
         // If we've proven all properties to be false, short-cirquit.
