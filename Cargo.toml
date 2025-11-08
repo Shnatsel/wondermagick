@@ -60,4 +60,4 @@ opt-level = 3
 panic = "abort"
 
 [patch.crates-io]
-image = {git = "https://github.com/image-rs/image.git"}
+image = {git = "https://github.com/Shnatsel/image", branch = "generic-alpha"}
