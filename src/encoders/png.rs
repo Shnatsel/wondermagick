@@ -1,9 +1,8 @@
 use std::borrow::Cow;
 use std::io::Write;
-use std::result;
 
 use image::codecs::png::{CompressionType, FilterType, PngEncoder};
-use image::{DynamicImage, Pixel, Primitive};
+use image::{ColorType, DynamicImage, ImageBuffer, Pixel, Primitive};
 
 use crate::encoders::common::write_icc_and_exif;
 use crate::plan::Modifiers;
@@ -65,75 +64,147 @@ fn quality_to_compression_parameters(
     }
 }
 
-fn optimize_pixel_format(pixels: &DynamicImage) -> Cow<DynamicImage> {
+// TODO: upstream all the pixel format optimization below into `image`
+
+fn optimize_pixel_format(image: &DynamicImage) -> Cow<DynamicImage> {
     // TODO: palettize if the image has <256 colors
     use DynamicImage::*;
-    match pixels {
-        ImageRgb8(pixels) => match pixel_opt_transforms(pixels) {},
-        ImageRgba8(pixels) => todo!(),
-        ImageLuma16(pixels) => todo!(),
-        ImageLumaA16(pixels) => todo!(),
-        ImageRgb16(pixels) => todo!(),
-        ImageRgba16(pixels) => todo!(),
-        _ => Cow::Borrowed(pixels), // no-op
+    let transforms = match image {
+        ImageLumaA8(pixels) => find_pixel_optimizations(pixels),
+        ImageRgb8(pixels) => find_pixel_optimizations(pixels),
+        ImageRgba8(pixels) => find_pixel_optimizations(pixels),
+        ImageLuma16(pixels) => find_pixel_optimizations(pixels),
+        ImageLumaA16(pixels) => find_pixel_optimizations(pixels),
+        ImageRgb16(pixels) => find_pixel_optimizations(pixels),
+        ImageRgba16(pixels) => find_pixel_optimizations(pixels),
+        _ => return Cow::Borrowed(image), // no-op
+    };
+
+    apply_pixel_format_optimizations(image, transforms)
+}
+
+fn apply_pixel_format_optimizations(
+    image: &DynamicImage,
+    transforms: PixelFormatTransforms,
+) -> Cow<DynamicImage> {
+    let mut color_type = image.color();
+    if transforms.eight_bit {
+        color_type = to_8bit(color_type);
+    }
+    if transforms.grayscale {
+        color_type = to_grayscale(color_type);
+    }
+    if transforms.opaque {
+        color_type = to_opaque(color_type);
+    }
+
+    dynimage_to_color(image, color_type)
+}
+
+/// Converts the specified color type to its grayscale equivalent, if possible.
+/// `RgbF32` and `RgbaF32` are left intact because there is no grayscale equivalent for them.
+fn to_grayscale(color: ColorType) -> ColorType {
+    match color {
+        ColorType::Rgb8 => ColorType::L8,
+        ColorType::Rgba8 => ColorType::La8,
+        ColorType::Rgb16 => ColorType::L16,
+        ColorType::Rgba16 => ColorType::La16,
+        other => other,
     }
 }
 
-fn obviously_grayscale<P: Pixel>() -> bool {
-    P::CHANNEL_COUNT < 3
-}
-
-fn is_grayscale<P: Pixel>(input: &[P]) -> bool {
-    if obviously_grayscale::<P>() {
-        true
-    } else {
-        input.iter().copied().all(|pixel| {
-            let c = pixel.channels();
-            c[0] == c[1] && c[0] == c[2]
-        })
+fn to_8bit(color: ColorType) -> ColorType {
+    match color {
+        ColorType::L16 => ColorType::L8,
+        ColorType::La16 => ColorType::La8,
+        ColorType::Rgb16 => ColorType::Rgb8,
+        ColorType::Rgba16 => ColorType::Rgba8,
+        ColorType::Rgb32F => ColorType::Rgb8,
+        ColorType::Rgba32F => ColorType::Rgba8,
+        already_8bit => already_8bit,
     }
 }
 
-fn obviously_opaque<P: Pixel>() -> bool {
-    !P::HAS_ALPHA
+fn to_opaque(color: ColorType) -> ColorType {
+    match color {
+        ColorType::La8 => ColorType::L8,
+        ColorType::Rgba8 => ColorType::Rgb8,
+        ColorType::La16 => ColorType::L16,
+        ColorType::Rgba16 => ColorType::Rgb16,
+        ColorType::Rgba32F => ColorType::Rgb32F,
+        already_opaque => already_opaque,
+    }
 }
 
-fn is_opaque<P: Pixel>(input: &[P]) -> bool {
-    if obviously_opaque::<P>() {
-        true
+fn dynimage_to_color(image: &DynamicImage, color: ColorType) -> Cow<DynamicImage> {
+    if image.color() == color {
+        Cow::Borrowed(image)
     } else {
-        match input.first() {
-            Some(first_pixel) => {
-                // TODO: assumes that the alpha channel is always last.
-                // This holds for all DynamicImage variants but isn't safe to expose to fully generic code.
-                // Unfortunately there is no "give me your alpha channel" method on Pixel.
-                let first_alpha = *first_pixel.channels().last().unwrap();
-                input
-                    .iter()
-                    .copied()
-                    .all(|pixel| *pixel.channels().last().unwrap() == first_alpha)
-            }
-            None => true,
+        match color {
+            ColorType::L8 => Cow::Owned(DynamicImage::ImageLuma8(image.to_luma8())),
+            ColorType::La8 => Cow::Owned(DynamicImage::ImageLumaA8(image.to_luma_alpha8())),
+            ColorType::Rgb8 => Cow::Owned(DynamicImage::ImageRgb8(image.to_rgb8())),
+            ColorType::Rgba8 => Cow::Owned(DynamicImage::ImageRgba8(image.to_rgba8())),
+            ColorType::L16 => Cow::Owned(DynamicImage::ImageLuma16(image.to_luma16())),
+            ColorType::La16 => Cow::Owned(DynamicImage::ImageLumaA16(image.to_luma_alpha16())),
+            ColorType::Rgb16 => Cow::Owned(DynamicImage::ImageRgb16(image.to_rgb16())),
+            ColorType::Rgba16 => Cow::Owned(DynamicImage::ImageRgba16(image.to_rgba16())),
+            ColorType::Rgb32F => Cow::Owned(DynamicImage::ImageRgb32F(image.to_rgb32f())),
+            ColorType::Rgba32F => Cow::Owned(DynamicImage::ImageRgba32F(image.to_rgba32f())),
+            _ => unreachable!(),
         }
     }
 }
 
-fn contains_8_bit_data<S: Primitive, P: Pixel<Subpixel = S>>(input: &[P]) -> bool {
+#[inline]
+fn obviously_grayscale<P: Pixel>() -> bool {
+    P::CHANNEL_COUNT < 3
+}
+
+#[inline]
+fn is_grayscale<P: Pixel>(pixel: P) -> bool {
+    if obviously_grayscale::<P>() {
+        true
+    } else {
+        let c = pixel.channels();
+        (c[0] == c[1]) & (c[0] == c[2])
+    }
+}
+
+#[inline]
+fn obviously_opaque<P: Pixel>() -> bool {
+    !P::HAS_ALPHA
+}
+
+#[inline]
+fn is_opaque<P: Pixel>(pixel: P) -> bool {
+    if obviously_opaque::<P>() {
+        true
+    } else {
+        // This assumes that the alpha channel is always the last.
+        // This holds for all DynamicImage variants but isn't safe to expose to fully generic code.
+        // Unfortunately there is no "give me your alpha channel" method on Pixel.
+        let alpha = *pixel.channels().last().unwrap();
+        alpha == P::Subpixel::DEFAULT_MAX_VALUE
+    }
+}
+
+#[inline]
+fn contains_8_bit_data<S: Primitive, P: Pixel<Subpixel = S>>(pixel: P) -> bool {
     if obviously_8bit::<S, P>() {
         true
     } else if Some(S::DEFAULT_MAX_VALUE) == S::from(65535) {
-        input.iter().copied().all(|pixel| {
-            pixel
-                .channels()
-                .iter()
-                .copied()
-                .all(|channel_value| channel_value % S::from(256).unwrap() == S::from(0).unwrap())
-        })
+        pixel
+            .channels()
+            .iter()
+            .copied()
+            .all(|channel_value| channel_value % S::from(256).unwrap() == S::from(0).unwrap())
     } else {
         false
     }
 }
 
+#[inline]
 fn obviously_8bit<S: Primitive, P: Pixel<Subpixel = S>>() -> bool {
     Some(S::DEFAULT_MAX_VALUE) == S::from(255)
 }
@@ -146,6 +217,7 @@ struct PixelFormatTransforms {
 }
 
 impl PixelFormatTransforms {
+    #[inline]
     fn all_true() -> Self {
         Self {
             grayscale: true,
@@ -154,6 +226,7 @@ impl PixelFormatTransforms {
         }
     }
 
+    #[inline]
     fn all_false() -> Self {
         Self {
             grayscale: false,
@@ -163,53 +236,36 @@ impl PixelFormatTransforms {
     }
 }
 
-fn pixel_opt_transforms<S: Primitive, P: Pixel<Subpixel = S>>(
-    input: &[P],
-) -> PixelFormatTransforms {
+fn find_pixel_optimizations<S: Primitive, P: Pixel<Subpixel = S>, Container>(
+    input: &ImageBuffer<P, Container>,
+) -> PixelFormatTransforms
+where
+    P: Pixel + 'static,
+    Container: std::ops::Deref<Target = [P::Subpixel]>,
+    P::Subpixel:,
+{
     // all transforms are assumed to be valid until proven invalid
     let mut result = PixelFormatTransforms::all_true();
 
-    // Skip searching for possible transforms at runtime if they're obviously invalid at compile time.
-    // E.g. don't check 8-bit images to confirm that all values are within the 8-bit range.
-    if obviously_grayscale::<P>() {
-        result.grayscale = false
-    }
-    if obviously_opaque::<P>() {
-        result.opaque = false
-    }
-    if obviously_8bit::<S, P>() {
-        result.eight_bit = false
-    }
-
     // Check for all properties in a single scan through memory.
-    // We also check in chunks rather than pixel by pixel to allow for autovectorization.
-    // These two tricks improve performance significantly.
-    for chunk in input.chunks_exact(16) {
-        // we can stop checking for each property as soon as we find that it doesn't hold
-        if result.grayscale {
-            result.grayscale &= is_grayscale(chunk)
+    for row in input.rows() {
+        for pixel in row {
+            // We still check for properties that might already be found not to hold
+            // to avoid branching inside this hot loop and to enable autovectorization.
+            // Checks for properties that are statically known not to hold
+            // (e.g. 8-bit images containing 8-bit data) are optimized out at compile time
+            // because this function is generic on the pixel format.
+            result.grayscale &= is_grayscale(*pixel);
+            result.opaque &= is_opaque(*pixel);
+            result.eight_bit &= contains_8_bit_data(*pixel);
         }
-        if result.opaque {
-            result.opaque &= is_opaque(chunk)
-        }
-        if result.eight_bit {
-            result.eight_bit &= contains_8_bit_data(chunk)
-        }
-        // If we've proven all properties to be false, short-cirquit
+        // If we've proven all properties to be false, short-cirquit.
+        // We do this once per row to enable autovectorization above.
+        // Ideally you'd want this per chunk rather than per row,
+        // but rows() returning an iterator over Pixels instead of a slice makes this hard.
         if result == PixelFormatTransforms::all_false() {
             return result;
         }
-    }
-    // check the remainder after the chunked iteration
-    let chunk = input.chunks_exact(16).remainder();
-    if result.grayscale {
-        result.grayscale &= is_grayscale(chunk)
-    }
-    if result.opaque {
-        result.opaque &= is_opaque(chunk)
-    }
-    if result.eight_bit {
-        result.eight_bit &= contains_8_bit_data(chunk)
     }
 
     result
