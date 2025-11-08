@@ -1,6 +1,8 @@
 use std::io::Write;
 
-use crate::{error::MagickError, image::Image, plan::Modifiers, wm_err, wm_try};
+use crate::{
+    encoders::common::is_opaque, error::MagickError, image::Image, plan::Modifiers, wm_err, wm_try,
+};
 use image::DynamicImage;
 use webp::{Encoder, WebPMemory};
 
@@ -37,7 +39,11 @@ pub(crate) fn to_8bit_color(pixels: &DynamicImage) -> Option<DynamicImage> {
         ImageRgba8(_) => None,
         _ => {
             if pixels.color().has_alpha() {
-                Some(ImageRgba8(pixels.to_rgba8()))
+                if is_opaque(pixels) {
+                    Some(ImageRgb8(pixels.to_rgb8()))
+                } else {
+                    Some(ImageRgba8(pixels.to_rgba8()))
+                }
             } else {
                 Some(ImageRgb8(pixels.to_rgb8()))
             }

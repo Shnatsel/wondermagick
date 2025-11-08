@@ -21,6 +21,46 @@ pub(crate) fn optimize_pixel_format(image: &DynamicImage) -> Cow<'_, DynamicImag
     optimize_pixel_format_inner(image, false)
 }
 
+pub(crate) fn is_opaque(image: &DynamicImage) -> bool {
+    match image {
+        DynamicImage::ImageLuma8(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageLumaA8(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageRgb8(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageRgba8(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageLuma16(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageLumaA16(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageRgb16(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageRgba16(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageRgb32F(pixels) => is_opaque_inner(pixels),
+        DynamicImage::ImageRgba32F(pixels) => is_opaque_inner(pixels),
+        _ => unreachable!(),
+    }
+}
+
+fn is_opaque_inner<S: Primitive + Debug, P: Pixel<Subpixel = S>, Container>(
+    input: &ImageBuffer<P, Container>,
+) -> bool
+where
+    P: Pixel + 'static,
+    Container: std::ops::Deref<Target = [P::Subpixel]>,
+    P::Subpixel:,
+{
+    if !P::HAS_ALPHA {
+        true
+    } else {
+        let mut result = true; // opaque until proven otherwise
+        for row in input.rows() {
+            for pixel in row {
+                result &= can_remove_alpha(*pixel);
+            }
+            if result == false {
+                return result;
+            }
+        }
+        result
+    }
+}
+
 /// Losslessly optimizes the pixel format for the image.
 ///
 /// If the entire image is opaque, the alpha channel will be removed.
@@ -63,7 +103,7 @@ fn apply_pixel_format_optimizations(
     if transforms.grayscale {
         color_type = to_grayscale(color_type);
     }
-    if transforms.opaque {
+    if transforms.strip_alpha {
         color_type = to_opaque(color_type);
     }
 
@@ -166,7 +206,7 @@ fn can_convert_to_8bit<S: Primitive + Debug, P: Pixel<Subpixel = S>>(pixel: P) -
 #[derive(Copy, Clone, PartialEq, Eq)]
 struct PixelFormatTransforms {
     grayscale: bool,
-    opaque: bool,
+    strip_alpha: bool,
     eight_bit: bool,
 }
 
@@ -175,7 +215,7 @@ impl PixelFormatTransforms {
     fn all_true() -> Self {
         Self {
             grayscale: true,
-            opaque: true,
+            strip_alpha: true,
             eight_bit: true,
         }
     }
@@ -184,7 +224,7 @@ impl PixelFormatTransforms {
     fn all_false() -> Self {
         Self {
             grayscale: false,
-            opaque: false,
+            strip_alpha: false,
             eight_bit: false,
         }
     }
@@ -215,7 +255,7 @@ where
             // (e.g. 8-bit images containing 8-bit data) are optimized out at compile time
             // because this function is generic on the pixel format.
             result.grayscale &= can_convert_to_grayscale(*pixel);
-            result.opaque &= can_remove_alpha(*pixel);
+            result.strip_alpha &= can_remove_alpha(*pixel);
             // this branch should be removed by constant propagation
             if reduce_precision {
                 result.eight_bit &= can_convert_to_8bit(*pixel);
