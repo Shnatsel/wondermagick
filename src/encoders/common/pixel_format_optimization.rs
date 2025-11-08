@@ -204,10 +204,7 @@ fn can_remove_alpha<P: Pixel>(pixel: P) -> bool {
     if !P::HAS_ALPHA {
         false // input doesn't have alpha
     } else {
-        // This assumes that the alpha channel is always the last.
-        // This holds for all DynamicImage variants but isn't safe to expose to fully generic code.
-        // Unfortunately there is no "give me your alpha channel" method on Pixel.
-        let alpha = *pixel.channels().last().unwrap();
+        let alpha = pixel.alpha();
         alpha == P::Subpixel::DEFAULT_MAX_VALUE
     }
 }
