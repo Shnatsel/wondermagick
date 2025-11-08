@@ -16,5 +16,7 @@ pub fn encode<W: Write>(
     if let Some(icc) = image.icc.clone() {
         let _ = encoder.set_icc_profile(icc); // ignore UnsupportedError
     };
+    // ravif already discards alpha channel automatically if all pixels are opaque,
+    // so no need to explicitly convert on our end
     Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
 }
