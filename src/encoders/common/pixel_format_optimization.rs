@@ -58,13 +58,11 @@ fn is_opaque(image: &DynamicImage) -> bool {
     }
 }
 
-fn is_opaque_inner<S: Primitive + Debug, P: Pixel<Subpixel = S>, Container>(
-    input: &ImageBuffer<P, Container>,
-) -> bool
+fn is_opaque_inner<S, P, Container>(input: &ImageBuffer<P, Container>) -> bool
 where
-    P: Pixel + 'static,
+    S: Primitive + Debug,
+    P: Pixel<Subpixel = S>,
     Container: std::ops::Deref<Target = [P::Subpixel]>,
-    P::Subpixel:,
 {
     if !P::HAS_ALPHA {
         true
@@ -251,14 +249,14 @@ impl PixelFormatTransforms {
     }
 }
 
-fn find_pixel_optimizations<S: Primitive + Debug, P: Pixel<Subpixel = S>, Container>(
+fn find_pixel_optimizations<S, P, Container>(
     input: &ImageBuffer<P, Container>,
     reduce_precision: bool,
 ) -> PixelFormatTransforms
 where
-    P: Pixel + 'static,
+    S: Primitive + Debug,
+    P: Pixel<Subpixel = S>,
     Container: std::ops::Deref<Target = [P::Subpixel]>,
-    P::Subpixel:,
 {
     // all transforms are assumed to be valid until proven invalid
     let mut result = PixelFormatTransforms::all_true();
