@@ -9,7 +9,7 @@ use image::ImageFormat;
 
 use crate::{
     arg_parsers::{FileFormat, Location},
-    encoders,
+    encoders::{self, common::optimize_pixel_format},
     error::MagickError,
     image::Image,
     plan::Modifiers,
@@ -91,7 +91,7 @@ fn encode_inner(
         ImageFormat::Gif => encoders::gif::encode(image, &mut writer, modifiers)?,
         // TODO: set the metadata generically on all the abstract formats.
         // Requires https://github.com/image-rs/image/pull/2554 or equivalent.
-        _ => wm_try!(image.pixels.write_to(&mut writer, format)),
+        _ => wm_try!(optimize_pixel_format(&image.pixels).write_to(&mut writer, format)),
     }
 
     match location {
