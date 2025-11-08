@@ -282,7 +282,7 @@ where
                 result.eight_bit &= can_convert_to_8bit(*pixel);
             }
         }
-        // If we've proven all properties to be false, short-cirquit.
+        // If we've proven all properties to be false, short-circuit.
         // We do this once per row to enable autovectorization above.
         // Ideally you'd want this per chunk rather than per row,
         // but rows() returning an iterator over Pixels instead of a slice makes this hard.
