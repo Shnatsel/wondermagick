@@ -288,6 +288,18 @@ where
         result.eight_bit = false;
     }
 
+    // Resolve whether some transforms are beneficial statically if possible
+    // so we could exit early from the loop below
+    if obviously_grayscale::<P>() {
+        result.grayscale = false
+    }
+    if obviously_opaque::<P>() {
+        result.opaque = false
+    }
+    if obviously_8bit::<S, P>() {
+        result.eight_bit = false
+    }
+
     // Check for all properties in a single scan through memory.
     for row in input.rows() {
         for pixel in row {
