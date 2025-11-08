@@ -18,7 +18,7 @@ pub fn encode<W: Write>(
     let (compression, filter) = quality_to_compression_parameters(modifiers.quality)?;
     let mut encoder = PngEncoder::new_with_quality(writer, compression, filter);
     write_icc_and_exif(&mut encoder, image);
-    let pixels_to_write = optimize_pixel_format(&image.pixels);
+    let pixels_to_write = optimize_pixel_format(&image.pixels, true);
     Ok(wm_try!(pixels_to_write.write_with_encoder(encoder)))
 }
 
@@ -68,10 +68,10 @@ fn quality_to_compression_parameters(
 
 // TODO: upstream all the pixel format optimization below into `image`
 
-fn optimize_pixel_format(image: &DynamicImage) -> Cow<'_, DynamicImage> {
+fn optimize_pixel_format(image: &DynamicImage, reduce_precision: bool) -> Cow<'_, DynamicImage> {
     // TODO: palettize if the image has <256 colors
     use DynamicImage::*;
-    let transforms = match image {
+    let mut transforms = match image {
         ImageLumaA8(pixels) => find_pixel_optimizations(pixels),
         ImageRgb8(pixels) => find_pixel_optimizations(pixels),
         ImageRgba8(pixels) => find_pixel_optimizations(pixels),
@@ -81,6 +81,10 @@ fn optimize_pixel_format(image: &DynamicImage) -> Cow<'_, DynamicImage> {
         ImageRgba16(pixels) => find_pixel_optimizations(pixels),
         _ => return Cow::Borrowed(image), // no-op
     };
+
+    if !reduce_precision {
+        transforms.eight_bit = false;
+    }
 
     apply_pixel_format_optimizations(image, transforms)
 }
