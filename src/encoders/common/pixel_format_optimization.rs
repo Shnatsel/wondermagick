@@ -15,8 +15,13 @@ pub(crate) fn optimize_pixel_format_and_precision(image: &DynamicImage) -> Cow<'
 ///
 /// If the entire image is opaque, the alpha channel will be removed.
 /// If the entire image is grayscale, it will be converted to grayscale pixel format.
+///
 /// Does **not** reduce 16-bit images to 8-bit, even if it's lossless;
 /// use [optimize_pixel_format_and_precision] for that.
+///
+/// The behavior of this function over [optimize_pixel_format_and_precision] is useful
+/// when the image will be converted to 8 bits anyway (e.g. BMP),
+/// or when imagemagick does not optimize format and we mimick that behavior (e.g. TIFF)
 pub(crate) fn optimize_pixel_format(image: &DynamicImage) -> Cow<'_, DynamicImage> {
     optimize_pixel_format_inner(image, false)
 }
