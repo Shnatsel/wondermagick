@@ -23,5 +23,6 @@ pub fn encode<W: Write>(
         .map_err(|e| wm_err!("WebP encoding failed: {e:?}"))?;
     // TODO: `webp` crate doesn't support setting the ICC profile:
     // https://github.com/jaredforth/webp/issues/41
-    Ok(wm_try!(writer.write_all(&webp)))
+    wm_try!(writer.write_all(&webp));
+    Ok(())
 }

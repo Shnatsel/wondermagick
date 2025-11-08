@@ -11,5 +11,6 @@ pub fn encode<W: Write>(
 ) -> Result<(), MagickError> {
     // speed needs to be set manually due to https://github.com/image-rs/image/issues/2506
     let encoder = GifEncoder::new_with_speed(writer, 10);
-    Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
+    wm_try!(image.pixels.write_with_encoder(encoder));
+    Ok(())
 }

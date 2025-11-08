@@ -234,15 +234,13 @@ impl TryFrom<&OsStr> for ReadModifier {
                 Ok(geom) => Ok(Self::Crop(geom)),
                 Err(_) => Err(wm_err!("invalid crop geometry: {s:?}")),
             }
+        } else if ascii
+            .iter()
+            .all(|c| c.is_ascii_digit() || *c == b'-' || *c == b'+' || *c == b',')
+        {
+            Ok(Self::FrameSelect(s.to_owned()))
         } else {
-            if ascii
-                .iter()
-                .all(|c| c.is_ascii_digit() || *c == b'-' || *c == b'+' || *c == b',')
-            {
-                Ok(Self::FrameSelect(s.to_owned()))
-            } else {
-                return Err(wm_err!("invalid read modifier: {}", s.to_string_lossy()));
-            }
+            Err(wm_err!("invalid read modifier: {}", s.to_string_lossy()))
         }
     }
 }

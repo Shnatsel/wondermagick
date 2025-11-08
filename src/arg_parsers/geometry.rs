@@ -85,7 +85,7 @@ impl TryFrom<&OsStr> for Geometry {
         let mut ascii = s.as_encoded_bytes();
         let mut result = Geometry::default();
 
-        if ascii.len() == 0 {
+        if ascii.is_empty() {
             // emptry string is an error in -resize, -crop and crop-on-load in `convert`
             return Err(ArgParseErr::new());
         }

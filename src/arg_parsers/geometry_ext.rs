@@ -67,7 +67,7 @@ impl TryFrom<&OsStr> for ExtGeometry {
             greater_than: find_and_remove_byte(b'>', &mut ascii),
         };
 
-        let geom = if orig_len > 0 && ascii.len() == 0 {
+        let geom = if orig_len > 0 && ascii.is_empty() {
             Geometry::default()
             // imagemagick permits extended geometry with only one symbol such as @ or ^ and nothing else, which is a no-op
         } else {

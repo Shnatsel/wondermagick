@@ -145,7 +145,7 @@ impl ExecutionPlan {
 
             encode::encode(
                 &mut image,
-                &output_file,
+                output_file,
                 self.output_format,
                 &self.modifiers,
             )?;
@@ -196,13 +196,10 @@ pub struct Strip {
 impl Strip {
     pub fn set_all(&mut self, new_val: bool) {
         // enumerate the fields exhaustively so that the compiler complains if we miss any
-        std::mem::swap(
-            self,
-            &mut Self {
+        *self = Self {
                 exif: new_val,
                 icc: new_val,
-            },
-        );
+            };
     }
 }
 

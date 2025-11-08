@@ -18,5 +18,6 @@ pub fn encode<W: Write>(
     };
     // ravif already discards alpha channel automatically if all pixels are opaque,
     // so no need to explicitly convert on our end
-    Ok(wm_try!(image.pixels.write_with_encoder(encoder)))
+    wm_try!(image.pixels.write_with_encoder(encoder));
+    Ok(())
 }

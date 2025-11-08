@@ -77,7 +77,7 @@ where
             for pixel in row {
                 result &= can_remove_alpha(*pixel);
             }
-            if result == false {
+            if !result {
                 return result;
             }
         }

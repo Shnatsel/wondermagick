@@ -343,12 +343,12 @@ fn preserve_aspect_ratio(
     let target_width = compute_dimension(
         image.width(),
         Some(target_width.unwrap_or(u32::MAX)),
-        &constraint,
+        constraint,
     );
     let target_height = compute_dimension(
         image.height(),
         Some(target_height.unwrap_or(u32::MAX)),
-        &constraint,
+        constraint,
     );
     let image_ratio = Fraction::new(image.width(), image.height());
     let target_ratio = Fraction::new(target_width, target_height);

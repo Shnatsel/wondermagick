@@ -28,7 +28,7 @@ fn print_help(bin_name: &str) {
     // TODO: "Features:"
     // TODO: "Delegates (built-in):"
     println!("Usage: {bin_name} [options ...] file [options ...] file");
-    println!("");
+    println!();
     println!("Image Operators:");
     for arg in Arg::VARIANTS {
         let name: &'static str = arg.into();

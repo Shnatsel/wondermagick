@@ -20,7 +20,8 @@ pub fn encode<W: Write>(
     let mut encoder = JpegEncoder::new_with_quality(writer, quality);
     write_icc_and_exif(&mut encoder, image);
     let pixels_to_write = optimize_pixel_format(&image.pixels);
-    Ok(wm_try!(pixels_to_write.write_with_encoder(encoder)))
+    wm_try!(pixels_to_write.write_with_encoder(encoder));
+    Ok(())
 }
 
 fn convert_quality(input: f64) -> u8 {
