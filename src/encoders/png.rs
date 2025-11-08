@@ -67,7 +67,7 @@ fn quality_to_compression_parameters(
 
 // TODO: upstream all the pixel format optimization below into `image`
 
-fn optimize_pixel_format(image: &DynamicImage) -> Cow<DynamicImage> {
+fn optimize_pixel_format(image: &DynamicImage) -> Cow<'_, DynamicImage> {
     // TODO: palettize if the image has <256 colors
     use DynamicImage::*;
     let transforms = match image {
@@ -87,7 +87,7 @@ fn optimize_pixel_format(image: &DynamicImage) -> Cow<DynamicImage> {
 fn apply_pixel_format_optimizations(
     image: &DynamicImage,
     transforms: PixelFormatTransforms,
-) -> Cow<DynamicImage> {
+) -> Cow<'_, DynamicImage> {
     let mut color_type = image.color();
     if transforms.eight_bit {
         color_type = to_8bit(color_type);
