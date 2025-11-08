@@ -337,4 +337,20 @@ mod tests {
         let optimized_with_precision = optimize_pixel_format_and_precision(&dynimage);
         assert!(optimized_with_precision.color() == ColorType::Rgba16);
     }
+
+    #[test]
+    fn luma8_to_rgb_maybe_a() {
+        let mut img = GrayImage::new(100, 100);
+        let start = Luma::from_slice(&[0]);
+        let end = Luma::from_slice(&[255]);
+
+        image::imageops::vertical_gradient(&mut img, start, end);
+
+        let luma8 = DynamicImage::ImageLuma8(img);
+        let luma16 = DynamicImage::ImageLumaA16(luma8.to_luma_alpha16());
+        assert!(luma16.color() == ColorType::La16);
+
+        let converted = to_8bit_rgb_maybe_a(&luma16);
+        assert!(converted.color() == ColorType::Rgb8);
+    }
 }
