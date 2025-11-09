@@ -15,7 +15,6 @@ mod decode;
 mod encode;
 mod encoders;
 pub mod error;
-mod filename_utils;
 pub mod help;
 mod image;
 mod init;

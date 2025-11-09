@@ -10,7 +10,7 @@ use crate::arg_parsers::{
 };
 use crate::args::Arg;
 use crate::decode::decode;
-use crate::filename_utils::insert_suffix_before_extension_in_path;
+use crate::utils::filename::insert_suffix_before_extension_in_path;
 use crate::{encode, wm_err};
 use crate::{error::MagickError, operations::Operation, wm_try};
 
