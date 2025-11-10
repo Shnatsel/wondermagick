@@ -47,6 +47,13 @@ impl ExecutionPlan {
     fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), ArgParseErr> {
         match arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
+            Arg::Composite => {
+                let image_to_comp = self
+                    .input_files
+                    .pop()
+                    .ok_or(ArgParseErr::with_msg("image sequence is required"))?;
+                self.add_operation(Operation::Composite(image_to_comp.into(), None));
+            }
             Arg::Crop => {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
             }
@@ -167,7 +174,7 @@ impl ExecutionPlan {
 }
 
 /// Plan of operations for a single input file
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct FilePlan {
     pub location: Location,
     pub format: Option<FileFormat>,
