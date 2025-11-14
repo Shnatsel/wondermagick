@@ -4,7 +4,7 @@ use image::{DynamicImage, ImageBuffer, Pixel};
 use pic_scale_safe::ResamplingFunction;
 
 use crate::{
-    arg_parsers::{ResizeConstraint, ResizeGeometry},
+    arg_parsers::{Filter, ResizeConstraint, ResizeGeometry},
     error::MagickError,
     image::Image,
     utils::fraction::Fraction,
@@ -14,10 +14,18 @@ use crate::{
 use crate::arg_parsers::ResizeTarget;
 
 /// Implements `-resize` command
-pub fn resize(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+pub fn resize(
+    image: &mut Image,
+    geometry: &ResizeGeometry,
+    algorithm: Option<Filter>,
+) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(&image.pixels, geometry);
-    // The default algorithm is Sinc/Lancsoz3, a very high-quality one
-    resize_impl(&mut image.pixels, dst_width, dst_height, Default::default())
+    resize_impl(
+        &mut image.pixels,
+        dst_width,
+        dst_height,
+        algorithm.map(|a| a.into()),
+    )
 }
 
 /// Implements `-scale` command
@@ -27,7 +35,7 @@ pub fn scale(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickE
         &mut image.pixels,
         dst_width,
         dst_height,
-        ResamplingFunction::Box,
+        Some(ResamplingFunction::Box),
     )
 }
 
@@ -38,7 +46,7 @@ pub fn sample(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), Magick
         &mut image.pixels,
         dst_width,
         dst_height,
-        ResamplingFunction::Nearest,
+        Some(ResamplingFunction::Nearest),
     )
 }
 
@@ -54,7 +62,7 @@ pub fn thumbnail(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), Mag
         image,
         width,
         height,
-        ResamplingFunction::Nearest
+        Some(ResamplingFunction::Nearest)
     ));
 
     // now do the actual resize to the target dimensions
@@ -65,20 +73,23 @@ fn resize_impl(
     image: &mut DynamicImage,
     dst_width: u32,
     dst_height: u32,
-    algorithm: ResamplingFunction,
+    algorithm: Option<ResamplingFunction>,
 ) -> Result<(), MagickError> {
     if image.width() == dst_width && image.height() == dst_height {
         return Ok(());
     }
-    let alg = algorithm; // otherwise rustfmt breaks up too-long-lines and the formatting is a mess
     let src_size = pic_scale_safe::ImageSize::new(image.width() as usize, image.height() as usize);
     let dst_size = pic_scale_safe::ImageSize::new(dst_width as usize, dst_height as usize);
+
+    // TODO: replicate imagemagick algorithm selection:
+    // https://usage.imagemagick.org/filter/#default_filter
+    let alg = algorithm.unwrap_or_default(); // name also shortened to appease rustfmt
 
     // Premultiply the image by alpha channel to avoid color bleed from fully transparent pixels.
     let mut premultiplied_by_alpha = false;
     // There is no need to premultiply for nearest-neighbor resampling because it does not perform any blending.
     // This is actually a valuable optimization because -thumbnail uses nearest-neighbor for a part of the process.
-    if algorithm != ResamplingFunction::Nearest {
+    if alg != ResamplingFunction::Nearest {
         premultiplied_by_alpha = premultiply_alpha_if_needed(image);
     }
 

@@ -66,9 +66,9 @@ impl TryFrom<&OsStr> for Filter {
     }
 }
 
-impl Filter {
-    pub fn into_resize(self) -> ResamplingFunction {
-        match self {
+impl From<Filter> for ResamplingFunction {
+    fn from(value: Filter) -> ResamplingFunction {
+        match value {
             Filter::Bartlett => ResamplingFunction::Bartlett,
             Filter::Blackman => ResamplingFunction::Blackman,
             Filter::Bohman => ResamplingFunction::Bohman,
