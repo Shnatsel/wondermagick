@@ -3,7 +3,6 @@ use std::{
     path::PathBuf,
 };
 
-use crate::arg_parse_err::ArgParseErr;
 use crate::arg_parsers::FileFormat;
 use crate::arg_parsers::{
     parse_numeric_arg, CropGeometry, IdentifyFormat, InputFileArg, Location, ResizeGeometry,
@@ -11,6 +10,7 @@ use crate::arg_parsers::{
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::utils::filename::insert_suffix_before_extension_in_path;
+use crate::{arg_parse_err::ArgParseErr, arg_parsers::Filter};
 use crate::{encode, wm_err};
 use crate::{error::MagickError, operations::Operation, wm_try};
 
@@ -79,6 +79,7 @@ impl ExecutionPlan {
             Arg::Format => {
                 self.modifiers.identify_format = Some(IdentifyFormat::try_from(value.unwrap())?)
             }
+            Arg::Filter => self.modifiers.filter = Some(Filter::try_from(value.unwrap())?),
         };
 
         Ok(())
@@ -179,6 +180,7 @@ pub struct Modifiers {
     pub quality: Option<f64>,
     pub strip: Strip,
     pub identify_format: Option<IdentifyFormat>,
+    pub filter: Option<Filter>,
 }
 
 #[derive(Debug, Default, Copy, Clone)] // bools default to false
