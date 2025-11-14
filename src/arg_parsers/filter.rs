@@ -1,6 +1,8 @@
-use std::fmt::Display;
+use std::{ffi::OsStr, fmt::Display};
 
 use pic_scale_safe::ResamplingFunction;
+
+use crate::arg_parse_err::ArgParseErr;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, strum::EnumString, strum::IntoStaticStr)]
 #[strum(ascii_case_insensitive)]
@@ -43,6 +45,24 @@ impl Display for Filter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let stringified: &'static str = self.into();
         f.write_str(stringified)
+    }
+}
+
+impl TryFrom<&OsStr> for Filter {
+    type Error = ArgParseErr;
+
+    fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
+        if let Some(s_utf8) = s.to_str() {
+            if let Ok(known_filter) = Self::try_from(s_utf8) {
+                return Ok(known_filter);
+            }
+        }
+        Err(ArgParseErr {
+            message: Some(format!(
+                "unrecognized image filter `{}'",
+                s.to_string_lossy()
+            )),
+        })
     }
 }
 
