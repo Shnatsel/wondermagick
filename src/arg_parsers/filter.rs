@@ -40,36 +40,36 @@ pub enum Filter {
 impl Filter {
     pub fn into_resize(self) -> ResamplingFunction {
         match self {
-            Filter::Bartlett => todo!(),
-            Filter::Blackman => todo!(),
-            Filter::Bohman => todo!(),
+            Filter::Bartlett => ResamplingFunction::Bartlett,
+            Filter::Blackman => ResamplingFunction::Blackman,
+            Filter::Bohman => ResamplingFunction::Bohman,
             Filter::Box => ResamplingFunction::Box,
             Filter::Catrom => ResamplingFunction::CatmullRom,
-            Filter::Cosine => todo!(),
-            Filter::Cubic => todo!(),
+            Filter::Cosine => ResamplingFunction::Hann, // Cosine is a raised cosine, similar to Hann
+            Filter::Cubic => ResamplingFunction::Cubic,
             Filter::Gaussian => ResamplingFunction::Gaussian,
-            Filter::Hamming => todo!(),
-            Filter::Hann => todo!(),
-            Filter::Hermite => todo!(),
-            Filter::Jinc => todo!(),
-            Filter::Kaiser => todo!(),
+            Filter::Hamming => ResamplingFunction::Hamming,
+            Filter::Hann => ResamplingFunction::Hann,
+            Filter::Hermite => ResamplingFunction::Hermite,
+            Filter::Jinc => ResamplingFunction::Lanczos3Jinc, // Jinc is often used with a Lanczos window
+            Filter::Kaiser => ResamplingFunction::Kaiser,
             Filter::Lagrange => ResamplingFunction::Lagrange3,
             Filter::Lanczos => ResamplingFunction::Lanczos3,
             Filter::Lanczos2 => ResamplingFunction::Lanczos2,
-            Filter::Lanczos2Sharp => todo!(),
-            Filter::LanczosRadius => todo!(),
-            Filter::LanczosSharp => todo!(),
-            Filter::Mitchell => todo!(),
-            Filter::Parzen => todo!(),
+            Filter::Lanczos2Sharp => ResamplingFunction::Lanczos2, // No direct sharp equivalent, fallback to Lanczos2
+            Filter::LanczosRadius => ResamplingFunction::Lanczos3, // No direct equivalent, fallback to Lanczos3
+            Filter::LanczosSharp => ResamplingFunction::Lanczos3, // No direct sharp equivalent, fallback to Lanczos3
+            Filter::Mitchell => ResamplingFunction::MitchellNetravalli,
+            Filter::Parzen => ResamplingFunction::BSpline, // Parzen is a cubic B-spline
             Filter::Point => ResamplingFunction::Nearest,
-            Filter::Quadratic => todo!(),
-            Filter::Robidoux => todo!(),
-            Filter::RobidouxSharp => todo!(),
-            Filter::Sinc => todo!(),
-            Filter::SincFast => todo!(),
-            Filter::Spline => todo!(),
+            Filter::Quadratic => ResamplingFunction::Quadric,
+            Filter::Robidoux => ResamplingFunction::Robidoux,
+            Filter::RobidouxSharp => ResamplingFunction::RobidouxSharp,
+            Filter::Sinc => ResamplingFunction::Lanczos3, // Sinc is typically windowed, Lanczos is a good default
+            Filter::SincFast => ResamplingFunction::Lanczos2, // A faster, likely lower-quality Sinc, Lanczos2 is a reasonable approximation
+            Filter::Spline => ResamplingFunction::BSpline,
             Filter::Triangle => ResamplingFunction::Bilinear,
-            Filter::Welch => todo!(),
+            Filter::Welch => ResamplingFunction::Welch,
         }
     }
 }
