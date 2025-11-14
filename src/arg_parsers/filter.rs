@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use pic_scale_safe::ResamplingFunction;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, strum::EnumString, strum::IntoStaticStr)]
@@ -35,6 +37,13 @@ pub enum Filter {
     Spline,
     Triangle,
     Welch,
+}
+
+impl Display for Filter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let stringified: &'static str = self.into();
+        f.write_str(stringified)
+    }
 }
 
 impl Filter {
