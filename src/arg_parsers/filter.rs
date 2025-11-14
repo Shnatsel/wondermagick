@@ -95,7 +95,7 @@ impl From<Filter> for ResamplingFunction {
             Filter::Robidoux => ResamplingFunction::Robidoux,
             Filter::RobidouxSharp => ResamplingFunction::RobidouxSharp,
             Filter::Sinc => ResamplingFunction::Lanczos3, // Sinc is typically windowed, Lanczos is a good default
-            Filter::SincFast => ResamplingFunction::Lanczos2, // A faster, likely lower-quality Sinc, Lanczos2 is a reasonable approximation
+            Filter::SincFast => ResamplingFunction::Lanczos3, // https://github.com/Shnatsel/wondermagick/pull/57#discussion_r2529191479
             Filter::Spline => ResamplingFunction::BSpline,
             Filter::Triangle => ResamplingFunction::Bilinear,
             Filter::Welch => ResamplingFunction::Welch,
