@@ -3,7 +3,6 @@ use std::{
     path::PathBuf,
 };
 
-use crate::arg_parse_err::ArgParseErr;
 use crate::arg_parsers::FileFormat;
 use crate::arg_parsers::{
     parse_numeric_arg, CropGeometry, IdentifyFormat, InputFileArg, Location, ResizeGeometry,
@@ -11,6 +10,7 @@ use crate::arg_parsers::{
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::utils::filename::insert_suffix_before_extension_in_path;
+use crate::{arg_parse_err::ArgParseErr, arg_parsers::Filter};
 use crate::{encode, wm_err};
 use crate::{error::MagickError, operations::Operation, wm_try};
 
@@ -45,6 +45,12 @@ impl ExecutionPlan {
     /// Currently this can only fail due to argument parsing.
     /// Split into its own function due to lack of try{} blocks on stable Rust.
     fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), ArgParseErr> {
+        // Note on interaction with self.modifiers:
+        // In imagemagick the modifier only applies if it comes BEFORE the operation it affects.
+        // So `convert in.png -filter box -resize 100 out.png` uses box filter
+        // but `convert in.png -resize 100 -filter box out.png` uses default filter.
+        // To replicate that we clone the relevant modifiers for every operation into its enum's data.
+        // TODO: correctly handle `convert -resize 100 -filter box in.png out.png` where filter DOES apply.
         match arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
             Arg::Crop => {
@@ -54,9 +60,10 @@ impl ExecutionPlan {
                 self.add_operation(Operation::Identify(self.modifiers.identify_format.clone()));
             }
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
-            Arg::Resize => {
-                self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))
-            }
+            Arg::Resize => self.add_operation(Operation::Resize(
+                ResizeGeometry::try_from(value.unwrap())?,
+                self.modifiers.filter,
+            )),
             Arg::Sample => {
                 self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?))
             }
@@ -67,9 +74,10 @@ impl ExecutionPlan {
                 self.modifiers.strip.set_all(true);
             }
             Arg::Thumbnail => {
-                self.add_operation(Operation::Thumbnail(ResizeGeometry::try_from(
-                    value.unwrap(),
-                )?));
+                self.add_operation(Operation::Thumbnail(
+                    ResizeGeometry::try_from(value.unwrap())?,
+                    self.modifiers.filter,
+                ));
                 // -thumbnail also strips all metadata except the ICC profile
                 // Some docs state that it strips ICC profile also, but
                 // https://usage.imagemagick.org/thumbnails/ says v6.5.4-7 onwards preserves them.
@@ -79,6 +87,7 @@ impl ExecutionPlan {
             Arg::Format => {
                 self.modifiers.identify_format = Some(IdentifyFormat::try_from(value.unwrap())?)
             }
+            Arg::Filter => self.modifiers.filter = Some(Filter::try_from(value.unwrap())?),
         };
 
         Ok(())
@@ -108,7 +117,7 @@ impl ExecutionPlan {
         if let Some(modifier) = file.read_mod {
             use crate::arg_parsers::ReadModifier::*;
             let op = match modifier {
-                Resize(geom) => Some(Operation::Resize(geom)),
+                Resize(geom) => Some(Operation::Resize(geom, None)),
                 Crop(geom) => Some(Operation::CropOnLoad(geom)),
                 FrameSelect(s) => {
                     if s != OsStr::new("0") {
@@ -179,6 +188,7 @@ pub struct Modifiers {
     pub quality: Option<f64>,
     pub strip: Strip,
     pub identify_format: Option<IdentifyFormat>,
+    pub filter: Option<Filter>,
 }
 
 #[derive(Debug, Default, Copy, Clone)] // bools default to false

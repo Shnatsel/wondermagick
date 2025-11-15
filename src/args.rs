@@ -25,6 +25,7 @@ pub enum Arg {
     // TODO: -format can actually change meaning, as `-format type`
     // and as `-format expression`. We currently only implement `-format expression`.
     Format,
+    Filter,
     Identify,
     Quality,
     Resize,
@@ -40,6 +41,7 @@ impl Arg {
             Arg::AutoOrient => false,
             Arg::Crop => true,
             Arg::Format => true,
+            Arg::Filter => true,
             Arg::Identify => false,
             Arg::Quality => true,
             Arg::Resize => true,
@@ -55,6 +57,7 @@ impl Arg {
             Arg::AutoOrient => "automagically orient (rotate) image",
             Arg::Crop => "cut out a rectangular region of the image",
             Arg::Format => "output formatted image characteristics",
+            Arg::Filter => "use this filter when resizing an image",
             Arg::Identify => "identify the format and characteristics of the image",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
             Arg::Resize => "resize the image",
