@@ -77,7 +77,7 @@ impl From<Filter> for ResamplingFunction {
             Filter::Hermite => ResamplingFunction::Hermite,
             Filter::Jinc => ResamplingFunction::Lanczos3Jinc, // Jinc is often used with a Lanczos window
             Filter::Kaiser => ResamplingFunction::Kaiser,
-            Filter::Lagrange => ResamplingFunction::Lagrange3,
+            Filter::Lagrange => ResamplingFunction::Lagrange2, // https://github.com/Shnatsel/wondermagick/pull/57#discussion_r2529888794
             Filter::Lanczos => ResamplingFunction::Lanczos3,
             Filter::Lanczos2 => ResamplingFunction::Lanczos2,
             Filter::Lanczos2Sharp => ResamplingFunction::Lanczos2, // No direct sharp equivalent, fallback to Lanczos2
