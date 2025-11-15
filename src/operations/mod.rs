@@ -4,14 +4,14 @@ mod identify;
 mod resize;
 
 use crate::{
-    arg_parsers::{CropGeometry, IdentifyFormat, LoadCropGeometry, ResizeGeometry},
+    arg_parsers::{CropGeometry, Filter, IdentifyFormat, LoadCropGeometry, ResizeGeometry},
     error::MagickError,
     image::Image,
 };
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operation {
-    Resize(ResizeGeometry),
+    Resize(ResizeGeometry, Option<Filter>),
     Thumbnail(ResizeGeometry),
     Scale(ResizeGeometry),
     Sample(ResizeGeometry),
@@ -24,7 +24,7 @@ pub enum Operation {
 impl Operation {
     pub fn execute(&self, image: &mut Image) -> Result<(), MagickError> {
         match self {
-            Operation::Resize(geom) => resize::resize(image, geom),
+            Operation::Resize(geom, filter) => resize::resize(image, geom, *filter),
             Operation::Thumbnail(geom) => resize::thumbnail(image, geom),
             Operation::Scale(geom) => resize::scale(image, geom),
             Operation::Sample(geom) => resize::sample(image, geom),

@@ -45,6 +45,10 @@ impl ExecutionPlan {
     /// Currently this can only fail due to argument parsing.
     /// Split into its own function due to lack of try{} blocks on stable Rust.
     fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), ArgParseErr> {
+        // Note on interaction with self.modifiers:
+        // In imagemagick the modifier only applies if it comes BEFORE the operation it affects.
+        // So `-filter box -resize 100` uses box filter but `-resize 100 -filter box` uses default filter.
+        // To replicate that we clone the relevant modifiers for every operation into its enum's data.
         match arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
             Arg::Crop => {
@@ -54,9 +58,10 @@ impl ExecutionPlan {
                 self.add_operation(Operation::Identify(self.modifiers.identify_format.clone()));
             }
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
-            Arg::Resize => {
-                self.add_operation(Operation::Resize(ResizeGeometry::try_from(value.unwrap())?))
-            }
+            Arg::Resize => self.add_operation(Operation::Resize(
+                ResizeGeometry::try_from(value.unwrap())?,
+                self.modifiers.filter,
+            )),
             Arg::Sample => {
                 self.add_operation(Operation::Sample(ResizeGeometry::try_from(value.unwrap())?))
             }
@@ -109,7 +114,7 @@ impl ExecutionPlan {
         if let Some(modifier) = file.read_mod {
             use crate::arg_parsers::ReadModifier::*;
             let op = match modifier {
-                Resize(geom) => Some(Operation::Resize(geom)),
+                Resize(geom) => Some(Operation::Resize(geom, None)),
                 Crop(geom) => Some(Operation::CropOnLoad(geom)),
                 FrameSelect(s) => {
                     if s != OsStr::new("0") {
