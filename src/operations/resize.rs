@@ -1,7 +1,7 @@
 use std::ops::{AddAssign, BitXor};
 
 use image::{DynamicImage, ImageBuffer, Pixel};
-use pic_scale_safe::ResamplingFunction;
+use pic_scale_safe::{ImageSize, ResamplingFunction};
 
 use crate::{
     arg_parsers::{Filter, ResizeConstraint, ResizeGeometry},
@@ -20,23 +20,13 @@ pub fn resize(
     algorithm: Option<Filter>,
 ) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(&image.pixels, geometry);
-    resize_impl(
-        &mut image.pixels,
-        dst_width,
-        dst_height,
-        algorithm.map(|a| a.into()),
-    )
+    resize_impl(&mut image.pixels, dst_width, dst_height, algorithm)
 }
 
 /// Implements `-scale` command
 pub fn scale(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
     let (dst_width, dst_height) = compute_dimensions(&image.pixels, geometry);
-    resize_impl(
-        &mut image.pixels,
-        dst_width,
-        dst_height,
-        Some(ResamplingFunction::Box),
-    )
+    resize_impl(&mut image.pixels, dst_width, dst_height, Some(Filter::Box))
 }
 
 /// Implements `-sample` command
@@ -46,7 +36,7 @@ pub fn sample(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), Magick
         &mut image.pixels,
         dst_width,
         dst_height,
-        Some(ResamplingFunction::Nearest),
+        Some(Filter::Point),
     )
 }
 
@@ -62,40 +52,40 @@ pub fn thumbnail(
     // imagemagick first downscales to 5x the target size with the cheap nearest-neighbor algorithm
     let width = image.width().min(dst_width * 5);
     let height = image.height().min(dst_height * 5);
-    wm_try!(resize_impl(
-        image,
-        width,
-        height,
-        Some(ResamplingFunction::Nearest)
-    ));
+    wm_try!(resize_impl(image, width, height, Some(Filter::Point)));
 
     // now do the actual resize to the target dimensions
-    resize_impl(image, dst_width, dst_height, algorithm.map(|a| a.into()))
+    resize_impl(image, dst_width, dst_height, algorithm)
 }
 
 fn resize_impl(
     image: &mut DynamicImage,
     dst_width: u32,
     dst_height: u32,
-    algorithm: Option<ResamplingFunction>,
+    algorithm: Option<Filter>,
 ) -> Result<(), MagickError> {
     if image.width() == dst_width && image.height() == dst_height {
         return Ok(());
     }
-    let src_size = pic_scale_safe::ImageSize::new(image.width() as usize, image.height() as usize);
-    let dst_size = pic_scale_safe::ImageSize::new(dst_width as usize, dst_height as usize);
-
-    // TODO: replicate imagemagick algorithm selection:
-    // https://usage.imagemagick.org/filter/#default_filter
-    let alg = algorithm.unwrap_or_default(); // name also shortened to appease rustfmt
+    let src_size = ImageSize::new(image.width() as usize, image.height() as usize);
+    let dst_size = ImageSize::new(dst_width as usize, dst_height as usize);
 
     // Premultiply the image by alpha channel to avoid color bleed from fully transparent pixels.
     let mut premultiplied_by_alpha = false;
+    let mut constant_alpha = true;
     // There is no need to premultiply for nearest-neighbor resampling because it does not perform any blending.
     // This is actually a valuable optimization because -thumbnail uses nearest-neighbor for a part of the process.
-    if alg != ResamplingFunction::Nearest {
-        premultiplied_by_alpha = premultiply_alpha_if_needed(image);
+    if algorithm != Some(Filter::Point) {
+        constant_alpha = has_constant_alpha(image);
     }
+    if !constant_alpha {
+        premultiply_alpha(image);
+        premultiplied_by_alpha = true;
+    }
+    let alg: ResamplingFunction = match algorithm {
+        Some(filter) => filter.into(),
+        None => select_default_algorithm(src_size, dst_size, constant_alpha),
+    };
 
     use pic_scale_safe::*;
     match image {
@@ -158,41 +148,35 @@ fn resize_impl(
     Ok(())
 }
 
-/// Return value indicates whether the image was in premultiplied by alpha
-#[must_use]
-fn premultiply_alpha_if_needed(image: &mut DynamicImage) -> bool {
+fn premultiply_alpha(image: &mut DynamicImage) -> bool {
     use pic_scale_safe::*;
-    if !has_constant_alpha(image) {
-        match image {
-            DynamicImage::ImageLuma8(_) => false,
-            DynamicImage::ImageLumaA8(buf) => {
-                premultiply_la8(buf.as_mut());
-                true
-            }
-            DynamicImage::ImageRgb8(_) => false,
-            DynamicImage::ImageRgba8(buf) => {
-                premultiply_rgba8(buf.as_mut());
-                true
-            }
-            DynamicImage::ImageLuma16(_) => false,
-            DynamicImage::ImageLumaA16(buf) => {
-                premultiply_la16(buf.as_mut(), 16);
-                true
-            }
-            DynamicImage::ImageRgb16(_) => false,
-            DynamicImage::ImageRgba16(buf) => {
-                premultiply_rgba16(buf.as_mut(), 16);
-                true
-            }
-            DynamicImage::ImageRgb32F(_) => false,
-            DynamicImage::ImageRgba32F(buf) => {
-                premultiply_rgba_f32(buf.as_mut());
-                true
-            }
-            _ => unreachable!(),
+    match image {
+        DynamicImage::ImageLuma8(_) => false,
+        DynamicImage::ImageLumaA8(buf) => {
+            premultiply_la8(buf.as_mut());
+            true
         }
-    } else {
-        false
+        DynamicImage::ImageRgb8(_) => false,
+        DynamicImage::ImageRgba8(buf) => {
+            premultiply_rgba8(buf.as_mut());
+            true
+        }
+        DynamicImage::ImageLuma16(_) => false,
+        DynamicImage::ImageLumaA16(buf) => {
+            premultiply_la16(buf.as_mut(), 16);
+            true
+        }
+        DynamicImage::ImageRgb16(_) => false,
+        DynamicImage::ImageRgba16(buf) => {
+            premultiply_rgba16(buf.as_mut(), 16);
+            true
+        }
+        DynamicImage::ImageRgb32F(_) => false,
+        DynamicImage::ImageRgba32F(buf) => {
+            premultiply_rgba_f32(buf.as_mut());
+            true
+        }
+        _ => unreachable!(),
     }
 }
 
@@ -272,6 +256,25 @@ fn has_constant_alpha_f32(img: &ImageBuffer<image::Rgba<f32>, Vec<f32>>) -> bool
     img.pixels()
         .map(|pixel| pixel.channels().last().unwrap())
         .all(|alpha| *alpha == first_pixel_alpha)
+}
+
+/// Replicates imagemagick algorithm selection:
+/// <https://usage.imagemagick.org/filter/#default_filter>
+#[must_use]
+fn select_default_algorithm(
+    src_size: ImageSize,
+    dst_size: ImageSize,
+    constant_alpha: bool,
+) -> ResamplingFunction {
+    if src_size.height < dst_size.height || src_size.width < dst_size.width {
+        // enlarging the image
+        ResamplingFunction::MitchellNetravalli
+    } else if !constant_alpha {
+        // image has transparency
+        ResamplingFunction::MitchellNetravalli
+    } else {
+        ResamplingFunction::Lanczos3
+    }
 }
 
 #[must_use]
