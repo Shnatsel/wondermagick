@@ -1,10 +1,12 @@
-use std::{ffi::OsStr, fmt::Display};
+use std::ffi::OsStr;
 
 use pic_scale_safe::ResamplingFunction;
 
 use crate::arg_parse_err::ArgParseErr;
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, strum::EnumString, strum::IntoStaticStr)]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Debug, strum::Display, strum::EnumString, strum::IntoStaticStr,
+)]
 #[strum(ascii_case_insensitive)]
 /// Represents imagemagick -filter options
 pub enum Filter {
@@ -39,13 +41,6 @@ pub enum Filter {
     Spline,
     Triangle,
     Welch,
-}
-
-impl Display for Filter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let stringified: &'static str = self.into();
-        f.write_str(stringified)
-    }
 }
 
 impl TryFrom<&OsStr> for Filter {
