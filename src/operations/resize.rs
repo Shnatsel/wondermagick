@@ -51,7 +51,11 @@ pub fn sample(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), Magick
 }
 
 /// Implements `-thumbnail` command
-pub fn thumbnail(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), MagickError> {
+pub fn thumbnail(
+    image: &mut Image,
+    geometry: &ResizeGeometry,
+    algorithm: Option<Filter>,
+) -> Result<(), MagickError> {
     let image = &mut image.pixels;
     let (dst_width, dst_height) = compute_dimensions(image, geometry);
 
@@ -66,7 +70,7 @@ pub fn thumbnail(image: &mut Image, geometry: &ResizeGeometry) -> Result<(), Mag
     ));
 
     // now do the actual resize to the target dimensions
-    resize_impl(image, dst_width, dst_height, Default::default())
+    resize_impl(image, dst_width, dst_height, algorithm.map(|a| a.into()))
 }
 
 fn resize_impl(

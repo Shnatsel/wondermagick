@@ -12,7 +12,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum Operation {
     Resize(ResizeGeometry, Option<Filter>),
-    Thumbnail(ResizeGeometry),
+    Thumbnail(ResizeGeometry, Option<Filter>),
     Scale(ResizeGeometry),
     Sample(ResizeGeometry),
     CropOnLoad(LoadCropGeometry),
@@ -25,7 +25,7 @@ impl Operation {
     pub fn execute(&self, image: &mut Image) -> Result<(), MagickError> {
         match self {
             Operation::Resize(geom, filter) => resize::resize(image, geom, *filter),
-            Operation::Thumbnail(geom) => resize::thumbnail(image, geom),
+            Operation::Thumbnail(geom, filter) => resize::thumbnail(image, geom, *filter),
             Operation::Scale(geom) => resize::scale(image, geom),
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),

@@ -72,9 +72,10 @@ impl ExecutionPlan {
                 self.modifiers.strip.set_all(true);
             }
             Arg::Thumbnail => {
-                self.add_operation(Operation::Thumbnail(ResizeGeometry::try_from(
-                    value.unwrap(),
-                )?));
+                self.add_operation(Operation::Thumbnail(
+                    ResizeGeometry::try_from(value.unwrap())?,
+                    self.modifiers.filter,
+                ));
                 // -thumbnail also strips all metadata except the ICC profile
                 // Some docs state that it strips ICC profile also, but
                 // https://usage.imagemagick.org/thumbnails/ says v6.5.4-7 onwards preserves them.
