@@ -47,8 +47,10 @@ impl ExecutionPlan {
     fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), ArgParseErr> {
         // Note on interaction with self.modifiers:
         // In imagemagick the modifier only applies if it comes BEFORE the operation it affects.
-        // So `-filter box -resize 100` uses box filter but `-resize 100 -filter box` uses default filter.
+        // So `convert in.png -filter box -resize 100 out.png` uses box filter
+        // but `convert in.png -resize 100 -filter box out.png` uses default filter.
         // To replicate that we clone the relevant modifiers for every operation into its enum's data.
+        // TODO: correctly handle `convert -resize 100 -filter box in.png out.png` where filter DOES apply.
         match arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
             Arg::Crop => {
