@@ -129,7 +129,7 @@ fn get_colorspace(color_type: ExtendedColorType) -> Option<String> {
         Rgb1 | Rgb2 | Rgb4 | Rgb8 | Rgb16 => "sRGB",
         Bgr8 | Bgra8 => "sRGB",
         Rgb32F | Rgba32F => "sRGB",
-        Cmyk8 => "CMYK",
+        Cmyk8 | Cmyk16 => "CMYK",
         Unknown(_) => return None,
         _ => return None,
     };
