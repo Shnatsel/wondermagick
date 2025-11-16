@@ -45,12 +45,6 @@ impl ExecutionPlan {
     /// Currently this can only fail due to argument parsing.
     /// Split into its own function due to lack of try{} blocks on stable Rust.
     fn apply_arg_inner(&mut self, arg: Arg, value: Option<&OsStr>) -> Result<(), ArgParseErr> {
-        // Note on interaction with self.modifiers:
-        // In imagemagick the modifier only applies if it comes BEFORE the operation it affects.
-        // So `convert in.png -filter box -resize 100 out.png` uses box filter
-        // but `convert in.png -resize 100 -filter box out.png` uses default filter.
-        // To replicate that we clone the relevant modifiers for every operation into its enum's data.
-        // TODO: correctly handle `convert -resize 100 -filter box in.png out.png` where filter DOES apply.
         match arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
             Arg::Crop => {
@@ -113,6 +107,21 @@ impl ExecutionPlan {
             format: file.format,
             ops: self.global_ops.clone(),
         };
+
+        // Operations are affected by Modifiers such as -format or -quality.
+        // Their behavior is somewhat nontrivial.
+        //
+        // In imagemagick the modifier (usually) only applies if it comes BEFORE the operation it affects.
+        // So `convert in.png -filter box -resize 100 out.png` uses box filter
+        // but `convert in.png -resize 100 -filter box out.png` uses default filter.
+        //
+        // However! In `convert -resize 100 -filter box in.png out.png` the filter DOES apply.
+        // This is because `-resize 100` comes before ALL filenames and is applied to all files,
+        // and it reads the state of the modifiers at the point when the file is added.
+        // This loop replicates this special behavior for global ops.
+        for op in &mut file_plan.ops {
+            op.apply_modifiers(&self.modifiers);
+        }
 
         if let Some(file_mod) = file.read_mod {
             use crate::arg_parsers::ReadModifier::*;

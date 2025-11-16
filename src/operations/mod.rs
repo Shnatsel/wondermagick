@@ -7,6 +7,7 @@ use crate::{
     arg_parsers::{CropGeometry, Filter, IdentifyFormat, LoadCropGeometry, ResizeGeometry},
     error::MagickError,
     image::Image,
+    plan,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -32,6 +33,23 @@ impl Operation {
             Operation::Crop(geom) => crop::crop(image, geom),
             Operation::Identify(format) => identify::identify(image, format.clone()),
             Operation::AutoOrient => auto_orient::auto_orient(image),
+        }
+    }
+
+    /// Modifiers are flags such as -quality that affect operations.
+    /// For global operations we need to alter them after the operation's creation,
+    /// to apply up-to-date modifiers.
+    pub fn apply_modifiers(&mut self, mods: &plan::Modifiers) {
+        use Operation::*;
+        match self {
+            Resize(resize_geometry, _filter) => *self = Resize(*resize_geometry, mods.filter),
+            Thumbnail(resize_geometry, _filter) => *self = Thumbnail(*resize_geometry, mods.filter),
+            Scale(_) => (),
+            Sample(_) => (),
+            CropOnLoad(_) => (),
+            Crop(_) => (),
+            Identify(_old_identify_format) => *self = Identify(mods.identify_format.clone()),
+            AutoOrient => (),
         }
     }
 }
