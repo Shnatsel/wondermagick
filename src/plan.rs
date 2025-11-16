@@ -114,9 +114,9 @@ impl ExecutionPlan {
             ops: self.global_ops.clone(),
         };
 
-        if let Some(modifier) = file.read_mod {
+        if let Some(file_mod) = file.read_mod {
             use crate::arg_parsers::ReadModifier::*;
-            let op = match modifier {
+            let op = match file_mod {
                 Resize(geom) => Some(Operation::Resize(geom, None)),
                 Crop(geom) => Some(Operation::CropOnLoad(geom)),
                 FrameSelect(s) => {
