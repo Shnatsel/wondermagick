@@ -31,6 +31,7 @@ pub enum Arg {
     Blur,
     GaussianBlur,
     Identify,
+    Monochrome,
     Quality,
     Resize,
     Sample,
@@ -51,6 +52,7 @@ impl Arg {
             Arg::Blur => true,
             Arg::GaussianBlur => true,
             Arg::Identify => false,
+            Arg::Monochrome => false,
             Arg::Quality => true,
             Arg::Resize => true,
             Arg::Sample => true,
@@ -71,6 +73,7 @@ impl Arg {
             Arg::Blur => "reduce image noise and reduce detail levels",
             Arg::GaussianBlur => "reduce image noise and reduce detail levels",
             Arg::Identify => "identify the format and characteristics of the image",
+            Arg::Monochrome => "transform image to black and white",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
             Arg::Resize => "resize the image",
             Arg::Sample => "scale image with pixel sampling",
