@@ -1,5 +1,5 @@
 use crate::{error::MagickError, image::Image, wm_err};
-use image::{DynamicImage, ImageBuffer, Luma};
+use image::{DynamicImage, GrayImage, Luma};
 
 pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
     let mut grayscale = image.pixels.to_luma8();
@@ -14,7 +14,7 @@ pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
 /// This is empirically tuned to give results similar to ImageMagick's -monochrome
 const CONTRAST_FACTOR: f32 = 10.0;
 
-fn apply_contrast(image: &mut ImageBuffer<Luma<u8>, Vec<u8>>, contrast_factor: f32) {
+fn apply_contrast(image: &mut GrayImage, contrast_factor: f32) {
     let offset = 128.0 * (1.0 - contrast_factor);
 
     for pixel in image.pixels_mut() {
@@ -30,7 +30,7 @@ const BACKGROUND: Luma<u8> = Luma([255]);
 const FOREGROUND: Luma<u8> = Luma([0]);
 const DITHER_THRESHOLD: u8 = 60;
 
-fn apply_dithering(image: &mut ImageBuffer<Luma<u8>, Vec<u8>>, noise_texture: &NoiseTexture) {
+fn apply_dithering(image: &mut GrayImage, noise_texture: &NoiseTexture) {
     let width = image.width();
     let height = image.height();
 
