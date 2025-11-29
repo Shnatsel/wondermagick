@@ -4,16 +4,7 @@ use std::{ffi::OsStr, str::FromStr};
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct BlurGeometry {
     radius: usize, // only to match imagemagick's cli behaviour, acutal value is ignored
-    pub sigma: Sigma,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Sigma(pub f32);
-
-impl Default for Sigma {
-    fn default() -> Self {
-        Sigma(1.2) // no science behind the value, just eyeballed to match imagemagick's default
-    }
+    pub sigma: f32,
 }
 
 impl FromStr for BlurGeometry {
@@ -44,18 +35,15 @@ impl TryFrom<&OsStr> for BlurGeometry {
                 .map_err(|_| ArgParseErr::with_msg("invalid radius value"))
                 .map(|radius: usize| Self {
                     radius,
-                    ..Default::default()
+                    sigma: 1.2, // no science behind the value, just eyeballed to match imagemagick's default
                 }),
             2 => {
                 let maybe_radius = strip_and_parse_number::<usize>(parts.first().unwrap());
                 let maybe_sigma = strip_and_parse_number::<f32>(parts.get(1).unwrap());
                 match (maybe_radius, maybe_sigma) {
-                    (Ok(radius), Ok(sigma)) => Ok(Self {
-                        radius,
-                        sigma: Sigma(sigma),
-                    }),
+                    (Ok(radius), Ok(sigma)) => Ok(Self { radius, sigma }),
                     (Err(_), Ok(sigma)) => Ok(Self {
-                        sigma: Sigma(sigma),
+                        sigma,
                         ..Default::default()
                     }),
                     _ => Err(ArgParseErr::with_msg("invalid sigma value")),
@@ -68,42 +56,34 @@ impl TryFrom<&OsStr> for BlurGeometry {
 
 #[cfg(test)]
 mod tests {
-    use super::{BlurGeometry, Sigma};
+    use super::BlurGeometry;
     use std::str::FromStr;
-
-    #[test]
-    fn test_default() {
-        let geom = BlurGeometry::default();
-        assert_eq!(geom.radius, 0);
-        assert_eq!(geom.sigma, Sigma::default());
-    }
 
     #[test]
     fn test_radius_only() {
         let geom = BlurGeometry::from_str("5").unwrap();
         assert_eq!(geom.radius, 5);
-        assert_eq!(geom.sigma, Sigma::default());
     }
 
     #[test]
     fn test_sigma_only() {
         let geom = BlurGeometry::from_str("x1337").unwrap();
         assert_eq!(geom.radius, 0);
-        assert_eq!(geom.sigma, Sigma(1337.0));
+        assert_eq!(geom.sigma, 1337.0);
     }
 
     #[test]
     fn test_radius_and_sigma_decimal() {
         let geom = BlurGeometry::from_str("5x1.0").unwrap();
         assert_eq!(geom.radius, 5);
-        assert_eq!(geom.sigma, Sigma(1.0));
+        assert_eq!(geom.sigma, 1.0);
     }
 
     #[test]
     fn test_radius_and_sigma_int() {
         let geom = BlurGeometry::from_str("5x1").unwrap();
         assert_eq!(geom.radius, 5);
-        assert_eq!(geom.sigma, Sigma(1.0));
+        assert_eq!(geom.sigma, 1.0);
     }
 
     #[test]
