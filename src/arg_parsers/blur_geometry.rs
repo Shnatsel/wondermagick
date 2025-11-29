@@ -38,14 +38,12 @@ impl TryFrom<&OsStr> for BlurGeometry {
         match parts.len() {
             1 => strip_and_parse_number::<usize>(parts.first().unwrap())
                 .map_err(|_| ArgParseErr::new())
-                .and_then(|radius: usize| {
-                    Ok(Self {
-                        radius,
-                        ..Default::default()
-                    })
+                .map(|radius: usize| Self {
+                    radius,
+                    ..Default::default()
                 }),
             2 => {
-                let maybe_radius = strip_and_parse_number::<usize>(parts.get(0).unwrap());
+                let maybe_radius = strip_and_parse_number::<usize>(parts.first().unwrap());
                 let maybe_sigma = strip_and_parse_number::<f32>(parts.get(1).unwrap());
                 match (maybe_radius, maybe_sigma) {
                     (Ok(radius), Ok(sigma)) => Ok(Self {
