@@ -28,16 +28,20 @@ impl TryFrom<&OsStr> for BlurGeometry {
     type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
-        if !s.is_ascii() || s.is_empty() {
-            return Err(ArgParseErr::new());
+        if s.is_empty() {
+            return Err(ArgParseErr::with_msg(
+                "blur geometry must be non-empty and ASCII only",
+            ));
         }
 
-        let string: &str = s.try_into().map_err(|_e| ArgParseErr::new())?;
+        let string: &str = s
+            .try_into()
+            .map_err(|_e| ArgParseErr::with_msg("invalid blur geometry"))?;
         let parts: Vec<&str> = string.split('x').collect();
 
         match parts.len() {
             1 => strip_and_parse_number::<usize>(parts.first().unwrap())
-                .map_err(|_| ArgParseErr::new())
+                .map_err(|_| ArgParseErr::with_msg("invalid radius value"))
                 .map(|radius: usize| Self {
                     radius,
                     ..Default::default()
@@ -54,10 +58,10 @@ impl TryFrom<&OsStr> for BlurGeometry {
                         sigma: Sigma(sigma),
                         ..Default::default()
                     }),
-                    _ => Err(ArgParseErr::new()),
+                    _ => Err(ArgParseErr::with_msg("invalid sigma value")),
                 }
             }
-            _ => Err(ArgParseErr::new()),
+            _ => Err(ArgParseErr::with_msg("invalid blur geometry format")),
         }
     }
 }
