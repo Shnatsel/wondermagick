@@ -12,7 +12,7 @@ pub struct Sigma(pub f32);
 
 impl Default for Sigma {
     fn default() -> Self {
-        Sigma(5.0) // no science behind the value, just eyeballed to match imagemagick's default
+        Sigma(1.2) // no science behind the value, just eyeballed to match imagemagick's default
     }
 }
 
