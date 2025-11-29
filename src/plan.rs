@@ -5,7 +5,8 @@ use std::{
 
 use crate::arg_parsers::FileFormat;
 use crate::arg_parsers::{
-    parse_numeric_arg, CropGeometry, IdentifyFormat, InputFileArg, Location, ResizeGeometry,
+    parse_numeric_arg, BlurGeometry, CropGeometry, IdentifyFormat, InputFileArg, Location,
+    ResizeGeometry,
 };
 use crate::args::Arg;
 use crate::decode::decode;
@@ -53,7 +54,9 @@ impl ExecutionPlan {
             Arg::Identify => {
                 self.add_operation(Operation::Identify(self.modifiers.identify_format.clone()));
             }
-            Arg::Blur => self.add_operation(Operation::Blur),
+            Arg::Blur => {
+                self.add_operation(Operation::Blur(BlurGeometry::try_from(value.unwrap())?))
+            }
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
             Arg::Resize => self.add_operation(Operation::Resize(
                 ResizeGeometry::try_from(value.unwrap())?,

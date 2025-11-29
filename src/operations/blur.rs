@@ -1,6 +1,7 @@
-use crate::{error::MagickError, image::Image};
+use crate::{arg_parsers::BlurGeometry, arg_parsers::Sigma, error::MagickError, image::Image};
 
-pub fn blur(image: &mut Image) -> Result<(), MagickError> {
-    image.pixels = image.pixels.blur(5.0);
+pub fn blur(image: &mut Image, geometry: &BlurGeometry) -> Result<(), MagickError> {
+    let Sigma(sigma) = geometry.sigma;
+    image.pixels = image.pixels.blur(sigma);
     Ok(())
 }

@@ -17,3 +17,5 @@ mod identify_format;
 pub use identify_format::{IdentifyFormat, Token, Var};
 mod filter;
 pub use filter::*;
+mod blur_geometry;
+pub use blur_geometry::*;
