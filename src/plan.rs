@@ -53,6 +53,7 @@ impl ExecutionPlan {
             Arg::Identify => {
                 self.add_operation(Operation::Identify(self.modifiers.identify_format.clone()));
             }
+            Arg::Blur => self.add_operation(Operation::Blur),
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
             Arg::Resize => self.add_operation(Operation::Resize(
                 ResizeGeometry::try_from(value.unwrap())?,

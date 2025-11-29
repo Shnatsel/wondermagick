@@ -1,4 +1,5 @@
 mod auto_orient;
+mod blur;
 mod crop;
 mod identify;
 mod resize;
@@ -20,6 +21,7 @@ pub enum Operation {
     Crop(CropGeometry),
     Identify(Option<IdentifyFormat>),
     AutoOrient,
+    Blur,
 }
 
 impl Operation {
@@ -33,6 +35,7 @@ impl Operation {
             Operation::Crop(geom) => crop::crop(image, geom),
             Operation::Identify(format) => identify::identify(image, format.clone()),
             Operation::AutoOrient => auto_orient::auto_orient(image),
+            Operation::Blur => blur::blur(image),
         }
     }
 
@@ -50,6 +53,7 @@ impl Operation {
             Crop(_) => (),
             Identify(_old_identify_format) => *self = Identify(mods.identify_format.clone()),
             AutoOrient => (),
+            Blur => (),
         }
     }
 }
