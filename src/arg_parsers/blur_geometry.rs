@@ -71,7 +71,7 @@ mod tests {
     fn test_default() {
         let geom = BlurGeometry::default();
         assert_eq!(geom.radius, 0);
-        assert_eq!(geom.sigma, Sigma(5.0));
+        assert_eq!(geom.sigma, Sigma::default());
     }
 
     #[test]
