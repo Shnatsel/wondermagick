@@ -76,16 +76,17 @@ impl TryFrom<&OsStr> for UnsharpGeometry {
                 }
             }
             2 => {
+                // we do have a radius and sigma, and maybe gain and maybe threshold
                 let radius =
                     strip_and_parse_number::<usize>(parts.first().unwrap()).map_err(|_| {
                         ArgParseErr::with_msg("invalid radius value in unsharp geometry")
                     })?;
-                let subparts: Vec<&str> = string.split('+').collect();
+                let subparts: Vec<&str> = parts.get(1).unwrap().split('+').collect();
 
                 match subparts.len() {
                     1 => {
-                        let sigma =
-                            strip_and_parse_number::<f32>(parts.get(1).unwrap()).map_err(|_| {
+                        let sigma = strip_and_parse_number::<f32>(subparts.first().unwrap())
+                            .map_err(|_| {
                                 ArgParseErr::with_msg("invalid sigma value in unsharp geometry")
                             })?;
                         return Ok(Self {
@@ -109,12 +110,17 @@ impl TryFrom<&OsStr> for UnsharpGeometry {
                         });
                     }
                     3 => {
+                        let sigma = strip_and_parse_number::<f32>(subparts.first().unwrap())
+                            .map_err(|_| {
+                                ArgParseErr::with_msg("invalid sigma value in unsharp geometry")
+                            })?;
                         let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
                             .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
                         let threshold = strip_and_parse_number::<i32>(subparts.get(2).unwrap())
                             .map_err(|_| ArgParseErr::with_msg("invalid threshold value"))?;
                         return Ok(Self {
                             radius,
+                            sigma,
                             gain,
                             threshold,
                             ..Default::default()
