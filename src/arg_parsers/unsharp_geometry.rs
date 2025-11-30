@@ -31,107 +31,78 @@ impl TryFrom<&OsStr> for UnsharpGeometry {
             .try_into()
             .map_err(|_e| ArgParseErr::with_msg("invalid unsharp geometry"))?;
         let parts: Vec<&str> = string.split('x').collect();
-        println!("parts: {:?}", parts);
 
         match parts.len() {
+            // we don't have a sigma, but do have a radius and maybe gain and maybe threshold
             1 => {
-                // we don't have a sigma, but must have a radius and maybe gain and maybe threshold
                 let subparts: Vec<&str> = string.split('+').collect();
+                let radius = parse_radius(subparts.first().unwrap())?;
 
                 match subparts.len() {
-                    1 => {
-                        let radius = strip_and_parse_number::<usize>(string)
-                            .map_err(|_| ArgParseErr::with_msg("invalid radius value"))?;
-                        return Ok(Self {
-                            radius,
-                            ..Default::default()
-                        });
-                    }
-                    2 => {
-                        let radius = strip_and_parse_number::<usize>(subparts.first().unwrap())
-                            .map_err(|_| ArgParseErr::with_msg("invalid radius value"))?;
-                        let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
-                            .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
-                        return Ok(Self {
-                            radius,
-                            gain,
-                            ..Default::default()
-                        });
-                    }
-                    3 => {
-                        let radius = strip_and_parse_number::<usize>(subparts.first().unwrap())
-                            .map_err(|_| ArgParseErr::with_msg("invalid radius value"))?;
-                        let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
-                            .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
-                        let threshold = strip_and_parse_number::<i32>(subparts.get(2).unwrap())
-                            .map_err(|_| ArgParseErr::with_msg("invalid threshold value"))?;
-                        return Ok(Self {
-                            radius,
-                            gain,
-                            threshold,
-                            ..Default::default()
-                        });
-                    }
+                    1 => Ok(Self {
+                        radius,
+                        ..Default::default()
+                    }),
+                    2 => Ok(Self {
+                        radius,
+                        gain: parse_gain(subparts.get(1).unwrap())?,
+                        ..Default::default()
+                    }),
+                    3 => Ok(Self {
+                        radius,
+                        gain: parse_gain(subparts.get(1).unwrap())?,
+                        threshold: parse_threshold(subparts.get(2).unwrap())?,
+                        ..Default::default()
+                    }),
                     _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
                 }
             }
+            // we do have a radius and sigma, and maybe gain and maybe threshold
             2 => {
-                // we do have a radius and sigma, and maybe gain and maybe threshold
-                let radius =
-                    strip_and_parse_number::<usize>(parts.first().unwrap()).map_err(|_| {
-                        ArgParseErr::with_msg("invalid radius value in unsharp geometry")
-                    })?;
+                let radius = parse_radius(parts.first().unwrap())?;
                 let subparts: Vec<&str> = parts.get(1).unwrap().split('+').collect();
 
                 match subparts.len() {
-                    1 => {
-                        let sigma = strip_and_parse_number::<f32>(subparts.first().unwrap())
-                            .map_err(|_| {
-                                ArgParseErr::with_msg("invalid sigma value in unsharp geometry")
-                            })?;
-                        return Ok(Self {
-                            radius,
-                            sigma,
-                            ..Default::default()
-                        });
-                    }
-                    2 => {
-                        let sigma = strip_and_parse_number::<f32>(subparts.first().unwrap())
-                            .map_err(|_| {
-                                ArgParseErr::with_msg("invalid sigma value in unsharp geometry")
-                            })?;
-                        let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
-                            .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
-                        return Ok(Self {
-                            radius,
-                            sigma,
-                            gain,
-                            ..Default::default()
-                        });
-                    }
-                    3 => {
-                        let sigma = strip_and_parse_number::<f32>(subparts.first().unwrap())
-                            .map_err(|_| {
-                                ArgParseErr::with_msg("invalid sigma value in unsharp geometry")
-                            })?;
-                        let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
-                            .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
-                        let threshold = strip_and_parse_number::<i32>(subparts.get(2).unwrap())
-                            .map_err(|_| ArgParseErr::with_msg("invalid threshold value"))?;
-                        return Ok(Self {
-                            radius,
-                            sigma,
-                            gain,
-                            threshold,
-                            ..Default::default()
-                        });
-                    }
+                    1 => Ok(Self {
+                        radius,
+                        sigma: parse_sigma(subparts.first().unwrap())?,
+                        ..Default::default()
+                    }),
+                    2 => Ok(Self {
+                        radius,
+                        sigma: parse_sigma(subparts.first().unwrap())?,
+                        gain: parse_gain(subparts.get(1).unwrap())?,
+                        ..Default::default()
+                    }),
+                    3 => Ok(Self {
+                        radius,
+                        sigma: parse_sigma(subparts.first().unwrap())?,
+                        gain: parse_gain(subparts.get(1).unwrap())?,
+                        threshold: parse_threshold(subparts.get(2).unwrap())?,
+                        ..Default::default()
+                    }),
                     _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
                 }
             }
             _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
         }
     }
+}
+
+fn parse_radius(s: &str) -> Result<usize, ArgParseErr> {
+    strip_and_parse_number::<usize>(s).map_err(|_| ArgParseErr::with_msg("invalid radius value"))
+}
+
+fn parse_sigma(s: &str) -> Result<f32, ArgParseErr> {
+    strip_and_parse_number::<f32>(s).map_err(|_| ArgParseErr::with_msg("invalid sigma value"))
+}
+
+fn parse_gain(s: &str) -> Result<f32, ArgParseErr> {
+    strip_and_parse_number::<f32>(s).map_err(|_| ArgParseErr::with_msg("invalid gain value"))
+}
+
+fn parse_threshold(s: &str) -> Result<i32, ArgParseErr> {
+    strip_and_parse_number::<i32>(s).map_err(|_| ArgParseErr::with_msg("invalid threshold value"))
 }
 
 #[cfg(test)]
