@@ -1,6 +1,8 @@
 mod auto_orient;
 mod blur;
 mod crop;
+mod flip;
+pub use flip::Axis;
 mod identify;
 mod resize;
 
@@ -25,6 +27,7 @@ pub enum Operation {
     AutoOrient,
     Blur(BlurGeometry),
     GaussianBlur(BlurGeometry),
+    Flip(Axis),
 }
 
 impl Operation {
@@ -40,6 +43,7 @@ impl Operation {
             Operation::AutoOrient => auto_orient::auto_orient(image),
             Operation::Blur(geom) => blur::blur(image, geom),
             Operation::GaussianBlur(geom) => blur::gaussian_blur(image, geom),
+            Operation::Flip(axis) => flip::flip(image, axis),
         }
     }
 
@@ -59,6 +63,7 @@ impl Operation {
             AutoOrient => (),
             Blur(_) => (),
             GaussianBlur(_) => (),
+            Flip(_) => (),
         }
     }
 }
