@@ -2,7 +2,7 @@ use crate::{error::MagickError, image::Image, wm_err};
 use image::{imageops::colorops::contrast_in_place, DynamicImage, GrayImage, Luma};
 
 /// Empirically tuned to give results similar to ImageMagick's -monochrome
-const CONTRAST_FACTOR: f32 = 2.0;
+const CONTRAST_FACTOR: f32 = 50.0;
 
 pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
     let mut grayscaled = image.pixels.to_luma8();
