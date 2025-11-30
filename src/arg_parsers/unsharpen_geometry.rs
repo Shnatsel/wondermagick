@@ -68,24 +68,25 @@ fn parse_threshold(s: &str) -> Result<i32, ArgParseErr> {
 
 fn parse_rest(
     radius: usize,
-    sigma: Option<f32>,
+    maybe_sigma: Option<f32>,
     rest: Vec<&str>,
 ) -> Result<UnsharpenGeometry, ArgParseErr> {
+    let sigma = maybe_sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), Ok)?;
     match rest.len() {
         1 => Ok(UnsharpenGeometry {
             radius,
-            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), Ok)?,
+            sigma,
             ..Default::default()
         }),
         2 => Ok(UnsharpenGeometry {
             radius,
-            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), Ok)?,
+            sigma,
             gain: parse_gain(rest.get(1).unwrap())?,
             ..Default::default()
         }),
         3 => Ok(UnsharpenGeometry {
             radius,
-            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), Ok)?,
+            sigma,
             gain: parse_gain(rest.get(1).unwrap())?,
             threshold: parse_threshold(rest.get(2).unwrap())?,
         }),
