@@ -49,13 +49,13 @@ impl Operation {
     pub fn apply_modifiers(&mut self, mods: &plan::Modifiers) {
         use Operation::*;
         match self {
-            Resize(resize_geometry, _filter) => *self = Resize(*resize_geometry, mods.filter),
-            Thumbnail(resize_geometry, _filter) => *self = Thumbnail(*resize_geometry, mods.filter),
+            Resize(resize_geometry, _) => *self = Resize(*resize_geometry, mods.filter),
+            Thumbnail(resize_geometry, _) => *self = Thumbnail(*resize_geometry, mods.filter),
             Scale(_) => (),
             Sample(_) => (),
             CropOnLoad(_) => (),
             Crop(_) => (),
-            Identify(_old_identify_format) => *self = Identify(mods.identify_format.clone()),
+            Identify(_) => *self = Identify(mods.identify_format.clone()),
             AutoOrient => (),
             Blur(_) => (),
             GaussianBlur(_) => (),
