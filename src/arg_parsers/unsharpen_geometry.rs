@@ -74,21 +74,20 @@ fn parse_rest(
     match rest.len() {
         1 => Ok(UnsharpenGeometry {
             radius,
-            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), |v| Ok(v))?,
+            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), Ok)?,
             ..Default::default()
         }),
         2 => Ok(UnsharpenGeometry {
             radius,
-            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), |v| Ok(v))?,
+            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), Ok)?,
             gain: parse_gain(rest.get(1).unwrap())?,
             ..Default::default()
         }),
         3 => Ok(UnsharpenGeometry {
             radius,
-            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), |v| Ok(v))?,
+            sigma: sigma.map_or_else(|| parse_sigma(rest.first().unwrap()), Ok)?,
             gain: parse_gain(rest.get(1).unwrap())?,
             threshold: parse_threshold(rest.get(2).unwrap())?,
-            ..Default::default()
         }),
         _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
     }
