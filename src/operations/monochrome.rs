@@ -1,29 +1,19 @@
 use crate::{error::MagickError, image::Image, wm_err};
 use image::{DynamicImage, GrayImage, Luma};
 
+/// Empirically tuned to give results similar to ImageMagick's -monochrome
+const CONTRAST_FACTOR: f32 = 2.0;
+
 pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
-    let mut grayscale = image.pixels.to_luma8();
-    apply_contrast(&mut grayscale, CONTRAST_FACTOR);
+    let grayscaled = image.pixels.to_luma8();
+    let mut adjusted = DynamicImage::ImageLuma8(grayscaled)
+        .adjust_contrast(CONTRAST_FACTOR)
+        .to_luma8();
     let noise_texture = NoiseTexture::load()?;
-    apply_dithering(&mut grayscale, &noise_texture);
-    image.pixels = DynamicImage::ImageLuma8(grayscale);
+    apply_dithering(&mut adjusted, &noise_texture);
+    image.pixels = DynamicImage::ImageLuma8(adjusted);
 
     Ok(())
-}
-
-/// This is empirically tuned to give results similar to ImageMagick's -monochrome
-const CONTRAST_FACTOR: f32 = 10.0;
-
-fn apply_contrast(image: &mut GrayImage, contrast_factor: f32) {
-    let offset = 128.0 * (1.0 - contrast_factor);
-
-    for pixel in image.pixels_mut() {
-        for channel in pixel.0.iter_mut() {
-            let value = *channel as f32;
-            let adjusted = (value * contrast_factor + offset).clamp(0.0, 255.0);
-            *channel = adjusted as u8;
-        }
-    }
 }
 
 const BACKGROUND: Luma<u8> = Luma([255]);
