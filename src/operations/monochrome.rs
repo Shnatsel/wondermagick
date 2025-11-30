@@ -7,7 +7,7 @@ const CONTRAST_FACTOR: f32 = 50.0;
 pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
     let mut grayscaled = image.pixels.to_luma8();
     contrast_in_place(&mut grayscaled, CONTRAST_FACTOR);
-    let noise_texture = NoiseTexture::load()?;
+    let noise_texture = NoiseTexture::try_load()?;
     apply_dithering(&mut grayscaled, &noise_texture);
     image.pixels = DynamicImage::ImageLuma8(grayscaled);
 
@@ -36,32 +36,44 @@ fn apply_dithering(image: &mut GrayImage, noise_texture: &NoiseTexture) {
     }
 }
 
-/// Blue noise texture data
 pub struct NoiseTexture {
     data: Vec<u8>,
     width: usize,
     height: usize,
 }
 
+// Generate blue noise data with the following sequence of commands:
+// * Clone or checkout the following commit:
+//   https://github.com/mblode/blue-noise-rust/commit/aea756b5853828ac6401937ee39bea27b2f39898
+// * Modify the src/generator.rs file to output raw bytes instead of PNG, e.g. by editing the
+//   `save_blue_noise_to_png` to contain the following code:
+//
+//  ```
+//  let raw = img.into_raw();
+//  BufWriter::new(File::create(&filename).expect("do so"))
+//    .write_all(&raw)
+//    .expect("write failed");
+//  ```
+//  * Run `cargo build --release`
+//  * Generate the blue noise file with:
+//    `/target/release/blue-noise generate --size 64 --output blue-noise.bin`
+//  * Copy the binary next to this source file.
+const NOISE_DATA: &'static [u8] = include_bytes!("blue-noise.bin");
+const NOISE_DATA_WIDTH_AND_HEIGHT: usize = 64;
+
 impl NoiseTexture {
-    /// Load blue noise texture from a file
-    pub fn load() -> Result<Self, MagickError> {
-        let path_to_crate = env!("CARGO_MANIFEST_DIR");
-
-        let img = image::open(format!("{}/src/operations/blue-noise.png", path_to_crate))
-            .map_err(|e| wm_err!("failed to load blue noise texture: {}", e))?;
-
-        let gray = img.to_luma8();
-        let (width, height) = gray.dimensions();
-
-        if width == 0 || height == 0 {
-            return Err(wm_err!("noise texture has invalid dimensions"));
-        }
+    pub fn try_load() -> Result<Self, MagickError> {
+        let gray = GrayImage::from_raw(
+            NOISE_DATA_WIDTH_AND_HEIGHT as u32,
+            NOISE_DATA_WIDTH_AND_HEIGHT as u32,
+            NOISE_DATA.to_vec(),
+        )
+        .ok_or_else(|| wm_err!("failed to load noise texture"))?;
 
         Ok(Self {
             data: gray.into_raw(),
-            width: width as usize,
-            height: height as usize,
+            width: NOISE_DATA_WIDTH_AND_HEIGHT,
+            height: NOISE_DATA_WIDTH_AND_HEIGHT,
         })
     }
 
