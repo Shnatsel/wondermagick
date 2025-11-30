@@ -5,7 +5,7 @@ use std::{
 
 use crate::arg_parsers::{
     parse_numeric_arg, BlurGeometry, CropGeometry, FileFormat, GrayscaleMethod, IdentifyFormat,
-    InputFileArg, Location, ResizeGeometry, UnsharpGeometry,
+    InputFileArg, Location, ResizeGeometry, UnsharpenGeometry,
 };
 use crate::args::{Arg, SignedArg};
 use crate::decode::decode;
@@ -103,7 +103,7 @@ impl ExecutionPlan {
             Arg::Filter => self.modifiers.filter = Some(Filter::try_from(value.unwrap())?),
             Arg::Flip => self.add_operation(Operation::Flip(Axis::Vertical)),
             Arg::Flop => self.add_operation(Operation::Flip(Axis::Horizontal)),
-            Arg::Unsharp => self.add_operation(Operation::Unsharp(UnsharpGeometry::try_from(
+            Arg::Unsharp => self.add_operation(Operation::Unsharpen(UnsharpenGeometry::try_from(
                 value.unwrap(),
             )?)),
         };

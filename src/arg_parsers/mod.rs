@@ -21,5 +21,5 @@ mod blur_geometry;
 pub use blur_geometry::*;
 mod grayscale_method;
 pub use grayscale_method::*;
-mod unsharp_geometry;
-pub use unsharp_geometry::*;
+mod unsharpen_geometry;
+pub use unsharpen_geometry::*;

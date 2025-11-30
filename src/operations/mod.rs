@@ -8,12 +8,12 @@ mod identify;
 mod monochrome;
 mod negate;
 mod resize;
-mod unsharp;
+mod unsharpen;
 
 use crate::{
     arg_parsers::{
         BlurGeometry, CropGeometry, Filter, GrayscaleMethod, IdentifyFormat, LoadCropGeometry,
-        ResizeGeometry, UnsharpGeometry,
+        ResizeGeometry, UnsharpenGeometry,
     },
     error::MagickError,
     image::Image,
@@ -36,7 +36,7 @@ pub enum Operation {
     Grayscale(GrayscaleMethod),
     Flip(Axis),
     Monochrome,
-    Unsharp(UnsharpGeometry),
+    Unsharpen(UnsharpenGeometry),
 }
 
 impl Operation {
@@ -56,7 +56,7 @@ impl Operation {
             Operation::Grayscale(method) => grayscale::grayscale(image, method),
             Operation::Flip(axis) => flip::flip(image, axis),
             Operation::Monochrome => monochrome::monochrome(image),
-            Operation::Unsharp(geom) => unsharp::unsharp(image, geom),
+            Operation::Unsharpen(geom) => unsharpen::unsharpen(image, geom),
         }
     }
 
@@ -80,7 +80,7 @@ impl Operation {
             Grayscale(_) => (),
             Flip(_) => (),
             Monochrome => (),
-            Unsharp(_) => (),
+            Unsharpen(_) => (),
         }
     }
 }
