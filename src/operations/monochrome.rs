@@ -58,7 +58,7 @@ pub struct NoiseTexture {
 //  * Generate the blue noise file with:
 //    `/target/release/blue-noise generate --size 64 --output blue-noise.bin`
 //  * Copy the binary next to this source file.
-const NOISE_DATA: &'static [u8] = include_bytes!("blue-noise.bin");
+const NOISE_DATA: &[u8] = include_bytes!("blue-noise.bin");
 const NOISE_DATA_WIDTH_AND_HEIGHT: usize = 64;
 
 impl NoiseTexture {
