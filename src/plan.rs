@@ -13,7 +13,7 @@ use crate::decode::decode;
 use crate::utils::filename::insert_suffix_before_extension_in_path;
 use crate::{arg_parse_err::ArgParseErr, arg_parsers::Filter};
 use crate::{encode, wm_err};
-use crate::{error::MagickError, operations::Operation, wm_try};
+use crate::{error::MagickError, operations::Axis, operations::Operation, wm_try};
 
 /// Plan of operations for the whole run over multiple files
 #[derive(Debug, Default)]
@@ -89,6 +89,8 @@ impl ExecutionPlan {
                 self.modifiers.identify_format = Some(IdentifyFormat::try_from(value.unwrap())?)
             }
             Arg::Filter => self.modifiers.filter = Some(Filter::try_from(value.unwrap())?),
+            Arg::Flip => self.add_operation(Operation::Flip(Axis::Vertical)),
+            Arg::Flop => self.add_operation(Operation::Flip(Axis::Horizontal)),
         };
 
         Ok(())
