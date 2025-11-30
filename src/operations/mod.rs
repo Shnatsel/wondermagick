@@ -24,6 +24,7 @@ pub enum Operation {
     Identify(Option<IdentifyFormat>),
     AutoOrient,
     Blur(BlurGeometry),
+    GaussianBlur(BlurGeometry),
 }
 
 impl Operation {
@@ -38,6 +39,7 @@ impl Operation {
             Operation::Identify(format) => identify::identify(image, format.clone()),
             Operation::AutoOrient => auto_orient::auto_orient(image),
             Operation::Blur(geom) => blur::blur(image, geom),
+            Operation::GaussianBlur(geom) => blur::gaussian_blur(image, geom),
         }
     }
 
@@ -56,6 +58,7 @@ impl Operation {
             Identify(_old_identify_format) => *self = Identify(mods.identify_format.clone()),
             AutoOrient => (),
             Blur(_) => (),
+            GaussianBlur(_) => (),
         }
     }
 }
