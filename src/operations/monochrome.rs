@@ -28,7 +28,6 @@ fn apply_contrast(image: &mut GrayImage, contrast_factor: f32) {
 
 const BACKGROUND: Luma<u8> = Luma([255]);
 const FOREGROUND: Luma<u8> = Luma([0]);
-const DITHER_THRESHOLD: u8 = 60;
 
 fn apply_dithering(image: &mut GrayImage, noise_texture: &NoiseTexture) {
     let width = image.width();
@@ -37,11 +36,6 @@ fn apply_dithering(image: &mut GrayImage, noise_texture: &NoiseTexture) {
     for y in 0..height {
         for x in 0..width {
             let pixel_luma = image.get_pixel(x, y).0[0];
-
-            if pixel_luma >= (255 - DITHER_THRESHOLD) || pixel_luma <= (0 + DITHER_THRESHOLD) {
-                continue;
-            }
-
             let noise_luma = noise_texture.get(x, y);
             let color = if pixel_luma > noise_luma {
                 BACKGROUND
