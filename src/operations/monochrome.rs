@@ -1,4 +1,4 @@
-use crate::{error::MagickError, image::Image, wm_err};
+use crate::{error::MagickError, image::Image};
 use image::{imageops::colorops::contrast_in_place, DynamicImage, GrayImage, Luma};
 
 /// Empirically tuned to give results similar to ImageMagick's -monochrome
@@ -7,8 +7,7 @@ const CONTRAST_FACTOR: f32 = 50.0;
 pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
     let mut grayscaled = image.pixels.to_luma8();
     contrast_in_place(&mut grayscaled, CONTRAST_FACTOR);
-    let noise_texture = NoiseTexture::try_load()?;
-    apply_dithering(&mut grayscaled, &noise_texture);
+    apply_dithering(&mut grayscaled);
     image.pixels = DynamicImage::ImageLuma8(grayscaled);
 
     Ok(())
@@ -17,14 +16,14 @@ pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
 const BACKGROUND: Luma<u8> = Luma([255]);
 const FOREGROUND: Luma<u8> = Luma([0]);
 
-fn apply_dithering(image: &mut GrayImage, noise_texture: &NoiseTexture) {
+fn apply_dithering(image: &mut GrayImage) {
     let width = image.width();
     let height = image.height();
 
     for y in 0..height {
         for x in 0..width {
             let pixel_luma = image.get_pixel(x, y).0[0];
-            let noise_luma = noise_texture.get(x, y);
+            let noise_luma = get_noise(x, y);
             let color = if pixel_luma > noise_luma {
                 BACKGROUND
             } else {
@@ -34,12 +33,6 @@ fn apply_dithering(image: &mut GrayImage, noise_texture: &NoiseTexture) {
             image.put_pixel(x, y, color);
         }
     }
-}
-
-pub struct NoiseTexture {
-    data: Vec<u8>,
-    width: usize,
-    height: usize,
 }
 
 // Generate blue noise data with the following sequence of commands:
@@ -61,28 +54,11 @@ pub struct NoiseTexture {
 const NOISE_DATA: &[u8] = include_bytes!("blue-noise.bin");
 const NOISE_DATA_WIDTH_AND_HEIGHT: usize = 64;
 
-impl NoiseTexture {
-    pub fn try_load() -> Result<Self, MagickError> {
-        let gray = GrayImage::from_raw(
-            NOISE_DATA_WIDTH_AND_HEIGHT as u32,
-            NOISE_DATA_WIDTH_AND_HEIGHT as u32,
-            NOISE_DATA.to_vec(),
-        )
-        .ok_or_else(|| wm_err!("failed to load noise texture"))?;
-
-        Ok(Self {
-            data: gray.into_raw(),
-            width: NOISE_DATA_WIDTH_AND_HEIGHT,
-            height: NOISE_DATA_WIDTH_AND_HEIGHT,
-        })
-    }
-
-    /// Get the noise value at the given coordinates. If the coordinates are out of bounds,
-    /// they will wrap around. Means we don't need a noise texture as large as the image.
-    #[inline]
-    fn get(&self, x: u32, y: u32) -> u8 {
-        let wrap_x = (x as usize) % self.width;
-        let wrap_y = (y as usize) % self.height;
-        self.data[wrap_y * self.width + wrap_x]
-    }
+/// Get the noise value at the given coordinates. If the coordinates are out of bounds,
+/// they will wrap around. Means we don't need a noise texture as large as the image.
+#[inline]
+fn get_noise(x: u32, y: u32) -> u8 {
+    let wrap_x = (x as usize) % NOISE_DATA_WIDTH_AND_HEIGHT;
+    let wrap_y = (y as usize) % NOISE_DATA_WIDTH_AND_HEIGHT;
+    NOISE_DATA[wrap_y * NOISE_DATA_WIDTH_AND_HEIGHT + wrap_x]
 }
