@@ -28,7 +28,7 @@ where
 /// * `Ok(T)`: If stripping and parsing are successful, containing the parsed number.
 /// * `Err(T::Err)`: If parsing fails, containing the error from `T::from_str`.
 /// ```
-fn strip_and_parse_number<T>(input: &str) -> Result<T, T::Err>
+pub fn strip_and_parse_number<T>(input: &str) -> Result<T, T::Err>
 where
     T: FromStr, // The target type T must be parsable from a string.
     T::Err: std::error::Error,

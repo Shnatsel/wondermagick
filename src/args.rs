@@ -26,6 +26,7 @@ pub enum Arg {
     // and as `-format expression`. We currently only implement `-format expression`.
     Format,
     Filter,
+    Blur,
     Identify,
     Quality,
     Resize,
@@ -42,6 +43,7 @@ impl Arg {
             Arg::Crop => true,
             Arg::Format => true,
             Arg::Filter => true,
+            Arg::Blur => true,
             Arg::Identify => false,
             Arg::Quality => true,
             Arg::Resize => true,
@@ -58,6 +60,7 @@ impl Arg {
             Arg::Crop => "cut out a rectangular region of the image",
             Arg::Format => "output formatted image characteristics",
             Arg::Filter => "use this filter when resizing an image",
+            Arg::Blur => "reduce image noise and reduce detail levels",
             Arg::Identify => "identify the format and characteristics of the image",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
             Arg::Resize => "resize the image",
