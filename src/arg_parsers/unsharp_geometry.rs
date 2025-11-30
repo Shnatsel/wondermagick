@@ -23,16 +23,108 @@ impl TryFrom<&OsStr> for UnsharpGeometry {
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
         if s.is_empty() {
             return Err(ArgParseErr::with_msg(
-                "blur geometry must be non-empty and ASCII only",
+                "unsharp geometry must be non-empty and ASCII only",
             ));
         }
 
-        Ok(Self {
-            radius: 0,
-            sigma: 1.0,
-            gain: 1.0,
-            threshold: 0,
-        })
+        let string: &str = s
+            .try_into()
+            .map_err(|_e| ArgParseErr::with_msg("invalid unsharp geometry"))?;
+        let parts: Vec<&str> = string.split('x').collect();
+        println!("parts: {:?}", parts);
+
+        match parts.len() {
+            1 => {
+                // we don't have a sigma, but must have a radius and maybe gain and maybe threshold
+                let subparts: Vec<&str> = string.split('+').collect();
+
+                match subparts.len() {
+                    1 => {
+                        let radius = strip_and_parse_number::<usize>(string)
+                            .map_err(|_| ArgParseErr::with_msg("invalid radius value"))?;
+                        return Ok(Self {
+                            radius,
+                            ..Default::default()
+                        });
+                    }
+                    2 => {
+                        let radius = strip_and_parse_number::<usize>(subparts.first().unwrap())
+                            .map_err(|_| ArgParseErr::with_msg("invalid radius value"))?;
+                        let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
+                            .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
+                        return Ok(Self {
+                            radius,
+                            gain,
+                            ..Default::default()
+                        });
+                    }
+                    3 => {
+                        let radius = strip_and_parse_number::<usize>(subparts.first().unwrap())
+                            .map_err(|_| ArgParseErr::with_msg("invalid radius value"))?;
+                        let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
+                            .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
+                        let threshold = strip_and_parse_number::<i32>(subparts.get(2).unwrap())
+                            .map_err(|_| ArgParseErr::with_msg("invalid threshold value"))?;
+                        return Ok(Self {
+                            radius,
+                            gain,
+                            threshold,
+                            ..Default::default()
+                        });
+                    }
+                    _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
+                }
+            }
+            2 => {
+                let radius =
+                    strip_and_parse_number::<usize>(parts.first().unwrap()).map_err(|_| {
+                        ArgParseErr::with_msg("invalid radius value in unsharp geometry")
+                    })?;
+                let subparts: Vec<&str> = string.split('+').collect();
+
+                match subparts.len() {
+                    1 => {
+                        let sigma =
+                            strip_and_parse_number::<f32>(parts.get(1).unwrap()).map_err(|_| {
+                                ArgParseErr::with_msg("invalid sigma value in unsharp geometry")
+                            })?;
+                        return Ok(Self {
+                            radius,
+                            sigma,
+                            ..Default::default()
+                        });
+                    }
+                    2 => {
+                        let sigma = strip_and_parse_number::<f32>(subparts.first().unwrap())
+                            .map_err(|_| {
+                                ArgParseErr::with_msg("invalid sigma value in unsharp geometry")
+                            })?;
+                        let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
+                            .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
+                        return Ok(Self {
+                            radius,
+                            sigma,
+                            gain,
+                            ..Default::default()
+                        });
+                    }
+                    3 => {
+                        let gain = strip_and_parse_number::<f32>(subparts.get(1).unwrap())
+                            .map_err(|_| ArgParseErr::with_msg("invalid gain value"))?;
+                        let threshold = strip_and_parse_number::<i32>(subparts.get(2).unwrap())
+                            .map_err(|_| ArgParseErr::with_msg("invalid threshold value"))?;
+                        return Ok(Self {
+                            radius,
+                            gain,
+                            threshold,
+                            ..Default::default()
+                        });
+                    }
+                    _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
+                }
+            }
+            _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
+        }
     }
 }
 
@@ -79,6 +171,7 @@ mod tests {
             }
         );
     }
+
     #[test]
     fn test_radius_and_sigma_and_gain_and_threshold() {
         let geom = UnsharpGeometry::from_str("42x2.1+7+11").unwrap();
@@ -89,6 +182,20 @@ mod tests {
                 sigma: 2.1,
                 gain: 7.0,
                 threshold: 11,
+            }
+        );
+    }
+
+    #[test]
+    fn test_radius_and_gain_and_threshold() {
+        let geom = UnsharpGeometry::from_str("42+7+11").unwrap();
+        assert_eq!(
+            geom,
+            UnsharpGeometry {
+                radius: 42,
+                gain: 7.0,
+                threshold: 11,
+                ..Default::default()
             }
         );
     }
