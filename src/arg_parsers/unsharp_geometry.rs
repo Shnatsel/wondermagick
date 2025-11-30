@@ -37,52 +37,13 @@ impl TryFrom<&OsStr> for UnsharpGeometry {
             1 => {
                 let subparts: Vec<&str> = string.split('+').collect();
                 let radius = parse_radius(subparts.first().unwrap())?;
-
-                match subparts.len() {
-                    1 => Ok(Self {
-                        radius,
-                        ..Default::default()
-                    }),
-                    2 => Ok(Self {
-                        radius,
-                        gain: parse_gain(subparts.get(1).unwrap())?,
-                        ..Default::default()
-                    }),
-                    3 => Ok(Self {
-                        radius,
-                        gain: parse_gain(subparts.get(1).unwrap())?,
-                        threshold: parse_threshold(subparts.get(2).unwrap())?,
-                        ..Default::default()
-                    }),
-                    _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
-                }
+                Ok(parse_rest_without_sigma(radius, subparts)?)
             }
             // we do have a radius and sigma, and maybe gain and maybe threshold
             2 => {
                 let radius = parse_radius(parts.first().unwrap())?;
                 let subparts: Vec<&str> = parts.get(1).unwrap().split('+').collect();
-
-                match subparts.len() {
-                    1 => Ok(Self {
-                        radius,
-                        sigma: parse_sigma(subparts.first().unwrap())?,
-                        ..Default::default()
-                    }),
-                    2 => Ok(Self {
-                        radius,
-                        sigma: parse_sigma(subparts.first().unwrap())?,
-                        gain: parse_gain(subparts.get(1).unwrap())?,
-                        ..Default::default()
-                    }),
-                    3 => Ok(Self {
-                        radius,
-                        sigma: parse_sigma(subparts.first().unwrap())?,
-                        gain: parse_gain(subparts.get(1).unwrap())?,
-                        threshold: parse_threshold(subparts.get(2).unwrap())?,
-                        ..Default::default()
-                    }),
-                    _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
-                }
+                Ok(parse_rest(radius, subparts)?)
             }
             _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
         }
@@ -103,6 +64,54 @@ fn parse_gain(s: &str) -> Result<f32, ArgParseErr> {
 
 fn parse_threshold(s: &str) -> Result<i32, ArgParseErr> {
     strip_and_parse_number::<i32>(s).map_err(|_| ArgParseErr::with_msg("invalid threshold value"))
+}
+
+fn parse_rest(radius: usize, rest: Vec<&str>) -> Result<UnsharpGeometry, ArgParseErr> {
+    match rest.len() {
+        1 => Ok(UnsharpGeometry {
+            radius,
+            sigma: parse_sigma(rest.first().unwrap())?,
+            ..Default::default()
+        }),
+        2 => Ok(UnsharpGeometry {
+            radius,
+            sigma: parse_sigma(rest.first().unwrap())?,
+            gain: parse_gain(rest.get(1).unwrap())?,
+            ..Default::default()
+        }),
+        3 => Ok(UnsharpGeometry {
+            radius,
+            sigma: parse_sigma(rest.first().unwrap())?,
+            gain: parse_gain(rest.get(1).unwrap())?,
+            threshold: parse_threshold(rest.get(2).unwrap())?,
+            ..Default::default()
+        }),
+        _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
+    }
+}
+
+fn parse_rest_without_sigma(
+    radius: usize,
+    rest: Vec<&str>,
+) -> Result<UnsharpGeometry, ArgParseErr> {
+    match rest.len() {
+        1 => Ok(UnsharpGeometry {
+            radius,
+            ..Default::default()
+        }),
+        2 => Ok(UnsharpGeometry {
+            radius,
+            gain: parse_gain(rest.get(1).unwrap())?,
+            ..Default::default()
+        }),
+        3 => Ok(UnsharpGeometry {
+            radius,
+            gain: parse_gain(rest.get(1).unwrap())?,
+            threshold: parse_threshold(rest.get(2).unwrap())?,
+            ..Default::default()
+        }),
+        _ => Err(ArgParseErr::with_msg("invalid unsharp geometry format")),
+    }
 }
 
 #[cfg(test)]
