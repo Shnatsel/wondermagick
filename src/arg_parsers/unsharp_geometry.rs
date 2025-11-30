@@ -112,68 +112,63 @@ mod tests {
 
     #[test]
     fn test_radius_only() {
-        let geom = UnsharpGeometry::from_str("5").unwrap();
         assert_eq!(
-            geom,
-            UnsharpGeometry {
+            UnsharpGeometry::from_str("5"),
+            Ok(UnsharpGeometry {
                 radius: 5,
                 ..Default::default()
-            }
+            })
         );
     }
 
     #[test]
     fn test_radius_and_sigma() {
-        let geom = UnsharpGeometry::from_str("5x1.1").unwrap();
         assert_eq!(
-            geom,
-            UnsharpGeometry {
+            UnsharpGeometry::from_str("5x1.1"),
+            Ok(UnsharpGeometry {
                 radius: 5,
                 sigma: 1.1,
                 ..Default::default()
-            }
+            })
         );
     }
 
     #[test]
     fn test_radius_and_sigma_and_gain() {
-        let geom = UnsharpGeometry::from_str("2x1.5+9").unwrap();
         assert_eq!(
-            geom,
-            UnsharpGeometry {
+            UnsharpGeometry::from_str("2x1.5+9"),
+            Ok(UnsharpGeometry {
                 radius: 2,
                 sigma: 1.5,
                 gain: 9.0,
                 ..Default::default()
-            }
+            })
         );
     }
 
     #[test]
     fn test_radius_and_sigma_and_gain_and_threshold() {
-        let geom = UnsharpGeometry::from_str("42x2.1+7+11").unwrap();
         assert_eq!(
-            geom,
-            UnsharpGeometry {
+            UnsharpGeometry::from_str("42x2.1+7+11"),
+            Ok(UnsharpGeometry {
                 radius: 42,
                 sigma: 2.1,
                 gain: 7.0,
                 threshold: 11,
-            }
+            })
         );
     }
 
     #[test]
     fn test_radius_and_gain_and_threshold() {
-        let geom = UnsharpGeometry::from_str("42+7+11").unwrap();
         assert_eq!(
-            geom,
-            UnsharpGeometry {
+            UnsharpGeometry::from_str("42+7+11"),
+            Ok(UnsharpGeometry {
                 radius: 42,
                 gain: 7.0,
                 threshold: 11,
                 ..Default::default()
-            }
+            })
         );
     }
 
