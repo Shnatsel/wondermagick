@@ -27,6 +27,7 @@ pub enum Arg {
     Format,
     Filter,
     Blur,
+    GaussianBlur,
     Identify,
     Quality,
     Resize,
@@ -44,6 +45,7 @@ impl Arg {
             Arg::Format => true,
             Arg::Filter => true,
             Arg::Blur => true,
+            Arg::GaussianBlur => true,
             Arg::Identify => false,
             Arg::Quality => true,
             Arg::Resize => true,
@@ -61,6 +63,7 @@ impl Arg {
             Arg::Format => "output formatted image characteristics",
             Arg::Filter => "use this filter when resizing an image",
             Arg::Blur => "reduce image noise and reduce detail levels",
+            Arg::GaussianBlur => "reduce image noise and reduce detail levels",
             Arg::Identify => "identify the format and characteristics of the image",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
             Arg::Resize => "resize the image",
