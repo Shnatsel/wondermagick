@@ -4,10 +4,9 @@ use std::{
 };
 
 use crate::arg_parsers::{
-    parse_numeric_arg, BlurGeometry, CropGeometry, IdentifyFormat, InputFileArg, Location,
-    ResizeGeometry,
+    parse_numeric_arg, BlurGeometry, CropGeometry, FileFormat, GrayscaleMethod, IdentifyFormat,
+    InputFileArg, Location, ResizeGeometry,
 };
-use crate::arg_parsers::{FileFormat, GrayscaleMethod};
 use crate::args::Arg;
 use crate::decode::decode;
 use crate::utils::filename::insert_suffix_before_extension_in_path;
