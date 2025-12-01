@@ -31,16 +31,15 @@ impl TryFrom<&OsStr> for BlurGeometry {
         let parts: Vec<&str> = string.split('x').collect();
 
         match parts.len() {
-            1 => strip_and_parse_number::<usize>(parts.first().unwrap())
-                .map_err(|_| ArgParseErr::with_msg("invalid radius value"))
-                .map(|radius: usize| Self {
-                    radius,
-                    sigma: 1.2, // no science behind the value, just eyeballed to match imagemagick's default
-                }),
+            1 => parse_radius(string).map(|radius| Self {
+                radius,
+                sigma: 1.2, // no science behind the value, just eyeballed to match ImageMagick's default
+            }),
             2 => {
-                let maybe_radius = strip_and_parse_number::<usize>(parts.first().unwrap());
-                let maybe_sigma = strip_and_parse_number::<f32>(parts.get(1).unwrap());
-                match (maybe_radius, maybe_sigma) {
+                match (
+                    parse_radius(parts.first().unwrap()),
+                    parse_sigma(parts.get(1).unwrap()),
+                ) {
                     (Ok(radius), Ok(sigma)) => Ok(Self { radius, sigma }),
                     (Err(_), Ok(sigma)) => Ok(Self {
                         sigma,
@@ -52,6 +51,14 @@ impl TryFrom<&OsStr> for BlurGeometry {
             _ => Err(ArgParseErr::with_msg("invalid blur geometry format")),
         }
     }
+}
+
+fn parse_radius(s: &str) -> Result<usize, ArgParseErr> {
+    strip_and_parse_number::<usize>(s).map_err(|_| ArgParseErr::with_msg("invalid radius value"))
+}
+
+fn parse_sigma(s: &str) -> Result<f32, ArgParseErr> {
+    strip_and_parse_number::<f32>(s).map_err(|_| ArgParseErr::with_msg("invalid sigma value"))
 }
 
 #[cfg(test)]
