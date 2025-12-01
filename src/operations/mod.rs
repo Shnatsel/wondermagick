@@ -5,6 +5,7 @@ mod flip;
 pub use flip::Axis;
 mod identify;
 mod monochrome;
+mod negate;
 mod resize;
 
 use crate::{
@@ -25,6 +26,7 @@ pub enum Operation {
     CropOnLoad(LoadCropGeometry),
     Crop(CropGeometry),
     Identify(Option<IdentifyFormat>),
+    Negate,
     AutoOrient,
     Blur(BlurGeometry),
     GaussianBlur(BlurGeometry),
@@ -42,6 +44,7 @@ impl Operation {
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
             Operation::Crop(geom) => crop::crop(image, geom),
             Operation::Identify(format) => identify::identify(image, format.clone()),
+            Operation::Negate => negate::negate(image),
             Operation::AutoOrient => auto_orient::auto_orient(image),
             Operation::Blur(geom) => blur::blur(image, geom),
             Operation::GaussianBlur(geom) => blur::gaussian_blur(image, geom),
@@ -63,6 +66,7 @@ impl Operation {
             CropOnLoad(_) => (),
             Crop(_) => (),
             Identify(_) => *self = Identify(mods.identify_format.clone()),
+            Negate => (),
             AutoOrient => (),
             Blur(_) => (),
             GaussianBlur(_) => (),
