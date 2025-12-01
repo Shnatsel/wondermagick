@@ -19,3 +19,5 @@ mod filter;
 pub use filter::*;
 mod blur_geometry;
 pub use blur_geometry::*;
+mod grayscale_method;
+pub use grayscale_method::*;

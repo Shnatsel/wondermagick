@@ -3,6 +3,7 @@ mod blur;
 mod crop;
 mod flip;
 pub use flip::Axis;
+mod grayscale;
 mod identify;
 mod monochrome;
 mod negate;
@@ -10,7 +11,8 @@ mod resize;
 
 use crate::{
     arg_parsers::{
-        BlurGeometry, CropGeometry, Filter, IdentifyFormat, LoadCropGeometry, ResizeGeometry,
+        BlurGeometry, CropGeometry, Filter, GrayscaleMethod, IdentifyFormat, LoadCropGeometry,
+        ResizeGeometry,
     },
     error::MagickError,
     image::Image,
@@ -30,6 +32,7 @@ pub enum Operation {
     AutoOrient,
     Blur(BlurGeometry),
     GaussianBlur(BlurGeometry),
+    Grayscale(GrayscaleMethod),
     Flip(Axis),
     Monochrome,
 }
@@ -48,6 +51,7 @@ impl Operation {
             Operation::AutoOrient => auto_orient::auto_orient(image),
             Operation::Blur(geom) => blur::blur(image, geom),
             Operation::GaussianBlur(geom) => blur::gaussian_blur(image, geom),
+            Operation::Grayscale(method) => grayscale::grayscale(image, method),
             Operation::Flip(axis) => flip::flip(image, axis),
             Operation::Monochrome => monochrome::monochrome(image),
         }
@@ -70,6 +74,7 @@ impl Operation {
             AutoOrient => (),
             Blur(_) => (),
             GaussianBlur(_) => (),
+            Grayscale(_) => (),
             Flip(_) => (),
             Monochrome => (),
         }
