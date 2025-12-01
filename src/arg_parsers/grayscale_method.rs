@@ -26,7 +26,7 @@ impl TryFrom<&std::ffi::OsStr> for GrayscaleMethod {
         let string: &str = s
             .to_str()
             .ok_or_else(|| ArgParseErr::with_msg("invalid grayscale method"))?;
-        match string.to_lowercase().as_str() {
+        match string {
             "Rec601Luma" => Ok(GrayscaleMethod::Rec601Luma),
             "Rec601Luminance" => Ok(GrayscaleMethod::Rec601Luminance),
             "Rec709Luma" => Ok(GrayscaleMethod::Rec709Luma),
@@ -42,6 +42,19 @@ impl TryFrom<&std::ffi::OsStr> for GrayscaleMethod {
 mod tests {
     use super::GrayscaleMethod;
     use std::str::FromStr;
+
+    #[test]
+    fn test_valid_methods() {
+        assert_eq!(
+            GrayscaleMethod::from_str("Rec709Luma"),
+            Ok(GrayscaleMethod::Rec709Luma)
+        );
+    }
+
+    #[test]
+    fn test_case_sensitive() {
+        assert!(GrayscaleMethod::from_str("rec709luminance").is_err());
+    }
 
     #[test]
     fn test_invalid() {
