@@ -50,3 +50,44 @@ fn offset_from_gravity(
         Gravity::SouthWest => (0, image1_dim.1 - image2_dim.1),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::offset_from_gravity;
+    use super::Gravity;
+    use parameterized::parameterized;
+
+    const IMG1_DIM: (u32, u32) = (800, 600);
+    const IMG2_DIM: (u32, u32) = (200, 100);
+
+    #[parameterized(
+        gravity = {
+            Gravity::Center,
+            Gravity::North,
+            Gravity::South,
+            Gravity::East,
+            Gravity::West,
+            Gravity::NorthEast,
+            Gravity::NorthWest,
+            Gravity::SouthEast,
+            Gravity::SouthWest
+        },
+        expected_offsets = {
+            (300, 250),
+            (300, 0),
+            (300, 500),
+            (600, 250),
+            (0, 250),
+            (600, 0),
+            (0, 0),
+            (600, 500),
+            (0, 500)
+        }
+    )]
+    fn test_offset_from_gravity(gravity: Gravity, expected_offsets: (u32, u32)) {
+        assert_eq!(
+            offset_from_gravity(&gravity, IMG1_DIM, IMG2_DIM),
+            expected_offsets
+        );
+    }
+}
