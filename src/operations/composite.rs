@@ -10,13 +10,13 @@ pub fn composite(
     image1: &mut Image,
     image2_location: &Location,
     image2_format: Option<FileFormat>,
-    gravity: Option<&Gravity>,
+    gravity: Option<Gravity>,
     // TODO: If a third image is given this is treated as a grayscale blending 'mask' image
     // relative to the first 'destination' image. This mask is blended with the source image.
 ) -> Result<(), MagickError> {
     let image2 = decode(image2_location, image2_format)?;
     let (x, y) = if let Some(g) = gravity {
-        offset_from_gravity(g, image1.pixels.dimensions(), image2.pixels.dimensions())
+        offset_from_gravity(&g, image1.pixels.dimensions(), image2.pixels.dimensions())
     } else {
         (0, 0)
     };
