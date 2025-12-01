@@ -25,8 +25,8 @@ fn apply_contrast(image: &mut GrayImage, contrast_factor: f32) {
     }
 }
 
-const BACKGROUND: Luma<u8> = Luma([255]);
-const FOREGROUND: Luma<u8> = Luma([0]);
+const WHITE: Luma<u8> = Luma([255]);
+const BLACK: Luma<u8> = Luma([0]);
 
 fn apply_dithering(image: &mut GrayImage) {
     let width = image.width();
@@ -36,16 +36,16 @@ fn apply_dithering(image: &mut GrayImage) {
         for x in 0..width {
             let pixel_luma = image.get_pixel(x, y).0[0];
 
-            // No dithering needed for pure black or white
-            if pixel_luma == 0 || pixel_luma == 255 {
-                continue;
-            }
-
             let noise_luma = get_noise(x, y);
             let color = if pixel_luma > noise_luma {
-                BACKGROUND
+                WHITE
+            } else if pixel_luma < noise_luma {
+                BLACK
+            // tie break: pixel and noise have the same value, select the nearest color
+            } else if pixel_luma > 127 {
+                WHITE
             } else {
-                FOREGROUND
+                BLACK
             };
 
             image.put_pixel(x, y, color);
