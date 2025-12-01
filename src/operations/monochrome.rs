@@ -35,6 +35,12 @@ fn apply_dithering(image: &mut GrayImage) {
     for y in 0..height {
         for x in 0..width {
             let pixel_luma = image.get_pixel(x, y).0[0];
+
+            // No dithering needed for pure black or white
+            if pixel_luma == 0 || pixel_luma == 255 {
+                continue;
+            }
+
             let noise_luma = get_noise(x, y);
             let color = if pixel_luma > noise_luma {
                 BACKGROUND
@@ -61,7 +67,7 @@ fn apply_dithering(image: &mut GrayImage) {
 //  ```
 //  * Run `cargo build --release`
 //  * Generate the blue noise file with:
-//    `/target/release/blue-noise generate --size 64 --output blue-noise.bin`
+//    `./target/release/blue-noise generate --size 64 --output blue-noise.bin`
 //  * Copy the binary next to this source file.
 const NOISE_DATA: &[u8] = include_bytes!("blue-noise.bin");
 const NOISE_DATA_WIDTH_AND_HEIGHT: usize = 64;
