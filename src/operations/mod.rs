@@ -4,6 +4,7 @@ mod crop;
 mod flip;
 pub use flip::Axis;
 mod identify;
+mod monochrome;
 mod resize;
 
 use crate::{
@@ -28,6 +29,7 @@ pub enum Operation {
     Blur(BlurGeometry),
     GaussianBlur(BlurGeometry),
     Flip(Axis),
+    Monochrome,
 }
 
 impl Operation {
@@ -44,6 +46,7 @@ impl Operation {
             Operation::Blur(geom) => blur::blur(image, geom),
             Operation::GaussianBlur(geom) => blur::gaussian_blur(image, geom),
             Operation::Flip(axis) => flip::flip(image, axis),
+            Operation::Monochrome => monochrome::monochrome(image),
         }
     }
 
@@ -64,6 +67,7 @@ impl Operation {
             Blur(_) => (),
             GaussianBlur(_) => (),
             Flip(_) => (),
+            Monochrome => (),
         }
     }
 }

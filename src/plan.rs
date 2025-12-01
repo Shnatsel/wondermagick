@@ -60,6 +60,7 @@ impl ExecutionPlan {
             Arg::GaussianBlur => self.add_operation(Operation::GaussianBlur(
                 BlurGeometry::try_from(value.unwrap())?,
             )),
+            Arg::Monochrome => self.add_operation(Operation::Monochrome),
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
             Arg::Resize => self.add_operation(Operation::Resize(
                 ResizeGeometry::try_from(value.unwrap())?,
