@@ -13,7 +13,7 @@ mod unsharpen;
 
 use crate::{
     arg_parsers::{
-        BlurGeometry, CropGeometry, FileFormat, Filter, GrayscaleMethod, IdentifyFormat,
+        BlurGeometry, CropGeometry, FileFormat, Filter, Gravity, GrayscaleMethod, IdentifyFormat,
         LoadCropGeometry, Location, ResizeGeometry, UnsharpenGeometry,
     },
     error::MagickError,
@@ -27,7 +27,7 @@ pub enum Operation {
     Thumbnail(ResizeGeometry, Option<Filter>),
     Scale(ResizeGeometry),
     Sample(ResizeGeometry),
-    Composite(Location, Option<FileFormat>),
+    Composite(Location, Option<FileFormat>, Option<Gravity>),
     CropOnLoad(LoadCropGeometry),
     Crop(CropGeometry),
     Identify(Option<IdentifyFormat>),
@@ -48,8 +48,8 @@ impl Operation {
             Operation::Thumbnail(geom, filter) => resize::thumbnail(image, geom, *filter),
             Operation::Scale(geom) => resize::scale(image, geom),
             Operation::Sample(geom) => resize::sample(image, geom),
-            Operation::Composite(other_image, other_image_format) => {
-                composite::composite(image, &other_image, *other_image_format)
+            Operation::Composite(other_image, other_image_format, gravity) => {
+                composite::composite(image, &other_image, *other_image_format, gravity.as_ref())
             }
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
             Operation::Crop(geom) => crop::crop(image, geom),
@@ -75,7 +75,7 @@ impl Operation {
             Thumbnail(resize_geometry, _) => *self = Thumbnail(*resize_geometry, mods.filter),
             Scale(_) => (),
             Sample(_) => (),
-            Composite(_, _) => (),
+            Composite(_, _, _) => (),
             CropOnLoad(_) => (),
             Crop(_) => (),
             Identify(_) => *self = Identify(mods.identify_format.clone()),

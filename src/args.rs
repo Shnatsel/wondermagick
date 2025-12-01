@@ -60,6 +60,7 @@ pub enum Arg {
     Flop,
     Blur,
     GaussianBlur,
+    Gravity,
     Grayscale,
     Identify,
     Monochrome,
@@ -85,6 +86,7 @@ impl Arg {
             Arg::Flop => false,
             Arg::Blur => true,
             Arg::GaussianBlur => true,
+            Arg::Gravity => true,
             Arg::Grayscale => true,
             Arg::Identify => false,
             Arg::Monochrome => false,
@@ -110,6 +112,9 @@ impl Arg {
             Arg::Flop => "flop image horizontally",
             Arg::Blur => "reduce image noise and reduce detail levels",
             Arg::GaussianBlur => "reduce image noise and reduce detail levels",
+            Arg::Gravity => {
+                "sets the current gravity suggestion for various other settings and options"
+            }
             Arg::Grayscale => "convert image to grayscale",
             Arg::Identify => "identify the format and characteristics of the image",
             Arg::Monochrome => "transform image to black and white",
