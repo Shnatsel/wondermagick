@@ -10,6 +10,8 @@ pub fn grayscale(image: &mut image::Image, method: &GrayscaleMethod) -> Result<(
             image.pixels = image.pixels.grayscale();
             Ok(())
         }
-        _ => Err(wm_err!("grayscale method not implemented")),
+        _ => Err(wm_err!(
+            "grayscale method not implemented. Rec709Luma is the only supported method."
+        )),
     }
 }
