@@ -1,7 +1,8 @@
 use crate::arg_parse_err::ArgParseErr;
-use std::{ffi::OsStr, str::FromStr};
+use std::ffi::OsStr;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, strum::Display, strum::EnumString, strum::IntoStaticStr)]
+#[strum(ascii_case_insensitive)]
 pub enum Gravity {
     NorthWest,
     North,
@@ -14,38 +15,18 @@ pub enum Gravity {
     SouthEast,
 }
 
-impl FromStr for Gravity {
-    type Err = ArgParseErr;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(OsStr::new(s))
-    }
-}
-
 impl TryFrom<&OsStr> for Gravity {
     type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
-        if s.is_empty() {
-            return Err(ArgParseErr::with_msg("gravity type must be non-empty"));
+        if let Some(s_utf8) = s.to_str() {
+            if let Ok(known_gravity) = Self::try_from(s_utf8) {
+                return Ok(known_gravity);
+            }
         }
-
-        let string: &str = s
-            .try_into()
-            .map_err(|_e| ArgParseErr::with_msg("invalid gravity type"))?;
-
-        match string.to_lowercase().as_str() {
-            "center" => Ok(Gravity::Center),
-            "north" => Ok(Gravity::North),
-            "south" => Ok(Gravity::South),
-            "east" => Ok(Gravity::East),
-            "west" => Ok(Gravity::West),
-            "northeast" => Ok(Gravity::NorthEast),
-            "northwest" => Ok(Gravity::NorthWest),
-            "southeast" => Ok(Gravity::SouthEast),
-            "southwest" => Ok(Gravity::SouthWest),
-            _ => Err(ArgParseErr::with_msg("invalid gravity argument")),
-        }
+        Err(ArgParseErr {
+            message: Some(format!("unrecognized gravity `{}'", s.to_string_lossy())),
+        })
     }
 }
 
