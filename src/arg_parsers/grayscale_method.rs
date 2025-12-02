@@ -1,7 +1,8 @@
 use crate::arg_parse_err::ArgParseErr;
-use std::{ffi::OsStr, str::FromStr};
+use std::ffi::OsStr;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, strum::Display, strum::EnumString, strum::IntoStaticStr)]
+#[strum(ascii_case_insensitive)]
 pub enum GrayscaleMethod {
     Rec601Luma,
     Rec601Luminance,
@@ -11,30 +12,19 @@ pub enum GrayscaleMethod {
     Lightness,
 }
 
-impl FromStr for GrayscaleMethod {
-    type Err = ArgParseErr;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(OsStr::new(s))
-    }
-}
-
 impl TryFrom<&std::ffi::OsStr> for GrayscaleMethod {
     type Error = ArgParseErr;
 
-    fn try_from(s: &std::ffi::OsStr) -> Result<Self, Self::Error> {
-        let string: &str = s
-            .to_str()
-            .ok_or_else(|| ArgParseErr::with_msg("invalid grayscale method"))?;
-        match string {
-            "Rec601Luma" => Ok(GrayscaleMethod::Rec601Luma),
-            "Rec601Luminance" => Ok(GrayscaleMethod::Rec601Luminance),
-            "Rec709Luma" => Ok(GrayscaleMethod::Rec709Luma),
-            "Rec709Luminance" => Ok(GrayscaleMethod::Rec709Luminance),
-            "Brightness" => Ok(GrayscaleMethod::Brightness),
-            "Lightness" => Ok(GrayscaleMethod::Lightness),
-            _ => Err(ArgParseErr::with_msg("unknown grayscale method")),
+    fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
+        if let Some(s_utf8) = s.to_str() {
+            if let Ok(known_method) = Self::try_from(s_utf8) {
+                return Ok(known_method);
+            }
         }
+        Err(ArgParseErr::with_msg(format!(
+            "unrecognized grayscale method {}",
+            s.to_string_lossy()
+        )))
     }
 }
 
@@ -52,8 +42,11 @@ mod tests {
     }
 
     #[test]
-    fn test_case_sensitive() {
-        assert!(GrayscaleMethod::from_str("rec709luminance").is_err());
+    fn test_case_insensitive() {
+        assert_eq!(
+            GrayscaleMethod::from_str("rec709luminance"),
+            Ok(GrayscaleMethod::Rec709Luminance)
+        );
     }
 
     #[test]
