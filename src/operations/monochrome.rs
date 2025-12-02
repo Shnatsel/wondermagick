@@ -3,11 +3,38 @@ use image::{DynamicImage, GrayImage, Luma};
 
 pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
     let mut grayscaled = image.pixels.to_luma8();
+    auto_contrast(&mut grayscaled);
     apply_contrast(&mut grayscaled, CONTRAST_FACTOR);
     apply_dithering(&mut grayscaled);
     image.pixels = DynamicImage::ImageLuma8(grayscaled);
 
     Ok(())
+}
+
+/// Stretches out the image contrast to span the entire 0..=255 range
+fn auto_contrast(image: &mut GrayImage) {
+    if let Some(first_pixel) = image.pixels().next() {
+        let first_luma = first_pixel.0[0];
+        // find the smallest and largest luma value in a single pass over memory
+        let (min_luma, max_luma) =
+            image
+                .pixels()
+                .fold((first_luma, first_luma), |(min, max): (u8, u8), pixel| {
+                    let luma = pixel.0[0];
+                    (min.min(luma), max.max(luma))
+                });
+        // if the image already has full range, no need to do anything
+        if min_luma != 0 || max_luma != 255 {
+            let range = max_luma - min_luma;
+            let factor = 255.0 / range as f32;
+            for pixel in image.pixels_mut() {
+                for channel in pixel.0.iter_mut() {
+                    let adjusted: f32 = (*channel - min_luma) as f32 * factor;
+                    *channel = adjusted as u8;
+                }
+            }
+        }
+    }
 }
 
 /// Empirically tuned to give results similar to ImageMagick's -monochrome
