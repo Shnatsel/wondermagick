@@ -3,10 +3,9 @@ use std::{
     path::PathBuf,
 };
 
-use crate::arg_parsers::FileFormat;
 use crate::arg_parsers::{
-    parse_numeric_arg, BlurGeometry, CropGeometry, IdentifyFormat, InputFileArg, Location,
-    ResizeGeometry,
+    parse_numeric_arg, BlurGeometry, CropGeometry, FileFormat, GrayscaleMethod, IdentifyFormat,
+    InputFileArg, Location, ResizeGeometry,
 };
 use crate::args::{Arg, SignedArg};
 use crate::decode::decode;
@@ -68,6 +67,9 @@ impl ExecutionPlan {
             Arg::GaussianBlur => self.add_operation(Operation::GaussianBlur(
                 BlurGeometry::try_from(value.unwrap())?,
             )),
+            Arg::Grayscale => self.add_operation(Operation::Grayscale(GrayscaleMethod::try_from(
+                value.unwrap(),
+            )?)),
             Arg::Monochrome => self.add_operation(Operation::Monochrome),
             Arg::Negate => self.add_operation(Operation::Negate),
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
