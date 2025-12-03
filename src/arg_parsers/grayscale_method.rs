@@ -16,15 +16,9 @@ impl TryFrom<&std::ffi::OsStr> for GrayscaleMethod {
     type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
-        if let Some(s_utf8) = s.to_str() {
-            if let Ok(known_method) = Self::try_from(s_utf8) {
-                return Ok(known_method);
-            }
-        }
-        Err(ArgParseErr::with_msg(format!(
-            "unrecognized grayscale method {}",
-            s.to_string_lossy()
-        )))
+        s.to_str()
+            .ok_or_else(|| ArgParseErr::with_msg("non-utf8 grayscale value"))
+            .and_then(|val| Self::try_from(val).map_err(ArgParseErr::with_msg))
     }
 }
 
