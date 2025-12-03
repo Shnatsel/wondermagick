@@ -1,6 +1,6 @@
-use crate::{arg_parsers::GrayscaleMethod, error::MagickError, image, wm_err};
+use crate::{arg_parsers::GrayscaleMethod, error::MagickError, image::Image, wm_err};
 
-pub fn grayscale(image: &mut image::Image, method: &GrayscaleMethod) -> Result<(), MagickError> {
+pub fn grayscale(image: &mut Image, method: &GrayscaleMethod) -> Result<(), MagickError> {
     match method {
         GrayscaleMethod::Rec709Luma => {
             // image-rs appears to be using something like Rec. 709 by default for grayscale
