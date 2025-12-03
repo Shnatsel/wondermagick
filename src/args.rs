@@ -17,6 +17,35 @@ use crate::{
 
 use strum::{EnumString, IntoStaticStr, VariantArray};
 
+pub enum ArgSign {
+    Plus,
+    Minus,
+}
+
+impl TryFrom<char> for ArgSign {
+    type Error = MagickError;
+
+    fn try_from(value: char) -> Result<Self, MagickError> {
+        match value {
+            '-' => Ok(ArgSign::Minus),
+            '+' => Ok(ArgSign::Plus),
+            _ => Err(wm_err!("invalid argument sign `{}'", value)),
+        }
+    }
+}
+
+/// Some arguments have different behavior depending on whether they are prefixed with `-` or `+`.
+pub struct SignedArg {
+    pub sign: ArgSign,
+    pub arg: Arg,
+}
+
+impl SignedArg {
+    pub fn needs_value(&self) -> bool {
+        self.arg.needs_value()
+    }
+}
+
 #[derive(EnumString, IntoStaticStr, VariantArray, Debug, Clone, Copy, PartialEq, Eq)]
 #[strum(serialize_all = "kebab-case")]
 pub enum Arg {
@@ -119,11 +148,11 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             // A file named "-foobar.jpg" will be parsed as an option.
             // Sadly imagemagick does not support the -- convention to separate options and filenames,
             // and there is nothing we can do about it without introducing incompatibility in argument parsing.
-            let (_sign, string_arg) = sign_and_arg_name(raw_arg)?;
+            let (sign, string_arg) = sign_and_arg_name(raw_arg)?;
             let arg = Arg::try_from(string_arg.as_str())
                 .map_err(|_| wm_err!("unrecognized option `{}'", string_arg))?;
             let value = if arg.needs_value() { iter.next() } else { None };
-            plan.apply_arg(arg, value.as_deref())?;
+            plan.apply_arg(SignedArg { sign, arg }, value.as_deref())?;
         } else {
             plan.add_input_file(InputFileArg::parse(&raw_arg)?);
         }
@@ -161,13 +190,12 @@ fn optionlike(arg: &OsStr) -> bool {
 }
 
 /// Splits the string into a sign (- or +) and argument name
-fn sign_and_arg_name(raw_arg: OsString) -> Result<(u8, String), MagickError> {
+fn sign_and_arg_name(raw_arg: OsString) -> Result<(ArgSign, String), MagickError> {
     let mut string = raw_arg
         .into_string()
         .map_err(|s| wm_err!("unrecognized option `{}'", s.to_string_lossy()))?;
     let sign = string.remove(0);
-    assert!(sign == '-' || sign == '+');
-    Ok((sign as u8, string))
+    Ok((ArgSign::try_from(sign)?, string))
 }
 
 #[cfg(test)]
