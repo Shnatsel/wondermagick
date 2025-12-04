@@ -20,7 +20,7 @@ pub fn composite(
     } else {
         (0, 0)
     };
-    overlay(&mut image1.pixels, &image2.pixels, x as i64, y as i64);
+    overlay(&mut image1.pixels, &image2.pixels, x, y);
     Ok(())
 }
 
@@ -28,26 +28,26 @@ fn offset_from_gravity(
     gravity: &Gravity,
     image1_dim: (u32, u32),
     image2_dim: (u32, u32),
-) -> (u32, u32) {
+) -> (i64, i64) {
+    eprintln!(
+        "Calculating offset for gravity {:?} with image1_dim {:?} and image2_dim {:?}",
+        gravity, image1_dim, image2_dim
+    );
+    let w1 = i64::from(image1_dim.0);
+    let h1 = i64::from(image1_dim.1);
+    let w2 = i64::from(image2_dim.0);
+    let h2 = i64::from(image2_dim.1);
+
     match gravity {
-        Gravity::Center => (
-            (image1_dim.0 - image2_dim.0) / 2,
-            (image1_dim.1 - image2_dim.1) / 2,
-        ),
-        Gravity::North => ((image1_dim.0 - image2_dim.0) / 2, 0),
-        Gravity::South => (
-            (image1_dim.0 - image2_dim.0) / 2,
-            image1_dim.1 - image2_dim.1,
-        ),
-        Gravity::East => (
-            image1_dim.0 - image2_dim.0,
-            (image1_dim.1 - image2_dim.1) / 2,
-        ),
-        Gravity::West => (0, (image1_dim.1 - image2_dim.1) / 2),
-        Gravity::NorthEast => (image1_dim.0 - image2_dim.0, 0),
+        Gravity::Center => ((w1 - w2) / 2, (h1 - h2) / 2),
+        Gravity::North => ((w1 - w2) / 2, 0),
+        Gravity::South => ((w1 - w2) / 2, h1 - h2),
+        Gravity::East => (w1 - w2, (h1 - h2) / 2),
+        Gravity::West => (0, (h1 - h2) / 2),
+        Gravity::NorthEast => (w1 - w2, 0),
         Gravity::NorthWest => (0, 0),
-        Gravity::SouthEast => (image1_dim.0 - image2_dim.0, image1_dim.1 - image2_dim.1),
-        Gravity::SouthWest => (0, image1_dim.1 - image2_dim.1),
+        Gravity::SouthEast => (w1 - w2, h1 - h2),
+        Gravity::SouthWest => (0, h1 - h2),
     }
 }
 
@@ -84,10 +84,18 @@ mod tests {
             (0, 500)
         }
     )]
-    fn test_offset_from_gravity(gravity: Gravity, expected_offsets: (u32, u32)) {
+    fn test_offset_from_gravity(gravity: Gravity, expected_offsets: (i64, i64)) {
         assert_eq!(
             offset_from_gravity(&gravity, IMG1_DIM, IMG2_DIM),
             expected_offsets
         );
+    }
+
+    #[test]
+    fn test_offset_from_gravity_img2_larger_than_img1() {
+        let img1_dim = (100, 100);
+        let img2_dim = (200, 200);
+        let offsets = offset_from_gravity(&Gravity::Center, img1_dim, img2_dim);
+        assert_eq!(offsets, (-50, -50));
     }
 }
