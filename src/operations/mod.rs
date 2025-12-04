@@ -49,7 +49,7 @@ impl Operation {
             Operation::Scale(geom) => resize::scale(image, geom),
             Operation::Sample(geom) => resize::sample(image, geom),
             Operation::Composite(other_image, other_image_format, gravity) => {
-                composite::composite(image, &other_image, *other_image_format, gravity.clone())
+                composite::composite(image, other_image, *other_image_format, gravity.clone())
             }
             Operation::CropOnLoad(geom) => crop::crop_on_load(image, geom),
             Operation::Crop(geom) => crop::crop(image, geom),
