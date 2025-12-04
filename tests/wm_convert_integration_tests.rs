@@ -1,10 +1,15 @@
 use std::fs;
 use std::process::Command;
 
-#[test]
-fn test_convert_png_to_jpg_succeeds() {
+fn setup<'a>() -> (&'a str, &'a str) {
     let binary = env!("CARGO_BIN_EXE_wm-convert");
     let tmp_dir = env!("CARGO_TARGET_TMPDIR");
+    (binary, tmp_dir)
+}
+
+#[test]
+fn test_convert_png_to_jpg_succeeds() {
+    let (binary, tmp_dir) = setup();
     let output_path = format!("{}/resized.jpg", tmp_dir);
     let _ = fs::remove_file(&output_path);
 
@@ -19,8 +24,7 @@ fn test_convert_png_to_jpg_succeeds() {
 
 #[test]
 fn test_convert_composite_succeeds() {
-    let binary = env!("CARGO_BIN_EXE_wm-convert");
-    let tmp_dir = env!("CARGO_TARGET_TMPDIR");
+    let (binary, tmp_dir) = setup();
     let output_path = format!("{}/composited.png", tmp_dir);
     let _ = fs::remove_file(&output_path);
 
@@ -40,8 +44,7 @@ fn test_convert_composite_succeeds() {
 
 #[test]
 fn test_resize_identify_succeeds() {
-    let binary = env!("CARGO_BIN_EXE_wm-convert");
-    let tmp_dir = env!("CARGO_TARGET_TMPDIR");
+    let (binary, tmp_dir) = setup();
     let output_path = format!("{}/resized.png", tmp_dir);
     let _ = fs::remove_file(&output_path);
 
