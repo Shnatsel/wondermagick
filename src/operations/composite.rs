@@ -33,10 +33,8 @@ fn offset_from_gravity(
         "Calculating offset for gravity {:?} with image1_dim {:?} and image2_dim {:?}",
         gravity, image1_dim, image2_dim
     );
-    let w1 = i64::from(image1_dim.0);
-    let h1 = i64::from(image1_dim.1);
-    let w2 = i64::from(image2_dim.0);
-    let h2 = i64::from(image2_dim.1);
+    let (w1, h1) = (i64::from(image1_dim.0), i64::from(image1_dim.1));
+    let (w2, h2) = (i64::from(image2_dim.0), i64::from(image2_dim.1));
 
     match gravity {
         Gravity::Center => ((w1 - w2) / 2, (h1 - h2) / 2),
