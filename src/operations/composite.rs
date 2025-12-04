@@ -45,7 +45,7 @@ fn offset_from_gravity(
         Gravity::East => (w1 - w2, (h1 - h2) / 2),
         Gravity::West => (0, (h1 - h2) / 2),
         Gravity::NorthEast => (w1 - w2, 0),
-        Gravity::NorthWest => (0, 0),
+        Gravity::NorthWest | Gravity::Forget | Gravity::None => (0, 0),
         Gravity::SouthEast => (w1 - w2, h1 - h2),
         Gravity::SouthWest => (0, h1 - h2),
     }
@@ -69,6 +69,8 @@ mod tests {
             Gravity::West,
             Gravity::NorthEast,
             Gravity::NorthWest,
+            Gravity::None,
+            Gravity::Forget,
             Gravity::SouthEast,
             Gravity::SouthWest
         },
@@ -79,6 +81,8 @@ mod tests {
             (600, 250),
             (0, 250),
             (600, 0),
+            (0, 0),
+            (0, 0),
             (0, 0),
             (600, 500),
             (0, 500)

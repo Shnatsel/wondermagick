@@ -13,6 +13,8 @@ pub enum Gravity {
     SouthWest,
     South,
     SouthEast,
+    None,
+    Forget,
 }
 
 impl TryFrom<&OsStr> for Gravity {
