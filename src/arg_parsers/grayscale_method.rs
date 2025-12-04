@@ -1,15 +1,21 @@
 use crate::arg_parse_err::ArgParseErr;
 use std::ffi::OsStr;
 
+/// https://imagemagick.org/script/command-line-options.php#intensity
+/// Running ImageMagick 6's `convert -list intensity` shows all available methods.
 #[derive(Debug, Clone, PartialEq, strum::Display, strum::EnumString, strum::IntoStaticStr)]
 #[strum(ascii_case_insensitive)]
 pub enum GrayscaleMethod {
+    Average,
+    Brightness,
+    Lightness,
+    MS,
+    Mean,
+    RMS,
     Rec601Luma,
     Rec601Luminance,
     Rec709Luma,
     Rec709Luminance,
-    Brightness,
-    Lightness,
 }
 
 impl TryFrom<&std::ffi::OsStr> for GrayscaleMethod {
