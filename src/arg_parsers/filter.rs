@@ -47,17 +47,9 @@ impl TryFrom<&OsStr> for Filter {
     type Error = ArgParseErr;
 
     fn try_from(s: &OsStr) -> Result<Self, Self::Error> {
-        if let Some(s_utf8) = s.to_str() {
-            if let Ok(known_filter) = Self::try_from(s_utf8) {
-                return Ok(known_filter);
-            }
-        }
-        Err(ArgParseErr {
-            message: Some(format!(
-                "unrecognized image filter `{}'",
-                s.to_string_lossy()
-            )),
-        })
+        s.to_str()
+            .ok_or_else(|| ArgParseErr::with_msg("non-utf8 filter value"))
+            .and_then(|val| Filter::try_from(val).map_err(ArgParseErr::with_msg))
     }
 }
 
