@@ -48,6 +48,7 @@ jxl = ["dep:jxl-oxide"]
 quickcheck = "1"
 quickcheck_macros = "1"
 derive-quickcheck-arbitrary = "0.1.3"
+parameterized = "2.1.0"
 
 # Most of the time is spent in `image` and its dependencies,
 # so build it with optimizations in debug mode to get good performance
