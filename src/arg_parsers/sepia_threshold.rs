@@ -2,7 +2,7 @@ use crate::arg_parse_err::ArgParseErr;
 use std::{ffi::OsStr, str::FromStr};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct SepiaThreshold(f32);
+pub struct SepiaThreshold(pub f32);
 
 impl FromStr for SepiaThreshold {
     type Err = ArgParseErr;
