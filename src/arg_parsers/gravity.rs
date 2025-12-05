@@ -1,6 +1,8 @@
 use crate::arg_parse_err::ArgParseErr;
 use std::ffi::OsStr;
 
+/// https://imagemagick.org/script/command-line-options.php#gravity
+/// Running ImageMagick 6's `convert -list gravity` shows all possible values.
 #[derive(Debug, Clone, PartialEq, strum::Display, strum::EnumString, strum::IntoStaticStr)]
 #[strum(ascii_case_insensitive)]
 pub enum Gravity {
