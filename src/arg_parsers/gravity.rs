@@ -24,9 +24,10 @@ impl TryFrom<&OsStr> for Gravity {
                 return Ok(known_gravity);
             }
         }
-        Err(ArgParseErr {
-            message: Some(format!("unrecognized gravity `{}'", s.to_string_lossy())),
-        })
+        Err(ArgParseErr::with_msg(format!(
+            "unrecognized gravity `{}'",
+            s.to_string_lossy()
+        )))
     }
 }
 
