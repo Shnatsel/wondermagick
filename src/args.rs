@@ -69,6 +69,7 @@ pub enum Arg {
     Resize,
     Sample,
     Scale,
+    SepiaTone,
     Strip,
     Thumbnail,
     Unsharp,
@@ -95,6 +96,7 @@ impl Arg {
             Arg::Quality => true,
             Arg::Resize => true,
             Arg::Sample => true,
+            Arg::SepiaTone => true,
             Arg::Scale => true,
             Arg::Strip => false,
             Arg::Thumbnail => true,
@@ -122,6 +124,7 @@ impl Arg {
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
             Arg::Resize => "resize the image",
             Arg::Sample => "scale image with pixel sampling",
+            Arg::SepiaTone => "simulate a sepia-toned photo",
             Arg::Scale => "scale the image",
             Arg::Strip => "strip image of all profiles and comments",
             Arg::Thumbnail => "create a thumbnail of the image",

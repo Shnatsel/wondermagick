@@ -9,12 +9,13 @@ mod identify;
 mod monochrome;
 mod negate;
 mod resize;
+mod sepia_tone;
 mod unsharpen;
 
 use crate::{
     arg_parsers::{
         BlurGeometry, CropGeometry, Filter, GrayscaleMethod, IdentifyFormat, LoadCropGeometry,
-        ResizeGeometry, UnsharpenGeometry,
+        ResizeGeometry, SepiaThreshold, UnsharpenGeometry,
     },
     error::MagickError,
     image::Image,
@@ -38,6 +39,7 @@ pub enum Operation {
     Flip(Axis),
     Monochrome,
     Unsharpen(UnsharpenGeometry),
+    SepiaTone(SepiaThreshold),
 }
 
 impl Operation {
@@ -58,6 +60,7 @@ impl Operation {
             Operation::Flip(axis) => flip::flip(image, axis),
             Operation::Monochrome => monochrome::monochrome(image),
             Operation::Unsharpen(geom) => unsharpen::unsharpen(image, geom),
+            Operation::SepiaTone(threshold) => sepia_tone::sepia_tone(image, threshold),
         }
     }
 
@@ -82,6 +85,7 @@ impl Operation {
             Flip(_) => (),
             Monochrome => (),
             Unsharpen(_) => (),
+            SepiaTone(_) => (),
         }
     }
 }
