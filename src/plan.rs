@@ -3,7 +3,7 @@ use std::{
     path::PathBuf,
 };
 
-use crate::args::{Arg, SignedArg};
+use crate::args::{Arg, ArgParseCtx, SignedArg};
 use crate::decode::decode;
 use crate::utils::filename::insert_suffix_before_extension_in_path;
 use crate::{arg_parse_err::ArgParseErr, arg_parsers::Filter};
@@ -32,6 +32,7 @@ pub struct ExecutionPlan {
 enum ExecutionStep {
     Map(Operation),
     InputFile(FilePlan),
+    Write(Location, Option<FileFormat>),
 }
 
 impl ExecutionPlan {
@@ -39,18 +40,20 @@ impl ExecutionPlan {
         &mut self,
         signed_arg: SignedArg,
         value: Option<&OsStr>,
+        ctx: &ArgParseCtx,
     ) -> Result<(), MagickError> {
         let arg_string: &'static str = signed_arg.arg.into();
         if signed_arg.needs_value() != value.is_some() {
             return Err(wm_err!("argument requires a value: {arg_string}"));
         };
 
-        self.apply_arg_inner(signed_arg, value).map_err(|arg_err| {
-            wm_err!(
-                "{}",
-                arg_err.display_with_arg(arg_string, value.unwrap_or_default())
-            )
-        })?;
+        self.apply_arg_inner(signed_arg, value, ctx)
+            .map_err(|arg_err| {
+                wm_err!(
+                    "{}",
+                    arg_err.display_with_arg(arg_string, value.unwrap_or_default())
+                )
+            })?;
 
         Ok(())
     }
@@ -61,6 +64,7 @@ impl ExecutionPlan {
         &mut self,
         signed_arg: SignedArg,
         value: Option<&OsStr>,
+        ctx: &ArgParseCtx,
     ) -> Result<(), ArgParseErr> {
         match signed_arg.arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
@@ -112,6 +116,9 @@ impl ExecutionPlan {
             Arg::Filter => self.modifiers.filter = Some(Filter::try_from(value.unwrap())?),
             Arg::Flip => self.add_operation(Operation::Flip(Axis::Vertical)),
             Arg::Flop => self.add_operation(Operation::Flip(Axis::Horizontal)),
+            Arg::Write => {
+                self.add_output(value.unwrap(), ctx)?;
+            }
         };
 
         Ok(())
@@ -127,6 +134,16 @@ impl ExecutionPlan {
         } else {
             self.execution.push(ExecutionStep::Map(op));
         }
+    }
+
+    fn add_output(&mut self, loc: &OsStr, ctx: &ArgParseCtx) -> Result<(), ArgParseErr> {
+        if self.execution.is_empty() {
+            return Err(ArgParseErr::with_msg("no images for write -write"));
+        }
+
+        let (loc, format) = ctx.parse_output_file(loc);
+        self.execution.push(ExecutionStep::Write(loc, format));
+        Ok(())
     }
 
     pub fn add_input_file(&mut self, file: InputFileArg) {
@@ -171,9 +188,10 @@ impl ExecutionPlan {
         self.execution.push(ExecutionStep::InputFile(file_plan));
     }
 
-    pub fn set_output_file(&mut self, file: Location, format: Option<FileFormat>) {
-        self.output_file = file;
-        self.output_format = format;
+    pub fn set_output_file(&mut self, file: &OsStr, ctx: &ArgParseCtx) {
+        let (output_file, output_format) = ctx.parse_output_file(file);
+        self.output_file = output_file;
+        self.output_format = output_format;
     }
 
     pub fn execute(&self) -> Result<(), MagickError> {
@@ -186,7 +204,10 @@ impl ExecutionPlan {
         crate::init::init();
 
         let mut sequence: Vec<Image> = vec![];
-        for step in &self.execution {
+
+        let output = ExecutionStep::Write(self.output_file.clone(), self.output_format);
+
+        for step in self.execution.iter().chain([&output]) {
             match step {
                 ExecutionStep::Map(op) => {
                     for image in &mut sequence {
@@ -202,17 +223,13 @@ impl ExecutionPlan {
 
                     sequence.push(image);
                 }
+                ExecutionStep::Write(location, format) => {
+                    let output_locations = Self::output_locations(location, &sequence);
+                    for (image, specific_location) in sequence.iter_mut().zip(output_locations) {
+                        encode::encode(image, &specific_location, *format, &self.modifiers)?;
+                    }
+                }
             }
-        }
-
-        let output_locations = Self::output_locations(&self.output_file, &sequence);
-        for (image, specific_location) in sequence.iter_mut().zip(output_locations) {
-            encode::encode(
-                image,
-                &specific_location,
-                self.output_format,
-                &self.modifiers,
-            )?;
         }
 
         Ok(())
@@ -279,6 +296,7 @@ mod tests {
     use super::*;
 
     use image::ImageFormat;
+    use std::path::PathBuf;
 
     #[test]
     fn test_output_locations() {
@@ -332,6 +350,6 @@ mod tests {
 
         let outputs = ExecutionPlan::output_locations(&Location::Stdio, &two_sequence);
 
-        assert_eq!(outputs, vec![Location::Stdio, Location::Stdio],);
+        assert_eq!(outputs, vec![Location::Stdio, Location::Stdio]);
     }
 }
