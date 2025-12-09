@@ -9,7 +9,7 @@ use std::{
 };
 
 use crate::{
-    arg_parsers::{parse_path_and_format, FileFormat, InputFileArg, Location},
+    arg_parsers::{FileFormat, InputFileArg, Location},
     error::MagickError,
     plan::ExecutionPlan,
     wm_err,
@@ -72,6 +72,7 @@ pub enum Arg {
     Strip,
     Thumbnail,
     Unsharp,
+    Write,
 }
 
 impl Arg {
@@ -98,6 +99,7 @@ impl Arg {
             Arg::Strip => false,
             Arg::Thumbnail => true,
             Arg::Unsharp => true,
+            Arg::Write => true,
         }
     }
 
@@ -124,7 +126,57 @@ impl Arg {
             Arg::Strip => "strip image of all profiles and comments",
             Arg::Thumbnail => "create a thumbnail of the image",
             Arg::Unsharp => "sharpen the image",
+            Arg::Write => "write current image sequence to an output file",
         }
+    }
+}
+
+/// Handed to operations that consume an argument to parse it in-context.
+#[derive(Debug)]
+pub struct ArgParseCtx {
+    /// Function to check if a path refers to an actual file, or may be a pattern.
+    ///
+    /// We punt the actual IO work to be configured on the plan so that the plan may be used in
+    /// contexts where we should not be dependent on the real filesystem.
+    exists: ExistsFn,
+}
+
+impl ArgParseCtx {
+    /// An argument parsing context that will access the host file system directly.
+    pub fn with_file_system() -> Self {
+        Self {
+            exists: ExistsFn {
+                debug: "real_fs",
+                call: Box::new(|path: &'_ Path| -> bool {
+                    matches!(std::fs::exists(path), Ok(true))
+                }),
+            },
+        }
+    }
+
+    pub(crate) fn parse_output_file(&self, input: &OsStr) -> (Location, Option<FileFormat>) {
+        Self::parse_output_file_inner(input, &*self.exists.call)
+    }
+
+    fn parse_output_file_inner(
+        input: &OsStr,
+        exists: &dyn Fn(&Path) -> bool,
+    ) -> (Location, Option<FileFormat>) {
+        let mut output_file = Location::from_arg(input);
+        let mut output_format = None;
+        // "-" is parsed as (Stdio, None) no matter what.
+        // "png:-" is parsed as:
+        //   - (Path("png:-"), None) if a file or dir named "png:-" exists.
+        //   - (Stdio, Some("png")) otherwise.
+        if let Location::Path(path) = &output_file {
+            if !exists(path) {
+                if let Some((path, format)) = crate::arg_parsers::parse_path_and_format(input) {
+                    output_file = Location::from_arg(&path);
+                    output_format = Some(format);
+                }
+            }
+        }
+        (output_file, output_format)
     }
 }
 
@@ -148,11 +200,9 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
         ));
     }
 
+    let ctx = ArgParseCtx::with_file_system();
     let mut plan = ExecutionPlan::default();
-    let (output_file, output_format) = parse_output_file(&output_filename, |path| {
-        matches!(std::fs::exists(path), Ok(true))
-    });
-    plan.set_output_file(output_file, output_format);
+    plan.set_output_file(&output_filename, &ctx);
 
     let mut iter = args.into_iter().skip(1); // skip argv[0], path to our binary
     while let Some(raw_arg) = iter.next() {
@@ -168,33 +218,12 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             } else {
                 None
             };
-            plan.apply_arg(SignedArg { sign, arg }, value.as_deref())?;
+            plan.apply_arg(SignedArg { sign, arg }, value.as_deref(), &ctx)?;
         } else {
             plan.add_input_file(InputFileArg::parse(&raw_arg)?);
         }
     }
     Ok(plan)
-}
-
-fn parse_output_file(
-    input: &OsStr,
-    exists: impl FnOnce(&Path) -> bool,
-) -> (Location, Option<FileFormat>) {
-    let mut output_file = Location::from_arg(input);
-    let mut output_format = None;
-    // "-" is parsed as (Stdio, None) no matter what.
-    // "png:-" is parsed as:
-    //   - (Path("png:-"), None) if a file or dir named "png:-" exists.
-    //   - (Stdio, Some("png")) otherwise.
-    if let Location::Path(path) = &output_file {
-        if !exists(path) {
-            if let Some((path, format)) = parse_path_and_format(input) {
-                output_file = Location::from_arg(&path);
-                output_format = Some(format);
-            }
-        }
-    }
-    (output_file, output_format)
 }
 
 /// Checks if the string starts with a `-` or a `+`, followed by an ASCII letter
@@ -214,29 +243,42 @@ fn sign_and_arg_name(raw_arg: OsString) -> Result<(ArgSign, String), MagickError
     Ok((ArgSign::try_from(sign)?, string))
 }
 
+struct ExistsFn {
+    debug: &'static str,
+    call: Box<dyn Fn(&Path) -> bool>,
+}
+
+impl core::fmt::Debug for ExistsFn {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("ExistsFn")
+            .field("debug_name", &self.debug)
+            .finish_non_exhaustive()
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use image::ImageFormat;
     use std::path::PathBuf;
-
-    use super::*;
 
     #[test]
     fn test_parse_output_file() {
         assert_eq!(
-            parse_output_file(OsStr::new("-"), |_| false),
+            ArgParseCtx::parse_output_file_inner(OsStr::new("-"), &|_| false),
             (Location::Stdio, None),
         );
         assert_eq!(
-            parse_output_file(OsStr::new("-"), |_| true),
+            ArgParseCtx::parse_output_file_inner(OsStr::new("-"), &|_| true),
             (Location::Stdio, None),
         );
         assert_eq!(
-            parse_output_file(OsStr::new("png:-"), |_| false),
+            ArgParseCtx::parse_output_file_inner(OsStr::new("png:-"), &|_| false),
             (Location::Stdio, Some(FileFormat::Format(ImageFormat::Png))),
         );
         assert_eq!(
-            parse_output_file(OsStr::new("png:-"), |_| true),
+            ArgParseCtx::parse_output_file_inner(OsStr::new("png:-"), &|_| true),
             (Location::Path(PathBuf::from("png:-")), None),
         );
     }
