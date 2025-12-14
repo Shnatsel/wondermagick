@@ -18,17 +18,52 @@ use crate::{error::MagickError, operations::Axis, operations::Operation, wm_try}
 /// Plan of operations for the whole run over multiple files
 #[derive(Debug, Default)]
 pub struct ExecutionPlan {
-    /// Operations to be applied to ALL input files
+    /// Operations to be applied to ALL input files.
+    ///
+    /// We keep this list to construct a [`ExecutionStep::InputFile`].
     global_ops: Vec<Operation>,
+    /// List of steps to execute on the image sequence itself once we start.
     execution: Vec<ExecutionStep>,
+    /// Where to write the output image(s).
     output_file: Location,
     output_format: Option<FileFormat>,
+    /// Current state of modifiers that apply to some operations. Modifiers are used by and applied
+    /// to all later operations, when we add the operations to the `execution` list.
     modifiers: Modifiers,
 }
 
+/// Magick script occurs in a sequential order, manipulating a list of images.
+///
+/// We differentiate between different kinds of steps depending on their effect on the list to
+/// simplify the model of possible result states. For instance, the simplest kind of operations
+/// execute on each image individually and have no effect otherwise, these are implemented as
+/// [`ExecutionStep::Map`]. Other operations take the whole list of images and produce one (not yet
+/// implemented). Yet others may manipulate the list as a whole (not yet implemented). In input
+/// files there are additional 'global' execution steps which apply to all input files, but we
+/// store those in the [`FilePlan`] for the image when it the input execution step is created (see
+/// [`ExecutionStep::InputFile`] for this particular subtlety).
 #[derive(Debug)]
 enum ExecutionStep {
+    /// Apply an operation to all images in the current list of images (in imagemagick lingo, image
+    /// stack). <https://imagemagick.org/script/command-line-processing.php#stack>
+    ///
+    /// Note that some options should be considered for each image individually such as
+    /// percentage-qualified sizes in `-resize`.
     Map(Operation),
+    /// Add a new image to the back of the sequence.
+    ///
+    ///
+    /// A minor subtlety, in image magick the command `+write` can 'restore' an image to its
+    /// 'original state'. This undoes all operations applied to the image so far but *not* the
+    /// global operations that become part of the definition of this image. The image is restore to
+    /// its state that resulted from this operation. Some formats, including sequences, have inline
+    /// selection operations that modify the original definition as well. This is not yet
+    /// implemented but will be important. For comparison, inspect:
+    ///
+    /// ```bash
+    /// magick rose: -extract 20x20 +write 'null:' out.png # out is a 70x46 file
+    /// magick -extract 20x20 rose: +write 'null:' out.png # out is a 20x20 file
+    /// ```
     InputFile(FilePlan),
 }
 
@@ -119,10 +154,15 @@ impl ExecutionPlan {
     }
 
     fn add_operation(&mut self, op: Operation) {
-        // Operations such as -resize apply to all the files already listed,
-        // but not subsequent ones,
+        // Operations such as -resize apply to all the files already listed (they map over the
+        // current image sequence), but not subsequent ones,
+        //
         // UNLESS they are specified before any of the files,
         // in which case they apply to all subsequent operations.
+        //
+        // FIXME: most operations are not allowed as global operations and they terminate the
+        // global phase just like an input file. If used in global position they will then likely
+        // error out due to the lack of input files.
         if self.execution.is_empty() {
             self.global_ops.push(op);
         } else {
