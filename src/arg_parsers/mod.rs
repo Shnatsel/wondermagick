@@ -23,3 +23,5 @@ mod grayscale_method;
 pub use grayscale_method::*;
 mod unsharpen_geometry;
 pub use unsharpen_geometry::*;
+mod gravity;
+pub use gravity::*;

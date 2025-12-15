@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::arg_parsers::{
-    parse_numeric_arg, BlurGeometry, CropGeometry, FileFormat, GrayscaleMethod, IdentifyFormat,
-    InputFileArg, Location, ResizeGeometry, UnsharpenGeometry,
+    parse_numeric_arg, BlurGeometry, CropGeometry, FileFormat, Gravity, GrayscaleMethod,
+    IdentifyFormat, InputFileArg, Location, ResizeGeometry, UnsharpenGeometry,
 };
 use crate::args::{Arg, SignedArg};
 use crate::decode::decode;
@@ -97,6 +97,17 @@ impl ExecutionPlan {
     ) -> Result<(), ArgParseErr> {
         match signed_arg.arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
+            Arg::Composite => {
+                let image_to_comp = self
+                    .input_files
+                    .pop()
+                    .ok_or(ArgParseErr::with_msg("image sequence is required"))?;
+                self.add_operation(Operation::Composite(
+                    image_to_comp.location,
+                    image_to_comp.format,
+                    self.modifiers.gravity.clone(),
+                ))
+            }
             Arg::Crop => {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
             }
@@ -109,6 +120,7 @@ impl ExecutionPlan {
             Arg::GaussianBlur => self.add_operation(Operation::GaussianBlur(
                 BlurGeometry::try_from(value.unwrap())?,
             )),
+            Arg::Gravity => self.modifiers.gravity = Some(Gravity::try_from(value.unwrap())?),
             Arg::Grayscale => self.add_operation(Operation::Grayscale(GrayscaleMethod::try_from(
                 value.unwrap(),
             )?)),
@@ -296,6 +308,7 @@ pub struct Modifiers {
     pub strip: Strip,
     pub identify_format: Option<IdentifyFormat>,
     pub filter: Option<Filter>,
+    pub gravity: Option<Gravity>,
 }
 
 #[derive(Debug, Default, Copy, Clone)] // bools default to false

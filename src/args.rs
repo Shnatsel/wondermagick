@@ -50,6 +50,7 @@ impl SignedArg {
 #[strum(serialize_all = "kebab-case")]
 pub enum Arg {
     AutoOrient,
+    Composite,
     Crop,
     // TODO: -format can actually change meaning, as `-format type`
     // and as `-format expression`. We currently only implement `-format expression`.
@@ -59,6 +60,7 @@ pub enum Arg {
     Flop,
     Blur,
     GaussianBlur,
+    Gravity,
     Grayscale,
     Identify,
     Monochrome,
@@ -76,6 +78,7 @@ impl Arg {
     pub fn needs_value(&self) -> bool {
         match self {
             Arg::AutoOrient => false,
+            Arg::Composite => false,
             Arg::Crop => true,
             Arg::Format => true,
             Arg::Filter => true,
@@ -83,6 +86,7 @@ impl Arg {
             Arg::Flop => false,
             Arg::Blur => true,
             Arg::GaussianBlur => true,
+            Arg::Gravity => true,
             Arg::Grayscale => true,
             Arg::Identify => false,
             Arg::Monochrome => false,
@@ -100,6 +104,7 @@ impl Arg {
     pub fn help_text(&self) -> &'static str {
         match self {
             Arg::AutoOrient => "automagically orient (rotate) image",
+            Arg::Composite => "perform alpha composition on two images and an optional mask",
             Arg::Crop => "cut out a rectangular region of the image",
             Arg::Format => "output formatted image characteristics",
             Arg::Filter => "use this filter when resizing an image",
@@ -107,6 +112,9 @@ impl Arg {
             Arg::Flop => "flop image horizontally",
             Arg::Blur => "reduce image noise and reduce detail levels",
             Arg::GaussianBlur => "reduce image noise and reduce detail levels",
+            Arg::Gravity => {
+                "sets the current gravity suggestion for various other settings and options"
+            }
             Arg::Grayscale => "convert image to grayscale",
             Arg::Identify => "identify the format and characteristics of the image",
             Arg::Monochrome => "transform image to black and white",
