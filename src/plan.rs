@@ -9,6 +9,7 @@ use crate::arg_parsers::{
 };
 use crate::args::{Arg, SignedArg};
 use crate::decode::decode;
+use crate::image::Image;
 use crate::utils::filename::insert_suffix_before_extension_in_path;
 use crate::{arg_parse_err::ArgParseErr, arg_parsers::Filter};
 use crate::{encode, wm_err};
@@ -17,12 +18,53 @@ use crate::{error::MagickError, operations::Axis, operations::Operation, wm_try}
 /// Plan of operations for the whole run over multiple files
 #[derive(Debug, Default)]
 pub struct ExecutionPlan {
-    /// Operations to be applied to ALL input files
+    /// Operations to be applied to ALL input files.
+    ///
+    /// We keep this list to construct a [`ExecutionStep::InputFile`].
     global_ops: Vec<Operation>,
+    /// List of steps to execute on the image sequence itself once we start.
+    execution: Vec<ExecutionStep>,
+    /// Where to write the output image(s).
     output_file: Location,
-    input_files: Vec<FilePlan>,
     output_format: Option<FileFormat>,
+    /// Current state of modifiers that apply to some operations. Modifiers are used by and applied
+    /// to all later operations, when we add the operations to the `execution` list.
     modifiers: Modifiers,
+}
+
+/// Magick script occurs in a sequential order, manipulating a list of images.
+///
+/// We differentiate between different kinds of steps depending on their effect on the list to
+/// simplify the model of possible result states. For instance, the simplest kind of operations
+/// execute on each image individually and have no effect otherwise, these are implemented as
+/// [`ExecutionStep::Map`]. Other operations take the whole list of images and produce one (not yet
+/// implemented). Yet others may manipulate the list as a whole (not yet implemented). In input
+/// files there are additional 'global' execution steps which apply to all input files, but we
+/// store those in the [`FilePlan`] for the image when it the input execution step is created (see
+/// [`ExecutionStep::InputFile`] for this particular subtlety).
+#[derive(Debug)]
+enum ExecutionStep {
+    /// Apply an operation to all images in the current list of images (in imagemagick lingo, image
+    /// stack). <https://imagemagick.org/script/command-line-processing.php#stack>
+    ///
+    /// Note that some options should be considered for each image individually such as
+    /// percentage-qualified sizes in `-resize`.
+    Map(Operation),
+    /// Add a new image to the back of the sequence.
+    ///
+    ///
+    /// A minor subtlety, in image magick the command `+write` can 'restore' an image to its
+    /// 'original state'. This undoes all operations applied to the image so far but *not* the
+    /// global operations that become part of the definition of this image. The image is restore to
+    /// its state that resulted from this operation. Some formats, including sequences, have inline
+    /// selection operations that modify the original definition as well. This is not yet
+    /// implemented but will be important. For comparison, inspect:
+    ///
+    /// ```bash
+    /// magick rose: -extract 20x20 +write 'null:' out.png # out is a 70x46 file
+    /// magick -extract 20x20 rose: +write 'null:' out.png # out is a 20x20 file
+    /// ```
+    InputFile(FilePlan),
 }
 
 impl ExecutionPlan {
@@ -112,16 +154,19 @@ impl ExecutionPlan {
     }
 
     fn add_operation(&mut self, op: Operation) {
-        // Operations such as -resize apply to all the files already listed,
-        // but not subsequent ones,
+        // Operations such as -resize apply to all the files already listed (they map over the
+        // current image sequence), but not subsequent ones,
+        //
         // UNLESS they are specified before any of the files,
         // in which case they apply to all subsequent operations.
-        if self.input_files.is_empty() {
+        //
+        // FIXME: most operations are not allowed as global operations and they terminate the
+        // global phase just like an input file. If used in global position they will then likely
+        // error out due to the lack of input files.
+        if self.execution.is_empty() {
             self.global_ops.push(op);
         } else {
-            for file_plan in &mut self.input_files {
-                file_plan.ops.push(op.clone())
-            }
+            self.execution.push(ExecutionStep::Map(op));
         }
     }
 
@@ -164,7 +209,7 @@ impl ExecutionPlan {
             }
         }
 
-        self.input_files.push(file_plan);
+        self.execution.push(ExecutionStep::InputFile(file_plan));
     }
 
     pub fn set_output_file(&mut self, file: Location, format: Option<FileFormat>) {
@@ -173,29 +218,57 @@ impl ExecutionPlan {
     }
 
     pub fn execute(&self) -> Result<(), MagickError> {
-        if self.input_files.is_empty() {
+        // Operations before the first file become global. If no file was added we never switched
+        // to execution on a sequence, so this is empty.
+        if self.execution.is_empty() {
             return Err(wm_err!("no images defined")); // mimics imagemagick
         }
+
         crate::init::init();
-        for (file_plan, output_file) in self.input_files.iter().zip(self.output_locations().iter())
-        {
-            let mut image = wm_try!(decode(&file_plan.location, file_plan.format));
 
-            for operation in &file_plan.ops {
-                operation.execute(&mut image)?;
+        let mut sequence: Vec<Image> = vec![];
+        for step in &self.execution {
+            match step {
+                ExecutionStep::Map(op) => {
+                    for image in &mut sequence {
+                        op.execute(image)?;
+                    }
+                }
+                ExecutionStep::InputFile(file_plan) => {
+                    let mut image = wm_try!(decode(&file_plan.location, file_plan.format));
+
+                    for operation in &file_plan.ops {
+                        operation.execute(&mut image)?;
+                    }
+
+                    sequence.push(image);
+                }
             }
+        }
 
-            encode::encode(&mut image, output_file, self.output_format, &self.modifiers)?;
+        let output_locations = Self::output_locations(&self.output_file, &sequence);
+        for (image, specific_location) in sequence.iter_mut().zip(output_locations) {
+            encode::encode(
+                image,
+                &specific_location,
+                self.output_format,
+                &self.modifiers,
+            )?;
         }
 
         Ok(())
     }
 
-    fn output_locations(&self) -> Vec<Location> {
-        if self.input_files.len() > 1 {
-            if let Location::Path(output_file) = &self.output_file {
+    /// There are actually two ways of encoding a sequence. If the format natively supports
+    /// sequences (GIF, TIFF, etc) then the images are encoded as frames in that format. Otherwise
+    /// the output location is treated as a pattern for multiple files (e.g. output-%d.png).
+    ///
+    /// FIXME: handle animated/sequence output
+    fn output_locations(output: &Location, images: &[Image]) -> Vec<Location> {
+        if images.len() > 1 {
+            if let Location::Path(output_file) = output {
                 let mut locations = Vec::new();
-                for i in 1..=self.input_files.len() {
+                for i in 1..=images.len() {
                     let suffix = OsString::from(format!("-{i}")); // indexing for output images starts at 1
                     let name =
                         insert_suffix_before_extension_in_path(output_file.as_os_str(), &suffix);
@@ -204,7 +277,8 @@ impl ExecutionPlan {
                 return locations;
             }
         }
-        vec![self.output_file.clone(); self.input_files.len()]
+
+        vec![output.clone(); images.len()]
     }
 }
 
@@ -244,47 +318,61 @@ impl Strip {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use image::ImageFormat;
 
     #[test]
     fn test_output_locations() {
-        let plan = ExecutionPlan {
-            output_file: Location::Path(PathBuf::from("out.gif")),
-            input_files: vec![Default::default(), Default::default()],
-            output_format: Some(FileFormat::Format(ImageFormat::Jpeg)), // Intentionally doesn't match the extension
-            ..Default::default()
+        let input = crate::image::InputProperties {
+            filename: OsString::from("input.png"),
+            color_type: image::ExtendedColorType::L16,
         };
+
+        let two_sequence = [
+            Image {
+                format: None,
+                exif: None,
+                icc: None,
+                pixels: image::DynamicImage::new_rgb8(1, 1),
+                properties: input.clone(),
+            },
+            Image {
+                format: Some(ImageFormat::Jpeg),
+                exif: None,
+                icc: None,
+                pixels: image::DynamicImage::new_rgb8(1, 1),
+                properties: input.clone(),
+            },
+        ];
+
+        let outputs = ExecutionPlan::output_locations(
+            &Location::Path(PathBuf::from("out.gif")),
+            &two_sequence,
+        );
+
         assert_eq!(
-            plan.output_locations(),
+            outputs,
             vec![
                 Location::Path(PathBuf::from("out-1.gif")),
                 Location::Path(PathBuf::from("out-2.gif")),
             ],
         );
 
-        let plan = ExecutionPlan {
-            output_file: Location::Path(PathBuf::from("no-extension")),
-            input_files: vec![Default::default(), Default::default()],
-            output_format: Some(FileFormat::Format(ImageFormat::Jpeg)),
-            ..Default::default()
-        };
+        let outputs = ExecutionPlan::output_locations(
+            &Location::Path(PathBuf::from("no-extension")),
+            &two_sequence,
+        );
+
         assert_eq!(
-            plan.output_locations(),
+            outputs,
             vec![
                 Location::Path(PathBuf::from("no-extension-1")),
                 Location::Path(PathBuf::from("no-extension-2")),
             ],
         );
 
-        let plan = ExecutionPlan {
-            output_file: Location::Stdio,
-            input_files: vec![Default::default(), Default::default()],
-            output_format: Some(FileFormat::Format(ImageFormat::Jpeg)),
-            ..Default::default()
-        };
-        assert_eq!(
-            plan.output_locations(),
-            vec![Location::Stdio, Location::Stdio],
-        );
+        let outputs = ExecutionPlan::output_locations(&Location::Stdio, &two_sequence);
+
+        assert_eq!(outputs, vec![Location::Stdio, Location::Stdio],);
     }
 }
