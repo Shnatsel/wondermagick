@@ -63,6 +63,7 @@ pub enum Arg {
     Identify,
     Monochrome,
     Negate,
+    Noise,
     Quality,
     Resize,
     Sample,
@@ -87,6 +88,7 @@ impl Arg {
             Arg::Identify => false,
             Arg::Monochrome => false,
             Arg::Negate => false,
+            Arg::Noise => false,
             Arg::Quality => true,
             Arg::Resize => true,
             Arg::Sample => true,
@@ -111,6 +113,7 @@ impl Arg {
             Arg::Identify => "identify the format and characteristics of the image",
             Arg::Monochrome => "transform image to black and white",
             Arg::Negate => "replace every pixel with its complementary color",
+            Arg::Noise => "add or reduce noise in an image",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
             Arg::Resize => "resize the image",
             Arg::Sample => "scale image with pixel sampling",
