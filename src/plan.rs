@@ -14,7 +14,12 @@ use crate::image::Image;
 use crate::utils::filename::insert_suffix_before_extension_in_path;
 use crate::{arg_parse_err::ArgParseErr, arg_parsers::Filter};
 use crate::{encode, wm_err};
-use crate::{error::MagickError, operations::Axis, operations::Operation, wm_try};
+use crate::{
+    error::MagickError,
+    operations::Axis,
+    operations::{Operation, RewriteOperation},
+    wm_try,
+};
 
 /// Plan of operations for the whole run over multiple files
 #[derive(Debug, Default)]
@@ -51,6 +56,12 @@ enum ExecutionStep {
     /// Note that some options should be considered for each image individually such as
     /// percentage-qualified sizes in `-resize`.
     Map(Operation),
+    /// Apply an operation that takes the whole current sequence, and produces new image(s).
+    ///
+    /// These operation may change the number of images in the sequence arbitrarily. They can not
+    /// be easily parallelized over individual images. We hand over the whole sequence in a vector
+    /// and expect it to be modified accordingly.
+    Rewrite(RewriteOperation),
     /// Add a new image to the back of the sequence.
     ///
     ///
@@ -103,7 +114,47 @@ impl ExecutionPlan {
                 self.modifiers.colorspace = Some(color);
             }
             Arg::Combine => {
-                todo!()
+                // Note: By experiment, and contrary to the documentation (ImageMagick 7.1.2-8),
+                // the current `-channel` is ignored. The channel order is defined by the color
+                // model alone.
+                // Note: For `-combine` the current `-type` is used by default to choose a channel
+                // model. If however more images are in the input than there are channels then _first_
+                // the color model is adjusted to RGBA and then any still leftover channels are added
+                // as meta channels. Meta channels are not yet supported by wondermagick so they will
+                // be lost.
+                // Note: The documentation lists a plus-style option that takes an additional
+                // colorspace argument available only in `magick` script (not the old convert). The
+                // handling of extra channels in this option is rather puzzling. Sometimes the alpha
+                // channel is skipped, supplying five images to `+combine sRGB` makes red vertical
+                // stripes appear in the ouptut (?). It may be memory corruption, at least the intent
+                // is extremely unclear and not documented sufficiently. So we should not implement
+                // that for now.
+                if matches!(signed_arg.sign, ArgSign::Plus) {
+                    // FIXME: We use the whole parser here despite only taking the model. The
+                    // documentation does not say what happens to the transfer functions and all
+                    // the other parts, i.e. interaction if a color profile is declared otherwise.
+                    //
+                    // There's a difference in chromaticity between these two:
+                    //
+                    // -colorspace rgb +combine lab
+                    // -colorspace lab -combine
+                    let model = Colorspace::try_from(value.unwrap())?.color;
+
+                    self.add_rewrite(RewriteOperation::Combine {
+                        color: self.color_type_for_model(model),
+                        fallback_for_channel_count: false,
+                    })?;
+                } else {
+                    let model = self
+                        .modifiers
+                        .colorspace
+                        .map_or(ColorModel::Rgb, |sp| sp.color);
+
+                    self.add_rewrite(RewriteOperation::Combine {
+                        color: self.color_type_for_model(model),
+                        fallback_for_channel_count: true,
+                    })?;
+                }
             }
             Arg::Crop => {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
@@ -175,6 +226,17 @@ impl ExecutionPlan {
             self.global_ops.push(op);
         } else {
             self.execution.push(ExecutionStep::Map(op));
+        }
+    }
+
+    fn add_rewrite(&mut self, op: RewriteOperation) -> Result<(), ArgParseErr> {
+        if self.execution.is_empty() {
+            Err(ArgParseErr::with_msg(format_args!(
+                "no input file for operation {op:?}"
+            )))
+        } else {
+            self.execution.push(ExecutionStep::Rewrite(op));
+            Ok(())
         }
     }
 
@@ -251,6 +313,9 @@ impl ExecutionPlan {
 
                     sequence.push(image);
                 }
+                ExecutionStep::Rewrite(op) => {
+                    op.execute(&mut sequence)?;
+                }
             }
         }
 
@@ -287,6 +352,12 @@ impl ExecutionPlan {
         }
 
         vec![output.clone(); images.len()]
+    }
+
+    fn color_type_for_model(&self, model: ColorModel) -> image::ColorType {
+        // FIXME: use the modifier of -depth and -storage-type
+        // FIXME: apply -alpha settings that may force on and off
+        model.with_channel_format(ChannelFormat::U8)
     }
 }
 

@@ -8,6 +8,7 @@ repository = "https://github.com/Shnatsel/wondermagick"
 
 [dependencies]
 current_platform = "0.2.0"
+bytemuck = "1"
 image = { version = "0.25.9", default-features = false, features = ["rayon"] }
 pic-scale-safe = { version = "0.1.5", features = ["rayon"] }
 strum = { version = "0.26.3", features = ["derive"] }
