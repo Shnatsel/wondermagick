@@ -1,6 +1,8 @@
 //! Parsers for specific command-line argument formats,
 //! e.g. <https://www.imagemagick.org/Magick++/Geometry.html>
 
+mod colorspace;
+pub use colorspace::*;
 mod crop;
 pub use crop::*;
 mod resize;

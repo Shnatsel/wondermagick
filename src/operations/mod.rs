@@ -1,5 +1,6 @@
 mod auto_orient;
 mod blur;
+mod combine;
 mod crop;
 mod flip;
 pub use flip::Axis;
@@ -81,6 +82,31 @@ impl Operation {
             Flip(_) => (),
             Monochrome => (),
             Unsharpen(_) => (),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum RewriteOperation {
+    Combine {
+        color: image::ColorType,
+        /// Rewrite the color model to true color (`sRGB`) when the channel count is exceeded?
+        fallback_for_channel_count: bool,
+    },
+}
+
+impl RewriteOperation {
+    pub(crate) fn execute(&self, sequence: &mut Vec<Image>) -> Result<(), MagickError> {
+        match self {
+            &RewriteOperation::Combine {
+                color,
+                fallback_for_channel_count,
+            } => {
+                let image =
+                    combine::combine(sequence.split_off(0), color, fallback_for_channel_count)?;
+                sequence.push(image);
+                Ok(())
+            }
         }
     }
 }
