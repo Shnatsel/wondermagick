@@ -4,10 +4,11 @@ use std::{
 };
 
 use crate::arg_parsers::{
-    parse_numeric_arg, BlurGeometry, CropGeometry, FileFormat, GrayscaleMethod, IdentifyFormat,
-    InputFileArg, Location, ResizeGeometry, UnsharpenGeometry,
+    parse_numeric_arg, BlurGeometry, ChannelFormat, ColorModel, Colorspace, CropGeometry,
+    FileFormat, GrayscaleMethod, IdentifyFormat, InputFileArg, Location, ResizeGeometry,
+    UnsharpenGeometry,
 };
-use crate::args::{Arg, SignedArg};
+use crate::args::{Arg, ArgSign, SignedArg};
 use crate::decode::decode;
 use crate::image::Image;
 use crate::utils::filename::insert_suffix_before_extension_in_path;
@@ -97,6 +98,13 @@ impl ExecutionPlan {
     ) -> Result<(), ArgParseErr> {
         match signed_arg.arg {
             Arg::AutoOrient => self.add_operation(Operation::AutoOrient),
+            Arg::Colorspace => {
+                let color = Colorspace::try_from(value.unwrap())?;
+                self.modifiers.colorspace = Some(color);
+            }
+            Arg::Combine => {
+                todo!()
+            }
             Arg::Crop => {
                 self.add_operation(Operation::Crop(CropGeometry::try_from(value.unwrap())?))
             }
@@ -296,6 +304,7 @@ pub struct Modifiers {
     pub strip: Strip,
     pub identify_format: Option<IdentifyFormat>,
     pub filter: Option<Filter>,
+    pub colorspace: Option<Colorspace>,
 }
 
 #[derive(Debug, Default, Copy, Clone)] // bools default to false

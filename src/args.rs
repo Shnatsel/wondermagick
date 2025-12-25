@@ -42,7 +42,7 @@ pub struct SignedArg {
 
 impl SignedArg {
     pub fn needs_value(&self) -> bool {
-        self.arg.needs_value()
+        self.arg.needs_value(&self.sign)
     }
 }
 
@@ -50,6 +50,8 @@ impl SignedArg {
 #[strum(serialize_all = "kebab-case")]
 pub enum Arg {
     AutoOrient,
+    Colorspace,
+    Combine,
     Crop,
     // TODO: -format can actually change meaning, as `-format type`
     // and as `-format expression`. We currently only implement `-format expression`.
@@ -73,9 +75,11 @@ pub enum Arg {
 }
 
 impl Arg {
-    pub fn needs_value(&self) -> bool {
+    pub fn needs_value(&self, sign: &ArgSign) -> bool {
         match self {
             Arg::AutoOrient => false,
+            Arg::Colorspace => true,
+            Arg::Combine => matches!(sign, ArgSign::Plus),
             Arg::Crop => true,
             Arg::Format => true,
             Arg::Filter => true,
@@ -100,6 +104,8 @@ impl Arg {
     pub fn help_text(&self) -> &'static str {
         match self {
             Arg::AutoOrient => "automagically orient (rotate) image",
+            Arg::Colorspace => "specify the colorspace of created images",
+            Arg::Combine => "create an image channel by channel from separate greyscale inputs",
             Arg::Crop => "cut out a rectangular region of the image",
             Arg::Format => "output formatted image characteristics",
             Arg::Filter => "use this filter when resizing an image",
@@ -157,7 +163,11 @@ pub fn parse_args(mut args: Vec<OsString>) -> Result<ExecutionPlan, MagickError>
             let (sign, string_arg) = sign_and_arg_name(raw_arg)?;
             let arg = Arg::try_from(string_arg.as_str())
                 .map_err(|_| wm_err!("unrecognized option `{}'", string_arg))?;
-            let value = if arg.needs_value() { iter.next() } else { None };
+            let value = if arg.needs_value(&sign) {
+                iter.next()
+            } else {
+                None
+            };
             plan.apply_arg(SignedArg { sign, arg }, value.as_deref())?;
         } else {
             plan.add_input_file(InputFileArg::parse(&raw_arg)?);
