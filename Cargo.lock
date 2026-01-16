@@ -457,7 +457,7 @@ dependencies = [
 [[package]]
 name = "hayro-jpeg2000"
 version = "0.2.0"
-source = "git+https://github.com/Shnatsel/hayro.git?branch=decoding-hooks#579bb97fbb3580e538359e80c5722de541fa3a82"
+source = "git+https://github.com/Shnatsel/hayro.git?branch=decoding-hooks#07a7f61d9aee0f22882de5028b46001f0022fb7c"
 dependencies = [
  "fearless_simd",
  "image",
