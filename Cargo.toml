@@ -64,3 +64,4 @@ panic = "abort"
 
 [patch.crates-io]
 image = {git = "https://github.com/image-rs/image.git"}
+hayro-jpeg2000 = {git = "https://github.com/Shnatsel/hayro.git", branch = "decoding-hooks"}

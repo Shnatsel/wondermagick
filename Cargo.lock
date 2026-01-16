@@ -457,12 +457,10 @@ dependencies = [
 [[package]]
 name = "hayro-jpeg2000"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07d8a5e080cc7429956acf933caf1ef8d4880ae70cbb26eeaec3ae228c7c5f61"
+source = "git+https://github.com/Shnatsel/hayro.git?branch=decoding-hooks#579bb97fbb3580e538359e80c5722de541fa3a82"
 dependencies = [
  "fearless_simd",
  "image",
- "log",
  "moxcms",
 ]
 
