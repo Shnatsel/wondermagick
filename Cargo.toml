@@ -16,7 +16,7 @@ tempfile = "3.23.0"
 webp = "0.3.1"
 mimalloc = { version = "0.1.47", optional = true }
 jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"], optional = true }
-hayro-jpeg2000 = { version = "0.2.0", optional = true }
+hayro-jpeg2000 = { version = "0.3.0", optional = true }
 
 [features]
 default = ["hardened_malloc", "default-formats"]
@@ -64,4 +64,3 @@ panic = "abort"
 
 [patch.crates-io]
 image = {git = "https://github.com/image-rs/image.git"}
-hayro-jpeg2000 = {git = "https://github.com/Shnatsel/hayro.git", branch = "decoding-hooks"}
