@@ -17,6 +17,7 @@ webp = "0.3.1"
 mimalloc = { version = "0.1.47", optional = true }
 jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"], optional = true }
 hayro-jpeg2000 = { version = "0.3.0", optional = true }
+image-extras = { version = "0.1.0", optional = true, default-features = false }
 
 [features]
 default = ["hardened_malloc", "default-formats"]
@@ -46,6 +47,12 @@ tiff = ["image/tiff"]
 webp = ["image/webp"]
 jpeg2000 = ["dep:hayro-jpeg2000"]
 jxl = ["dep:jxl-oxide"]
+otb = ["image-extras/otb"]
+sgi = ["image-extras/sgi"]
+pcx = ["image-extras/pcx"]
+wbmp = ["image-extras/wbmp"]
+xbm = ["image-extras/xbm"]
+xpm = ["image-extras/xpm"]
 
 [dev-dependencies]
 quickcheck = "1"
