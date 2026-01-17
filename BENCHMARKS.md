@@ -179,6 +179,8 @@ Summary
 
 ### Converting JPEG to WebP
 
+Input file: <https://commons.wikimedia.org/wiki/File:Sun_over_Lake_Hawea,_New_Zealand.jpg>
+
 ```
 $ ARGS='Sun_over_Lake_Hawea,_New_Zealand.jpg -quality 85 out.webp' hyperfine --warmup=3 "convert $ARGS" "wm-convert $ARGS"
 Benchmark 1: convert Sun_over_Lake_Hawea,_New_Zealand.jpg -quality 85 out.webp
