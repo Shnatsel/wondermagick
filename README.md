@@ -16,7 +16,9 @@ Thanks to Rust, we can now eradicate these vulnerabilities once and for all, wit
 
 The underlying image format decoders and encoders are very mature. The Rust community has been developing them and using them in production for years. They have been tested on millions of real-world images.
 
-`wondermagick` itself is in the early stages of development. We are currently focusing on the `convert` binary for converting and resizing images, which is the most common workload for `imagemagick`.
+`wondermagick` itself is still young. The `convert` binary is already usable for converting and resizing images, and [performs well](BENCHMARKS.md).
+
+See the `[features]` section in [`Cargo.toml`] for the list of supported image formats, and `wm-convert --help` for the list of supported operations.
 
 Supporting the `libmagick` C API is not planned.
 
