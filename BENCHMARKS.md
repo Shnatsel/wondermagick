@@ -177,4 +177,21 @@ Summary
     1.56 ± 0.02 times faster than convert "Exoplanet_Phase_Curve_(Diagram)_(01HK57P2YHV18MMV0RG5N7HY70).png" out.gif
 ```
 
+### Converting JPEG to WebP
+
+```
+$ ARGS='Sun_over_Lake_Hawea,_New_Zealand.jpg -quality 85 out.webp' hyperfine --warmup=3 "convert $ARGS" "wm-convert $ARGS"
+Benchmark 1: convert Sun_over_Lake_Hawea,_New_Zealand.jpg -quality 85 out.webp
+  Time (mean ± σ):      1.221 s ±  0.005 s    [User: 1.115 s, System: 0.105 s]
+  Range (min … max):    1.215 s …  1.232 s    10 runs
+ 
+Benchmark 2: wm-convert Sun_over_Lake_Hawea,_New_Zealand.jpg -quality 85 out.webp
+  Time (mean ± σ):      1.102 s ±  0.002 s    [User: 1.025 s, System: 0.077 s]
+  Range (min … max):    1.099 s …  1.106 s    10 runs
+ 
+Summary
+  wm-convert Sun_over_Lake_Hawea,_New_Zealand.jpg -quality 85 out.webp ran
+    1.11 ± 0.00 times faster than convert Sun_over_Lake_Hawea,_New_Zealand.jpg -quality 85 out.webp
+```
+
 All measurements were taken on commit `373e1c69196741523b11015c5ecb6f4b44ffe32a` on Rust 1.91.1 an AMD Zen 4 desktop CPU. Imagemagick version `8:6.9.11.60+dfsg-1.3ubuntu0.22.04.5` from the Ubuntu repositories was used as a point of reference. Imagemagick version `7.1.1.43+dfsg1-1` from Ubuntu 25.04 repositories was also measured, but the results are nearly identical to the older version, so they are omitted for brevity.
