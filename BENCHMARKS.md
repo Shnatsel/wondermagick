@@ -2,7 +2,7 @@
 
 We compare `wondermagick` against `imagemagick` in their default configurations. This includes a ~5% performance penalty from the hardened memory allocator that `wondermagick` defaults to.
 
-Note that you could improve the performance of both of them using arcane compilation flags. We're not going to do that here for either project. The point of this comparison is to show what kind of performance you might expect by simply installing a distribution package.
+Note that you could improve the performance of both of them using arcane compilation flags. We're not going to do that here. The point of this comparison is to show what kind of performance you might expect by simply installing a distribution package.
 
 ### Resizing JPEG
 
