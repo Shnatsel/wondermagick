@@ -187,6 +187,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fbdf580320f38b612e485521afda1ee26d10cc9884efaaa750d383e13e3c5f4"
 
 [[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "byteorder-lite"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -494,6 +500,17 @@ dependencies = [
  "tiff",
  "zune-core 0.5.1",
  "zune-jpeg 0.5.9",
+]
+
+[[package]]
+name = "image-extras"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86d29ba92ef6970a2685cc758b455d190842b8b9e96c865ffd31cdb9954b7548"
+dependencies = [
+ "image",
+ "pcx",
+ "wbmp",
 ]
 
 [[package]]
@@ -935,6 +952,15 @@ name = "pastey"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35fb2e5f958ec131621fdd531e9fc186ed768cbe395337403ae56c17a74c68ec"
+
+[[package]]
+name = "pcx"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c49a81cdd56136bf6a20df44c8d67453eca545ed82f716e8cd1c25fa0a1d621"
+dependencies = [
+ "byteorder",
+]
 
 [[package]]
 name = "pic-scale-safe"
@@ -1469,6 +1495,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "wbmp"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8225fa9cacbdd3c0eccaf5cab3f1920b70b02447ff67b4af1ca15873d2fa445f"
+
+[[package]]
 name = "webp"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1514,6 +1546,7 @@ dependencies = [
  "derive-quickcheck-arbitrary",
  "hayro-jpeg2000",
  "image",
+ "image-extras",
  "jxl-oxide",
  "mimalloc",
  "pic-scale-safe",
