@@ -4,6 +4,8 @@ We compare `wondermagick` against `imagemagick` in their default configurations.
 
 Note that you could improve the performance of both of them using arcane compilation flags. We're not going to do that here. The point of this comparison is to show what kind of performance you might expect by simply installing a distribution package.
 
+All measurements were taken on commit `410ee2d1efdac501c7f7ca91bd68c04e5a1fc93b` on Rust 1.91.1 an AMD Zen 4 desktop CPU. Imagemagick version `8:6.9.11.60+dfsg-1.3ubuntu0.22.04.5` from the Ubuntu repositories was used as a point of reference. Imagemagick version `7.1.1.43+dfsg1-1` from Ubuntu 25.04 repositories was also measured, but the results are nearly identical to the older version, so they are omitted for brevity.
+
 ### Resizing JPEG
 
 Input file: <https://commons.wikimedia.org/wiki/File:Sun_over_Lake_Hawea,_New_Zealand.jpg>
@@ -11,16 +13,16 @@ Input file: <https://commons.wikimedia.org/wiki/File:Sun_over_Lake_Hawea,_New_Ze
 ```
 $ ARGS='Sun_over_Lake_Hawea,_New_Zealand.jpg -resize 25% out.jpg' hyperfine --warmup=3 "convert $ARGS" "wm-convert $ARGS"
 Benchmark 1: convert Sun_over_Lake_Hawea,_New_Zealand.jpg -resize 25% out.jpg
-  Time (mean ± σ):     216.2 ms ±   1.7 ms    [User: 526.2 ms, System: 116.9 ms]
-  Range (min … max):   212.9 ms … 218.2 ms    13 runs
+  Time (mean ± σ):     232.4 ms ±   3.9 ms    [User: 611.3 ms, System: 113.8 ms]
+  Range (min … max):   226.7 ms … 238.8 ms    12 runs
  
 Benchmark 2: wm-convert Sun_over_Lake_Hawea,_New_Zealand.jpg -resize 25% out.jpg
-  Time (mean ± σ):     142.1 ms ±   1.7 ms    [User: 204.9 ms, System: 40.2 ms]
-  Range (min … max):   139.2 ms … 145.0 ms    21 runs
+  Time (mean ± σ):     145.4 ms ±   1.6 ms    [User: 203.4 ms, System: 44.5 ms]
+  Range (min … max):   142.2 ms … 148.5 ms    21 runs
  
 Summary
   wm-convert Sun_over_Lake_Hawea,_New_Zealand.jpg -resize 25% out.jpg ran
-    1.52 ± 0.02 times faster than convert Sun_over_Lake_Hawea,_New_Zealand.jpg -resize 25% out.jpg
+    1.60 ± 0.03 times faster than convert Sun_over_Lake_Hawea,_New_Zealand.jpg -resize 25% out.jpg
 ```
 
 ### Resizing PNG
@@ -196,4 +198,44 @@ Summary
     1.11 ± 0.00 times faster than convert Sun_over_Lake_Hawea,_New_Zealand.jpg -quality 85 out.webp
 ```
 
-All measurements were taken on commit `373e1c69196741523b11015c5ecb6f4b44ffe32a` on Rust 1.91.1 an AMD Zen 4 desktop CPU. Imagemagick version `8:6.9.11.60+dfsg-1.3ubuntu0.22.04.5` from the Ubuntu repositories was used as a point of reference. Imagemagick version `7.1.1.43+dfsg1-1` from Ubuntu 25.04 repositories was also measured, but the results are nearly identical to the older version, so they are omitted for brevity.
+### Converting JPEG to AVIF
+
+Input file: <https://derpibooru.org/images/3749221> chosen so that loss of visual quality would be readily apparent and sensor noise wouldn't mask it
+
+```
+$ ARGS='/home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif' hyperfine --warmup=3 "convert $ARGS" "wm-convert $ARGS"
+Benchmark 1: convert /home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif
+  Time (mean ± σ):      1.394 s ±  0.003 s    [User: 3.769 s, System: 0.236 s]
+  Range (min … max):    1.390 s …  1.399 s    10 runs
+ 
+Benchmark 2: wm-convert /home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif
+  Time (mean ± σ):      1.014 s ±  0.004 s    [User: 8.804 s, System: 0.057 s]
+  Range (min … max):    1.006 s …  1.020 s    10 runs
+ 
+Summary
+  wm-convert /home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif ran
+    1.38 ± 0.01 times faster than convert /home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif
+```
+
+However, the above is not an apples-to-apples comparison. We're comparing the default configurations. Imagemagick is configured to use inline assembly in AVIF encoding by default, while wondermagick doesn't use inline assembly by default to simplify the build process (you don't need to install nasm).
+
+This is what happens if we allow wondermagick to use inline assembly with `cargo build --release --features=asm` for a level playing field:
+
+```
+$ ARGS='/home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif' hyperfine --warmup=3 "convert $ARGS" "wm-convert $ARGS"
+Benchmark 1: convert /home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif
+  Time (mean ± σ):      1.394 s ±  0.003 s    [User: 3.766 s, System: 0.230 s]
+  Range (min … max):    1.390 s …  1.399 s    10 runs
+ 
+Benchmark 2: wm-convert /home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif
+  Time (mean ± σ):     432.5 ms ±   6.5 ms    [User: 3673.8 ms, System: 52.9 ms]
+  Range (min … max):   422.9 ms … 442.1 ms    10 runs
+ 
+Summary
+  wm-convert /home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif ran
+    3.22 ± 0.05 times faster than convert /home/shnatsel/Downloads/3749221.jpg -quality 90 out.avif
+```
+
+What about visual quality? Since it's lossy compression, we might just be doing less work and producing an inferior image?
+
+At least on this image, wondermagick absolutely trounces imagemagick by producing a 222kB image with same or better visual quality than imagemagick's 295kB image. Note that this might not hold for all inputs or quality settings, since each encoder implementation has its own best and worst cases.
