@@ -10,7 +10,18 @@ pub fn crop_on_load(
     // https://github.com/image-rs/image/issues/2296
     // TODO: change this in `image` because I don't want to emulate this on the client side
     // and pretend the problem doesn't exist for anyone else
-    let cropped = image.crop_imm(geom.xoffset, geom.yoffset, geom.width, geom.height);
+    let rect = image::math::Rect {
+        x: geom.xoffset,
+        y: geom.yoffset,
+        width: geom.width,
+        height: geom.height,
+    };
+    // crop_in_place exists but doesn't shrink the backing buffer,
+    // so we have to either allocate the large buffer and keep it around forever
+    // (lower peak memory usage) or allocate both large and small buffer but drop the large one
+    // (higher peak memory usage, quickly goes down later).
+    // This takes the second option, but we might reconsider later if there's compelling evidence.
+    let cropped = image.crop(rect);
     *image = cropped;
     Ok(())
 }
