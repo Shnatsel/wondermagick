@@ -6,6 +6,8 @@ Note that you could improve the performance of both of them using arcane compila
 
 All measurements were taken on commit `410ee2d1efdac501c7f7ca91bd68c04e5a1fc93b` on Rust 1.91.1 an AMD Zen 4 desktop CPU. Imagemagick version `8:6.9.11.60+dfsg-1.3ubuntu0.22.04.5` from the Ubuntu repositories was used as a point of reference. Imagemagick version `7.1.1.43+dfsg1-1` from Ubuntu 25.04 repositories was also measured, but the results are nearly identical to the older version, so they are omitted for brevity.
 
+These measurements should be taken as a rough guide only. Performance may vary depending on the hardware and the exact workload. If performance is important to you, always measure it on your hardware and inputs.
+
 ### Resizing JPEG
 
 Input file: <https://commons.wikimedia.org/wiki/File:Sun_over_Lake_Hawea,_New_Zealand.jpg>
