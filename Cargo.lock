@@ -568,7 +568,7 @@ checksum = "b454d911ac55068f53495488d8ccd0646eaa540c033a28ee15b07838afafb01f"
 [[package]]
 name = "jxl-bitstream"
 version = "1.1.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "tracing",
 ]
@@ -576,7 +576,7 @@ dependencies = [
 [[package]]
 name = "jxl-coding"
 version = "1.0.1"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "jxl-bitstream",
  "tracing",
@@ -585,7 +585,7 @@ dependencies = [
 [[package]]
 name = "jxl-color"
 version = "0.11.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "jxl-bitstream",
  "jxl-coding",
@@ -599,7 +599,7 @@ dependencies = [
 [[package]]
 name = "jxl-frame"
 version = "0.13.3"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "jxl-bitstream",
  "jxl-coding",
@@ -615,7 +615,7 @@ dependencies = [
 [[package]]
 name = "jxl-grid"
 version = "0.6.1"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "tracing",
 ]
@@ -623,7 +623,7 @@ dependencies = [
 [[package]]
 name = "jxl-image"
 version = "0.13.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "jxl-bitstream",
  "jxl-grid",
@@ -634,7 +634,7 @@ dependencies = [
 [[package]]
 name = "jxl-jbr"
 version = "0.2.1"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "brotli-decompressor",
  "jxl-bitstream",
@@ -651,7 +651,7 @@ dependencies = [
 [[package]]
 name = "jxl-modular"
 version = "0.11.2"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "jxl-bitstream",
  "jxl-coding",
@@ -664,7 +664,7 @@ dependencies = [
 [[package]]
 name = "jxl-oxide"
 version = "0.12.5"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "brotli-decompressor",
  "bytemuck",
@@ -685,7 +685,7 @@ dependencies = [
 [[package]]
 name = "jxl-oxide-common"
 version = "1.0.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "jxl-bitstream",
 ]
@@ -693,7 +693,7 @@ dependencies = [
 [[package]]
 name = "jxl-render"
 version = "0.12.3"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "bytemuck",
  "jxl-bitstream",
@@ -712,7 +712,7 @@ dependencies = [
 [[package]]
 name = "jxl-threadpool"
 version = "1.0.0"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "rayon",
  "rayon-core",
@@ -722,7 +722,7 @@ dependencies = [
 [[package]]
 name = "jxl-vardct"
 version = "0.11.1"
-source = "git+https://github.com/Shnatsel/jxl-oxide?branch=no-more-rect#3c8e969e56f017de4a22edbeab23063d500064e6"
+source = "git+https://github.com/tirr-c/jxl-oxide.git#4793a821d1a1893ce9ebd475b280a914d04f33df"
 dependencies = [
  "jxl-bitstream",
  "jxl-coding",
