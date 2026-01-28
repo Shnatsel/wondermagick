@@ -7,5 +7,7 @@ pub mod gif;
 pub mod jpeg;
 #[cfg(feature = "png")]
 pub mod png;
+#[cfg(feature = "tiff")]
+pub mod tiff;
 #[cfg(feature = "webp")]
 pub mod webp;
