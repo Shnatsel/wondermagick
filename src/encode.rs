@@ -89,6 +89,8 @@ fn encode_inner(
         ImageFormat::Avif => encoders::avif::encode(image, &mut writer, modifiers)?,
         #[cfg(feature = "gif")]
         ImageFormat::Gif => encoders::gif::encode(image, &mut writer, modifiers)?,
+        #[cfg(feature = "tiff")]
+        ImageFormat::Tiff => encoders::tiff::encode(image, &mut writer, modifiers)?,
         // TODO: set the metadata generically on all the abstract formats.
         // Requires https://github.com/image-rs/image/pull/2554 or equivalent.
         _ => wm_try!(optimize_pixel_format(&image.pixels).write_to(&mut writer, format)),
