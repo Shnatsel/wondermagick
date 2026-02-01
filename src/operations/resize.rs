@@ -701,6 +701,9 @@ mod tests {
         // ImageMagick 6 documentation even notes that extended geometry parsing
         // is inconsistent between commands, and you know it's cursed
         // when even the tool's own docs feel the need to call that out.
+        //
+        // This spec is nonsensical, it does nothing, and I'm not going to bend over
+        // backwards just so that people could really confusingly do nothing.
         let image = DynamicImage::new_rgb8(25, 50);
         let geometry = ResizeGeometry::from_str("-5x100").unwrap();
         assert_eq!((25, 50), compute_dimensions(&image, &geometry));
