@@ -651,4 +651,61 @@ mod tests {
         let geometry = ResizeGeometry::from_str("100^").unwrap();
         assert_eq!((100, 200), compute_dimensions(&image, &geometry));
     }
+
+    #[test]
+    fn negative_width_no_op() {
+        let image = DynamicImage::new_rgb8(25, 50);
+        let geometry = ResizeGeometry::from_str("-5").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+        let geometry = ResizeGeometry::from_str("-5!").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn negative_width_positive_height_no_op() {
+        let image = DynamicImage::new_rgb8(25, 50);
+        let geometry = ResizeGeometry::from_str("-5x100").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+        let geometry = ResizeGeometry::from_str("-5x100!").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn negative_height_no_op() {
+        let image = DynamicImage::new_rgb8(25, 50);
+        let geometry = ResizeGeometry::from_str("x-5").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+        let geometry = ResizeGeometry::from_str("x-5!").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn positive_width_negative_height_no_op() {
+        let image = DynamicImage::new_rgb8(25, 50);
+        let geometry = ResizeGeometry::from_str("100x-5").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+        let geometry = ResizeGeometry::from_str("100x-5!").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn negative_percentage_no_op() {
+        let image = DynamicImage::new_rgb8(25, 50);
+        let geometry = ResizeGeometry::from_str("-50%").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn negative_area_no_op() {
+        let image = DynamicImage::new_rgb8(25, 50);
+        let geometry = ResizeGeometry::from_str("-100@").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+    }
+
+    #[test]
+    fn negative_cover_no_op() {
+        let image = DynamicImage::new_rgb8(25, 50);
+        let geometry = ResizeGeometry::from_str("-100^").unwrap();
+        assert_eq!((25, 50), compute_dimensions(&image, &geometry));
+    }
 }
