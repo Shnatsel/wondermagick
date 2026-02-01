@@ -279,6 +279,11 @@ fn select_default_algorithm(
 
 #[must_use]
 fn compute_dimensions(image: &DynamicImage, geometry: &ResizeGeometry) -> (u32, u32) {
+    // imagemagick treats many illegal resize geometries as a no-op,
+    // which end up parsed as blank geometries; exit immediately to avoid tripping assertions later
+    if *geometry == ResizeGeometry::default() {
+        return (image.width(), image.height());
+    }
     let constraint = geometry.constraint;
     match geometry.target {
         ResizeTarget::Size {
