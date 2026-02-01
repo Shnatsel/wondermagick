@@ -686,6 +686,13 @@ mod tests {
 
     #[test]
     fn positive_width_negative_height_width_only() {
+        // All behavior involving negative offsets is nonsense, but this one takes the cake.
+        // Negative offsets in all the other positions just result in a no-op.
+        // Ideally it should be an error, but fine, whatever. At least it's consistent, right?
+        // Nope!
+        // Only here, ONLY HERE does the second part get discarded and the first one honored.
+        // Let's just take a moment to marvel at this behavior together. What the fuck?!
+        // And yes, we fully replicate that behavior and have an actual test for this. Yikes.
         let image = DynamicImage::new_rgb8(25, 50);
         let geometry = ResizeGeometry::from_str("100x-5").unwrap();
         assert_eq!((100, 200), compute_dimensions(&image, &geometry));
