@@ -160,8 +160,16 @@ fn read_float(input: &mut &[u8], allow_sign: bool) -> Option<f64> {
         count += count_leading_digits(&input[count..]);
     }
 
+    if count == 0 {
+        return None;
+    }
+
     let (number, remainder) = input.split_at(count);
-    let float = str::from_utf8(number).unwrap().parse::<f64>().unwrap();
+
+    // str::from_utf8(number).ok()?  -> returns None if bytes aren't valid UTF-8
+    // .parse::<f64>().ok()?         -> returns None if string isn't a valid f64 (e.g. "." or "+")
+    let float = str::from_utf8(number).ok()?.parse::<f64>().ok()?;
+
     *input = remainder;
     Some(float)
 }
