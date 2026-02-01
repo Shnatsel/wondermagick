@@ -165,10 +165,9 @@ impl TryFrom<&OsStr> for ResizeGeometry {
                 // height is ignored, I've checked
                 target = ResizeTarget::Area(width.round() as u64);
             } else {
-                // imagemagick reports "negative or zero image size" followed by the path to the image, and frankly fuck that
-                return Err(ArgParseErr::with_msg(
-                    "please specify the area to resize to when using @ operator",
-                ));
+                // imagemagick reports "negative or zero image size" followed by the path to the image,
+                // and the operation becomes a no-op
+                return Ok(Self::default());
             }
         } else if percentage_mode {
             match (geom.width, geom.height) {
