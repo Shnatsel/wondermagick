@@ -90,7 +90,7 @@ impl Arg {
             Arg::GaussianBlur => true,
             Arg::Grayscale => true,
             Arg::Identify => false,
-            Arg::Monochrome => false,
+            Arg::Monochrome => true,
             Arg::Negate => false,
             Arg::Quality => true,
             Arg::Resize => true,
@@ -117,7 +117,7 @@ impl Arg {
             Arg::GaussianBlur => "reduce image noise and reduce detail levels",
             Arg::Grayscale => "convert image to grayscale",
             Arg::Identify => "identify the format and characteristics of the image",
-            Arg::Monochrome => "transform image to black and white",
+            Arg::Monochrome => "transform image to black and white (use 'default' or noise,shadow,highlight,brightness,contrast,gamma)",
             Arg::Negate => "replace every pixel with its complementary color",
             Arg::Quality => "JPEG/MIFF/PNG compression level", // I'm so sorry
             Arg::Resize => "resize the image",

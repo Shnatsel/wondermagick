@@ -7,6 +7,7 @@ pub use flip::Axis;
 mod grayscale;
 mod identify;
 mod monochrome;
+pub use monochrome::MonochromeConfig;
 mod negate;
 mod resize;
 mod unsharpen;
@@ -36,7 +37,7 @@ pub enum Operation {
     GaussianBlur(BlurGeometry),
     Grayscale(GrayscaleMethod),
     Flip(Axis),
-    Monochrome,
+    Monochrome(MonochromeConfig),
     Unsharpen(UnsharpenGeometry),
 }
 
@@ -56,7 +57,7 @@ impl Operation {
             Operation::GaussianBlur(geom) => blur::gaussian_blur(image, geom),
             Operation::Grayscale(method) => grayscale::grayscale(image, method),
             Operation::Flip(axis) => flip::flip(image, axis),
-            Operation::Monochrome => monochrome::monochrome(image),
+            Operation::Monochrome(config) => monochrome::monochrome(image, config),
             Operation::Unsharpen(geom) => unsharpen::unsharpen(image, geom),
         }
     }
@@ -80,7 +81,7 @@ impl Operation {
             GaussianBlur(_) => (),
             Grayscale(_) => (),
             Flip(_) => (),
-            Monochrome => (),
+            Monochrome(_) => (),
             Unsharpen(_) => (),
         }
     }

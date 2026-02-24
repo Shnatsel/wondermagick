@@ -17,7 +17,7 @@ use crate::{encode, wm_err};
 use crate::{
     error::MagickError,
     operations::Axis,
-    operations::{Operation, RewriteOperation},
+    operations::{MonochromeConfig, Operation, RewriteOperation},
     wm_try,
 };
 
@@ -175,7 +175,13 @@ impl ExecutionPlan {
             Arg::Grayscale => self.add_operation(Operation::Grayscale(GrayscaleMethod::try_from(
                 value.unwrap(),
             )?)),
-            Arg::Monochrome => self.add_operation(Operation::Monochrome),
+            Arg::Monochrome => {
+                let val_str = value.unwrap().to_str().ok_or_else(|| {
+                    ArgParseErr::with_msg("monochrome: value is not valid UTF-8")
+                })?;
+                let config = MonochromeConfig::parse_arg(val_str)?;
+                self.add_operation(Operation::Monochrome(config));
+            }
             Arg::Negate => self.add_operation(Operation::Negate),
             Arg::Quality => self.modifiers.quality = Some(parse_numeric_arg(value.unwrap())?),
             Arg::Resize => self.add_operation(Operation::Resize(
