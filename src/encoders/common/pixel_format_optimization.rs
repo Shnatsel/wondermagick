@@ -26,65 +26,6 @@ pub(crate) fn optimize_pixel_format(image: &DynamicImage) -> Cow<'_, DynamicImag
     optimize_pixel_format_inner(image, false)
 }
 
-/// Converts the input image to Rgba8 or Rgb8, depending on whether the image is fully opaque.
-///
-/// This not only checks the pixel format but also scans the image to determine if there are any transparent pixels in it.
-pub(crate) fn to_8bit_rgb_maybe_a(pixels: &DynamicImage) -> Cow<'_, DynamicImage> {
-    use image::DynamicImage::*;
-    match pixels {
-        ImageRgb8(_) | ImageRgba8(_) => Cow::Borrowed(pixels),
-        _ => {
-            if pixels.color().has_alpha() {
-                if is_opaque(pixels) {
-                    Cow::Owned(ImageRgb8(pixels.to_rgb8()))
-                } else {
-                    Cow::Owned(ImageRgba8(pixels.to_rgba8()))
-                }
-            } else {
-                Cow::Owned(ImageRgb8(pixels.to_rgb8()))
-            }
-        }
-    }
-}
-
-fn is_opaque(image: &DynamicImage) -> bool {
-    match image {
-        DynamicImage::ImageLuma8(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageLumaA8(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageRgb8(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageRgba8(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageLuma16(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageLumaA16(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageRgb16(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageRgba16(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageRgb32F(pixels) => is_opaque_inner(pixels),
-        DynamicImage::ImageRgba32F(pixels) => is_opaque_inner(pixels),
-        _ => unreachable!(),
-    }
-}
-
-fn is_opaque_inner<S, P, Container>(input: &ImageBuffer<P, Container>) -> bool
-where
-    S: Primitive + Debug,
-    P: Pixel<Subpixel = S>,
-    Container: std::ops::Deref<Target = [P::Subpixel]>,
-{
-    if !P::HAS_ALPHA {
-        true
-    } else {
-        let mut result = true; // opaque until proven otherwise
-        for row in input.rows() {
-            for pixel in row {
-                result &= can_remove_alpha(*pixel);
-            }
-            if !result {
-                return result;
-            }
-        }
-        result
-    }
-}
-
 /// Losslessly optimizes the pixel format for the image.
 ///
 /// If the entire image is opaque, the alpha channel will be removed.
@@ -333,21 +274,5 @@ mod tests {
 
         let optimized_with_precision = optimize_pixel_format_and_precision(&dynimage);
         assert!(optimized_with_precision.color() == ColorType::Rgba16);
-    }
-
-    #[test]
-    fn luma8_to_rgb_maybe_a() {
-        let mut img = GrayImage::new(100, 100);
-        let start = Luma::from_slice(&[0]);
-        let end = Luma::from_slice(&[255]);
-
-        image::imageops::vertical_gradient(&mut img, start, end);
-
-        let luma8 = DynamicImage::ImageLuma8(img);
-        let luma16 = DynamicImage::ImageLumaA16(luma8.to_luma_alpha16());
-        assert!(luma16.color() == ColorType::La16);
-
-        let converted = to_8bit_rgb_maybe_a(&luma16);
-        assert!(converted.color() == ColorType::Rgb8);
     }
 }

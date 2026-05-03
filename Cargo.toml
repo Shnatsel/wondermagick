@@ -13,11 +13,12 @@ image = { version = "0.25.9", default-features = false, features = ["rayon"] }
 pic-scale-safe = { version = "0.1.5", features = ["rayon"] }
 strum = { version = "0.26.3", features = ["derive"] }
 tempfile = "3.23.0"
-webp = "0.3.1"
 mimalloc = { version = "0.1.47", optional = true }
 jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"], optional = true }
 hayro-jpeg2000 = { version = "0.3.0", optional = true }
 image-extras = { version = "0.1.0", optional = true, default-features = false }
+oxideav-core = { version = "0.1", optional = true }
+oxideav-webp = { version = "0.0.6", optional = true }
 
 [features]
 default = ["hardened_malloc", "default-formats"]
@@ -50,7 +51,7 @@ sgi = ["image-extras/sgi"]
 tga = ["image/tga"]
 tiff = ["image/tiff"]
 wbmp = ["image-extras/wbmp"]
-webp = ["image/webp"]
+webp = ["image/webp", "dep:oxideav-core", "dep:oxideav-webp"]
 xbm = ["image-extras/xbm"]
 xpm = ["image-extras/xpm"]
 

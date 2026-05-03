@@ -6,7 +6,7 @@ use image::ImageEncoder;
 mod pixel_format_optimization;
 
 pub(crate) use pixel_format_optimization::{
-    optimize_pixel_format, optimize_pixel_format_and_precision, to_8bit_rgb_maybe_a,
+    optimize_pixel_format, optimize_pixel_format_and_precision,
 };
 
 pub fn write_icc_and_exif(encoder: &mut impl ImageEncoder, image: &Image) {
