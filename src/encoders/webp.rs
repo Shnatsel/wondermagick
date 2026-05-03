@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use crate::{error::MagickError, image::Image, plan::Modifiers, wm_err, wm_try};
+use image::DynamicImage;
 use oxideav_core::{CodecId, CodecParameters, Frame, PixelFormat, VideoFrame, VideoPlane};
 use oxideav_webp::{encoder, encoder_vp8, CODEC_ID_VP8, CODEC_ID_VP8L};
 
@@ -9,19 +10,7 @@ pub fn encode<W: Write>(
     writer: &mut W,
     modifiers: &Modifiers,
 ) -> Result<(), MagickError> {
-    // oxideav-webp currently takes only RGBA frames on this path.
-    // additionally, oxideav-core VideoFrame needs to own its buffer,
-    // so we have to make a copy here since we're only handed an &Image
-    let rgba = image.pixels.to_rgba8();
-    let width = rgba.width();
-    let height = rgba.height();
-    let frame = Frame::Video(VideoFrame {
-        pts: Some(0),
-        planes: vec![VideoPlane {
-            stride: width as usize * 4,
-            data: rgba.into_raw(),
-        }],
-    });
+    let (pixel_format, frame) = webp_video_frame(&image.pixels);
 
     // imagemagick signals that the image should be lossless with quality=100
     let lossless = modifiers.quality == Some(100.0);
@@ -33,9 +22,9 @@ pub fn encode<W: Write>(
     } else {
         CODEC_ID_VP8
     }));
-    params.width = Some(width);
-    params.height = Some(height);
-    params.pixel_format = Some(PixelFormat::Rgba);
+    params.width = Some(image.pixels.width());
+    params.height = Some(image.pixels.height());
+    params.pixel_format = Some(pixel_format);
 
     let mut encoder = if lossless {
         encoder::make_encoder(&params).map_err(|e| wm_err!("WebP encoding failed: {e}"))?
@@ -59,11 +48,52 @@ pub fn encode<W: Write>(
     Ok(())
 }
 
+fn webp_video_frame(image: &DynamicImage) -> (PixelFormat, Frame) {
+    match image {
+        DynamicImage::ImageRgb8(pixels) => video_frame(
+            PixelFormat::Rgb24,
+            pixels.width() as usize * 3,
+            pixels.as_raw().clone(),
+        ),
+        DynamicImage::ImageRgba8(pixels) => video_frame(
+            PixelFormat::Rgba,
+            pixels.width() as usize * 4,
+            pixels.as_raw().clone(),
+        ),
+        image if !image.has_alpha() => {
+            let pixels = image.to_rgb8();
+            video_frame(
+                PixelFormat::Rgb24,
+                pixels.width() as usize * 3,
+                pixels.into_raw(),
+            )
+        }
+        image => {
+            let pixels = image.to_rgba8();
+            video_frame(
+                PixelFormat::Rgba,
+                pixels.width() as usize * 4,
+                pixels.into_raw(),
+            )
+        }
+    }
+}
+
+fn video_frame(pixel_format: PixelFormat, stride: usize, data: Vec<u8>) -> (PixelFormat, Frame) {
+    (
+        pixel_format,
+        Frame::Video(VideoFrame {
+            pts: Some(0),
+            planes: vec![VideoPlane { stride, data }],
+        }),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::ffi::OsString;
 
-    use image::{DynamicImage, ExtendedColorType, ImageFormat, RgbaImage};
+    use image::{DynamicImage, ExtendedColorType, ImageFormat, RgbImage, RgbaImage};
 
     use super::*;
     use crate::image::InputProperties;
@@ -89,6 +119,21 @@ mod tests {
         }
     }
 
+    fn test_rgb_image() -> Image {
+        let pixels =
+            RgbImage::from_raw(2, 2, vec![255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255]).unwrap();
+        Image {
+            format: Some(ImageFormat::Png),
+            exif: None,
+            icc: None,
+            pixels: DynamicImage::ImageRgb8(pixels),
+            properties: InputProperties {
+                filename: OsString::from("test-rgb.png"),
+                color_type: ExtendedColorType::Rgb8,
+            },
+        }
+    }
+
     #[test]
     fn encodes_lossy_webp() {
         let mut output = Vec::new();
@@ -98,6 +143,51 @@ mod tests {
         assert_eq!(&output[8..12], b"WEBP");
         let decoded = oxideav_webp::decode_webp(&output).unwrap();
         assert_eq!((decoded.width, decoded.height), (2, 2));
+    }
+
+    #[test]
+    fn rgb8_input_uses_rgb24_frame() {
+        let image = test_rgb_image();
+        let (pixel_format, frame) = webp_video_frame(&image.pixels);
+
+        assert_eq!(pixel_format, PixelFormat::Rgb24);
+        let Frame::Video(frame) = frame else {
+            unreachable!();
+        };
+        assert_eq!(frame.planes[0].stride, 6);
+        assert_eq!(frame.planes[0].data.len(), 12);
+    }
+
+    #[test]
+    fn encodes_lossy_rgb_webp_without_alpha_chunk() {
+        let mut output = Vec::new();
+        encode(&test_rgb_image(), &mut output, &Modifiers::default()).unwrap();
+
+        assert_eq!(&output[0..4], b"RIFF");
+        assert_eq!(&output[8..12], b"WEBP");
+        assert_eq!(&output[12..16], b"VP8 ");
+        let decoded = oxideav_webp::decode_webp(&output).unwrap();
+        assert_eq!((decoded.width, decoded.height), (2, 2));
+    }
+
+    #[test]
+    fn quality_100_encodes_lossless_rgb_webp() {
+        let mut output = Vec::new();
+        let modifiers = Modifiers {
+            quality: Some(100.0),
+            ..Modifiers::default()
+        };
+        encode(&test_rgb_image(), &mut output, &modifiers).unwrap();
+
+        assert_eq!(&output[0..4], b"RIFF");
+        assert_eq!(&output[8..12], b"WEBP");
+        assert_eq!(&output[12..16], b"VP8L");
+        let decoded = oxideav_webp::decode_webp(&output).unwrap();
+        assert_eq!((decoded.width, decoded.height), (2, 2));
+        assert_eq!(
+            decoded.frames[0].rgba,
+            vec![255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,]
+        );
     }
 
     #[test]

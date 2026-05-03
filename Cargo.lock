@@ -940,9 +940,9 @@ dependencies = [
 
 [[package]]
 name = "oxideav-webp"
-version = "0.0.6"
+version = "0.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f396788a448e4c0babf6032c44a6eee0d5a6c29df9ace2b13e8954f56d64ddd2"
+checksum = "374f2e2f0076ee0dba27ff6775f7d49fd731db419dfec6dab6befb4f389bd1f0"
 dependencies = [
  "oxideav-core",
  "oxideav-vp8",
