@@ -51,6 +51,20 @@ fn test_resize_identify_succeeds() {
 }
 
 #[test]
+fn test_identify_reports_current_color_type() {
+    let _guard = LOCK.lock().unwrap();
+
+    let binary = env!("CARGO_BIN_EXE_wm-convert");
+    let identify = Command::new(binary)
+        .args(["./tests/sample.png", "-monochrome", "-identify", "null:"])
+        .output()
+        .expect("convert did not exit successfully");
+
+    assert!(identify.status.success());
+    assert!(String::from_utf8(identify.stdout).unwrap().contains("Gray"));
+}
+
+#[test]
 fn combine_succeeds() {
     let _guard = LOCK.lock().unwrap();
 

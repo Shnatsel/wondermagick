@@ -34,6 +34,7 @@ pub fn monochrome(image: &mut Image) -> Result<(), MagickError> {
     remap_to_dither_band(&mut grayscaled);
     apply_blue_noise_scatter(&mut grayscaled);
     image.pixels = DynamicImage::ImageLuma8(grayscaled);
+    image.set_color_type_from_pixels();
     Ok(())
 }
 

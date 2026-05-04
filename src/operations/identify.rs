@@ -123,13 +123,14 @@ fn get_colorspace(color_type: ExtendedColorType) -> Option<String> {
     use ExtendedColorType::*;
     let string = match color_type {
         A8 => "Transparent",
-        L1 | L2 | L4 | L8 | L16 => "Gray",
-        La1 | La2 | La4 | La8 | La16 => "Gray",
+        L1 | L2 | L4 | L8 | L16 | L32F => "Gray",
+        La1 | La2 | La4 | La8 | La16 | La32F => "Gray",
         Rgba1 | Rgba2 | Rgba4 | Rgba8 | Rgba16 => "sRGB",
-        Rgb1 | Rgb2 | Rgb4 | Rgb8 | Rgb16 => "sRGB",
+        Rgb1 | Rgb2 | Rgb4 | Rgb5x1 | Rgb8 | Rgb16 => "sRGB",
         Bgr8 | Bgra8 => "sRGB",
         Rgb32F | Rgba32F => "sRGB",
         Cmyk8 | Cmyk16 => "CMYK",
+        YCbCr8 => "YCbCr",
         Unknown(_) => return None,
         _ => return None,
     };
@@ -172,6 +173,31 @@ mod tests {
         assert_eq!(
             String::try_from(output).unwrap(),
             format!("/some/path/test.png PNG {width}x{height} {width}x{height}+0+0 16-bit sRGB\n")
+        );
+    }
+
+    #[test]
+    fn test_identify_reports_original_extended_color_type() {
+        let mut output = Vec::new();
+        identify_impl(
+            &mut Image {
+                format: Some(image::ImageFormat::Png),
+                exif: None,
+                xmp: None,
+                icc: None,
+                pixels: DynamicImage::new_rgb8(1, 1),
+                properties: InputProperties {
+                    filename: "cmyk.png".into(),
+                    color_type: ExtendedColorType::Cmyk8,
+                },
+            },
+            None,
+            &mut output,
+        )
+        .unwrap();
+        assert_eq!(
+            String::try_from(output).unwrap(),
+            "cmyk.png PNG 1x1 1x1+0+0 8-bit CMYK\n"
         );
     }
 
