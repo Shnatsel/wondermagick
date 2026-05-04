@@ -77,7 +77,7 @@ enum ExecutionStep {
     /// magick -extract 20x20 rose: +write 'null:' out.png # out is a 20x20 file
     /// ```
     InputFile(FilePlan),
-    Write(Location, Option<FileFormat>),
+    Write(Location, Option<FileFormat>, Modifiers),
 }
 
 impl ExecutionPlan {
@@ -253,7 +253,8 @@ impl ExecutionPlan {
         }
 
         let (loc, format) = ctx.parse_output_file(loc);
-        self.execution.push(ExecutionStep::Write(loc, format));
+        self.execution
+            .push(ExecutionStep::Write(loc, format, self.modifiers.clone()));
         Ok(())
     }
 
@@ -316,7 +317,11 @@ impl ExecutionPlan {
 
         let mut sequence: Vec<Image> = vec![];
 
-        let output = ExecutionStep::Write(self.output_file.clone(), self.output_format);
+        let output = ExecutionStep::Write(
+            self.output_file.clone(),
+            self.output_format,
+            self.modifiers.clone(),
+        );
 
         for step in self.execution.iter().chain([&output]) {
             match step {
@@ -337,10 +342,10 @@ impl ExecutionPlan {
                 ExecutionStep::Rewrite(op) => {
                     op.execute(&mut sequence)?;
                 }
-                ExecutionStep::Write(location, format) => {
+                ExecutionStep::Write(location, format, modifiers) => {
                     let output_locations = Self::output_locations(location, &sequence);
                     for (image, specific_location) in sequence.iter_mut().zip(output_locations) {
-                        encode::encode(image, &specific_location, *format, &self.modifiers)?;
+                        encode::encode(image, &specific_location, *format, modifiers)?;
                     }
                 }
             }
@@ -386,7 +391,7 @@ pub struct FilePlan {
     pub ops: Vec<Operation>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Modifiers {
     pub quality: Option<f64>,
     pub strip: Strip,
