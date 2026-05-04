@@ -398,8 +398,9 @@ pub struct Modifiers {
 #[derive(Debug, Default, Copy, Clone)] // bools default to false
 pub struct Strip {
     pub exif: bool,
+    pub xmp: bool,
     pub icc: bool,
-    // TODO: XMP, etc: https://imagemagick.org/script/command-line-options.php#profile
+    // TODO: IPTC, etc: https://imagemagick.org/script/command-line-options.php#profile
 }
 
 impl Strip {
@@ -407,6 +408,7 @@ impl Strip {
         // enumerate the fields exhaustively so that the compiler complains if we miss any
         *self = Self {
             exif: new_val,
+            xmp: new_val,
             icc: new_val,
         };
     }
