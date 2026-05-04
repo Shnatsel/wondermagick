@@ -85,6 +85,7 @@ pub fn combine(
     let mut image = Image {
         format: first.format,
         exif: core::mem::take(&mut first.exif),
+        xmp: core::mem::take(&mut first.xmp),
         icc: core::mem::take(&mut first.icc),
         pixels,
         properties: first.properties.clone(),

@@ -157,6 +157,7 @@ mod tests {
             &mut Image {
                 format: Some(image::ImageFormat::Png),
                 exif: None,
+                xmp: None,
                 icc: None,
                 pixels: image,
                 properties: InputProperties {
@@ -181,6 +182,7 @@ mod tests {
             &mut Image {
                 format: None,
                 exif: None,
+                xmp: None,
                 icc: None,
                 pixels: DynamicImage::new_rgba8(123, 42),
                 properties: InputProperties {
@@ -209,6 +211,7 @@ mod tests {
             &mut Image {
                 format: None,
                 exif: None,
+                xmp: None,
                 icc: None,
                 pixels: DynamicImage::new_rgba8(1, 1),
                 properties: InputProperties {

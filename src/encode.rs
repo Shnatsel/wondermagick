@@ -36,9 +36,13 @@ pub fn encode(
     //
     // Therefore we do it here once and for all, without trusting any individual format handlers.
     let mut exif = None;
+    let mut xmp = None;
     let mut icc = None;
     if modifiers.strip.exif {
         exif = std::mem::take(&mut image.exif);
+    }
+    if modifiers.strip.xmp {
+        xmp = std::mem::take(&mut image.xmp);
     }
     if modifiers.strip.icc {
         icc = std::mem::take(&mut image.icc);
@@ -51,8 +55,11 @@ pub fn encode(
     if exif.is_some() {
         image.exif = exif;
     }
+    if xmp.is_some() {
+        image.xmp = xmp;
+    }
     if icc.is_some() {
-        image.exif = icc;
+        image.icc = icc;
     }
 
     result
@@ -144,4 +151,68 @@ fn choose_encoding_format(
         "no encode delegate for this image format `{}'",
         extension.to_ascii_uppercase().display()
     ))
+}
+
+#[cfg(all(test, feature = "jpeg"))]
+mod tests {
+    use super::*;
+
+    use crate::image::InputProperties;
+    use image::{DynamicImage, ExtendedColorType};
+
+    fn image_with_metadata() -> Image {
+        Image {
+            format: Some(ImageFormat::Jpeg),
+            exif: Some(vec![1, 2, 3]),
+            xmp: Some(
+                br#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF></rdf:RDF></x:xmpmeta>"#.to_vec(),
+            ),
+            icc: Some(vec![4, 5, 6]),
+            pixels: DynamicImage::new_luma8(2, 2),
+            properties: InputProperties {
+                filename: "input.jpg".into(),
+                color_type: ExtendedColorType::L8,
+            },
+        }
+    }
+
+    fn encode_and_decode(image: &mut Image, modifiers: &Modifiers) -> Image {
+        let tmp_dir = tempfile::tempdir().unwrap();
+        let location = Location::Path(tmp_dir.path().join("output.jpg"));
+
+        encode(
+            image,
+            &location,
+            Some(FileFormat::Format(ImageFormat::Jpeg)),
+            modifiers,
+        )
+        .unwrap();
+
+        crate::decode::decode(&location, Some(FileFormat::Format(ImageFormat::Jpeg))).unwrap()
+    }
+
+    #[test]
+    fn strip_removes_all_metadata_from_output_and_restores_input() {
+        let mut image = image_with_metadata();
+        let original_exif = image.exif.clone();
+        let original_xmp = image.xmp.clone();
+        let original_icc = image.icc.clone();
+
+        let decoded = encode_and_decode(&mut image, &Modifiers::default());
+        assert_eq!(decoded.exif, original_exif);
+        assert_eq!(decoded.xmp, original_xmp);
+        assert_eq!(decoded.icc, original_icc);
+
+        let mut modifiers = Modifiers::default();
+        modifiers.strip.set_all(true);
+        let stripped = encode_and_decode(&mut image, &modifiers);
+
+        assert_eq!(stripped.exif, None);
+        assert_eq!(stripped.xmp, None);
+        assert_eq!(stripped.icc, None);
+
+        assert_eq!(image.exif, original_exif);
+        assert_eq!(image.xmp, original_xmp);
+        assert_eq!(image.icc, original_icc);
+    }
 }
