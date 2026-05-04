@@ -430,6 +430,7 @@ mod tests {
             Image {
                 format: None,
                 exif: None,
+                xmp: None,
                 icc: None,
                 pixels: image::DynamicImage::new_rgb8(1, 1),
                 properties: input.clone(),
@@ -437,6 +438,7 @@ mod tests {
             Image {
                 format: Some(ImageFormat::Jpeg),
                 exif: None,
+                xmp: None,
                 icc: None,
                 pixels: image::DynamicImage::new_rgb8(1, 1),
                 properties: input.clone(),

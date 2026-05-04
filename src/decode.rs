@@ -42,6 +42,7 @@ pub fn decode(location: &Location, format: Option<FileFormat>) -> Result<Image, 
     };
     let mut decoder = wm_try!(reader.into_decoder());
     let exif = decoder.exif_metadata().unwrap_or(None);
+    let xmp = decoder.xmp_metadata().unwrap_or(None);
     let icc = decoder.icc_profile().unwrap_or(None);
     let color_type = decoder.original_color_type();
     let pixels = wm_try!(DynamicImage::from_decoder(decoder));
@@ -52,6 +53,7 @@ pub fn decode(location: &Location, format: Option<FileFormat>) -> Result<Image, 
     Ok(Image {
         format,
         exif,
+        xmp,
         icc,
         pixels,
         properties,
@@ -63,6 +65,7 @@ pub fn blank_image(location: &Location) -> Image {
         format: None,
         exif: None,
         icc: None,
+        xmp: None,
         pixels: DynamicImage::new_rgb8(1, 1),
         properties: InputProperties {
             filename: location.to_filename(),
