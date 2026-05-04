@@ -46,7 +46,7 @@ fn test_resize_identify_succeeds() {
         .output()
         .expect("convert did not exit successfully");
 
-    assert!(convert.status.success());
+    assert!(identify.status.success());
     assert!(String::from_utf8(identify.stdout).unwrap().contains("5x5"));
 }
 
