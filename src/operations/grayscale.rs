@@ -8,6 +8,7 @@ pub fn grayscale(image: &mut Image, method: &GrayscaleMethod) -> Result<(), Magi
             // https://github.com/image-rs/image/blob/2e121abff5f87028e85bf8f26a95f36f7b6182ac/src/images/buffer.rs#L1577
             // https://github.com/image-rs/image/issues/598
             image.pixels = image.pixels.grayscale();
+            image.set_color_type_from_pixels();
             Ok(())
         }
         _ => Err(wm_err!(

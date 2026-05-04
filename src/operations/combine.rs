@@ -90,6 +90,7 @@ pub fn combine(
         pixels,
         properties: first.properties.clone(),
     };
+    image.properties.color_type = color_type.into();
 
     // We store this as bytes to avoid monomorphizing the channel iteration loop itself over the
     // channel types that we support, which would be unnecessary code bloat.

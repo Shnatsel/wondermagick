@@ -46,8 +46,22 @@ fn test_resize_identify_succeeds() {
         .output()
         .expect("convert did not exit successfully");
 
-    assert!(convert.status.success());
+    assert!(identify.status.success());
     assert!(String::from_utf8(identify.stdout).unwrap().contains("5x5"));
+}
+
+#[test]
+fn test_identify_reports_current_color_type() {
+    let _guard = LOCK.lock().unwrap();
+
+    let binary = env!("CARGO_BIN_EXE_wm-convert");
+    let identify = Command::new(binary)
+        .args(["./tests/sample.png", "-monochrome", "-identify", "null:"])
+        .output()
+        .expect("convert did not exit successfully");
+
+    assert!(identify.status.success());
+    assert!(String::from_utf8(identify.stdout).unwrap().contains("Gray"));
 }
 
 #[test]
@@ -121,6 +135,53 @@ fn test_write_as_intermediate() {
         copy_img.dimensions(),
         output_img.dimensions(),
         "Intermediate write should have twice the dimensions of the final output",
+    );
+}
+
+#[test]
+fn test_write_uses_current_modifiers() {
+    let _guard = LOCK.lock().unwrap();
+
+    let binary = env!("CARGO_BIN_EXE_wm-convert");
+    let tmp_dir = env!("CARGO_TARGET_TMPDIR");
+
+    let default_path = format!("{}/default_quality.jpg", tmp_dir);
+    let written_path = format!("{}/write_before_quality.jpg", tmp_dir);
+    let final_path = format!("{}/final_quality.jpg", tmp_dir);
+    let _ = fs::remove_file(&default_path);
+    let _ = fs::remove_file(&written_path);
+    let _ = fs::remove_file(&final_path);
+
+    let default = Command::new(binary)
+        .args(["./tests/sample.png", &default_path])
+        .output()
+        .expect("convert did not exit successfully");
+    assert!(default.status.success());
+
+    let write = Command::new(binary)
+        .args([
+            "./tests/sample.png",
+            "-write",
+            &written_path,
+            "-quality",
+            "100",
+            &final_path,
+        ])
+        .output()
+        .expect("convert did not exit successfully");
+    assert!(write.status.success());
+
+    let default_bytes = fs::read(default_path).unwrap();
+    let written_bytes = fs::read(written_path).unwrap();
+    let final_bytes = fs::read(final_path).unwrap();
+
+    assert_eq!(
+        written_bytes, default_bytes,
+        "-write should encode with modifiers active at the -write argument"
+    );
+    assert_ne!(
+        final_bytes, default_bytes,
+        "final output should still use the later -quality modifier"
     );
 }
 
