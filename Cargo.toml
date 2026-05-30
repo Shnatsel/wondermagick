@@ -15,7 +15,6 @@ strum = { version = "0.26.3", features = ["derive"] }
 tempfile = "3.23.0"
 webpx = { version = "0.3.3", default-features = false, optional = true, features = ["encode", "std", "icc"] }
 mimalloc = { version = "0.1.47", optional = true }
-jxl-oxide = { version = "0.12.5", features = ["image", "moxcms"], optional = true }
 hayro-jpeg2000 = { version = "0.3.0", optional = true }
 image-extras = { version = "0.1.0", optional = true, default-features = false }
 
@@ -29,7 +28,7 @@ hardened_malloc = ["mimalloc/secure"]
 asm = ["image/nasm"]
 
 # These features enable/disable support for specific image formats at compile time
-default-formats = ["avif", "bmp", "exr", "ff", "gif", "hdr", "ico", "jpeg", "jpeg2000", "jxl", "otb", "pcx", "png", "pnm", "qoi", "sgi", "tga", "tiff", "webp", "xbm", "xpm"]
+default-formats = ["avif", "bmp", "exr", "ff", "gif", "hdr", "ico", "jpeg", "jpeg2000", "otb", "pcx", "png", "pnm", "qoi", "sgi", "tga", "tiff", "webp", "xbm", "xpm"]
 avif = ["image/avif"]
 bmp = ["image/bmp"]
 #dds = ["image/dds"] # moved to unreleased image-extras. TODO: re-enable.
@@ -40,7 +39,6 @@ hdr = ["image/hdr"]
 ico = ["image/ico"]
 jpeg = ["image/jpeg"]
 jpeg2000 = ["dep:hayro-jpeg2000"]
-jxl = ["dep:jxl-oxide"]
 otb = ["image-extras/otb"]
 pcx = ["image-extras/pcx"]
 png = ["image/png"]
@@ -71,5 +69,3 @@ panic = "abort"
 
 [patch.crates-io]
 image = {git = "https://github.com/image-rs/image.git"}
-# https://github.com/tirr-c/jxl-oxide/pull/488
-jxl-oxide = {git = "https://github.com/tirr-c/jxl-oxide.git"}
