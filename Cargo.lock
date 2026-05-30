@@ -481,7 +481,7 @@ checksum = "3d3067d79b975e8844ca9eb072e16b31c3c1c36928edf9c6789548c524d0d954"
 [[package]]
 name = "image"
 version = "0.25.9"
-source = "git+https://github.com/image-rs/image.git#f12ba2bbd3f5988e7094d48bb4f69e2d6219316a"
+source = "git+https://github.com/image-rs/image.git?rev=dbb885ce3641b714a3d0284a411f10a6fdcebaeb#dbb885ce3641b714a3d0284a411f10a6fdcebaeb"
 dependencies = [
  "bytemuck",
  "byteorder-lite",

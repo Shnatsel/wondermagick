@@ -68,4 +68,4 @@ opt-level = 3
 panic = "abort"
 
 [patch.crates-io]
-image = {git = "https://github.com/image-rs/image.git"}
+image = {git = "https://github.com/image-rs/image.git", rev = "dbb885ce3641b714a3d0284a411f10a6fdcebaeb"}
