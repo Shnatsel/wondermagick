@@ -6,7 +6,7 @@ use std::{
 use crate::arg_parsers::{
     parse_numeric_arg, BlurGeometry, ChannelFormat, ColorModel, Colorspace, CropGeometry,
     FileFormat, GrayscaleMethod, IdentifyFormat, InputFileArg, Location, ResizeGeometry,
-    UnsharpenGeometry,
+    SepiaThreshold, UnsharpenGeometry,
 };
 use crate::args::{Arg, ArgParseCtx, ArgSign, SignedArg};
 use crate::decode::decode;
@@ -214,6 +214,9 @@ impl ExecutionPlan {
             Arg::Write => {
                 self.add_output(value.unwrap(), ctx)?;
             }
+            Arg::SepiaTone => self.add_operation(Operation::SepiaTone(SepiaThreshold::try_from(
+                value.unwrap(),
+            )?)),
         };
 
         Ok(())

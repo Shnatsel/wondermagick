@@ -1584,6 +1584,7 @@ dependencies = [
  "image",
  "image-extras",
  "mimalloc",
+ "num-traits",
  "pic-scale-safe",
  "quickcheck",
  "quickcheck_macros",

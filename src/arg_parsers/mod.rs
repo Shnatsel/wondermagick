@@ -25,3 +25,5 @@ mod grayscale_method;
 pub use grayscale_method::*;
 mod unsharpen_geometry;
 pub use unsharpen_geometry::*;
+mod sepia_threshold;
+pub use sepia_threshold::*;
