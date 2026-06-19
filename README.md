@@ -43,3 +43,7 @@ You can help by:
 
 - [image-rs](https://github.com/image-rs/image/): does all the heavy lifting for `wondermagick`.
 - [WUFFS](https://github.com/google/wuffs/): memory-safe image decoders that compile to C. No support for encoding images or operations like resize. If you cannot adopt Rust, at least use these.
+
+## Special thanks
+
+This project has benefited from an [investment](https://www.sovereign.tech/tech/wondermagick) by the [Sovereign Tech Agency](https://www.sovereign.tech/). 91% of the funds were allocated to [image-rs](https://github.com/image-rs/image/) and its image format implementations, enabling its adoption GNOME and Chromium, while 9% of the funds were allocated to `wondermagick` and the image-rs features it was missing.
